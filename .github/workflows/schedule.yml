@@ -33,6 +33,9 @@ jobs:
         run: |
           set -e
           DATE=$(date -u +"%b %d %H:%M UTC %y")
+          EMOJIS=("🔴" "🟠" "🟡" "🟢" "🔵" "🟣" "🟤")
+          DAY_OF_WEEK=$(date -u +"%w")
+          EMOJI=${EMOJIS[$DAY_OF_WEEK]}
 
           rm -f ./.github/failed.txt
 
@@ -55,7 +58,7 @@ jobs:
               git branch -d "$BRANCH_NAME"
               echo "Committing changes for $script"
               git add .
-              git commit -m "$DATE" || true
+              git commit -m "$EMOJI $DATE" || true
             else
               echo -e "\033[31mFailed $script\033[0m"
               git reset --hard
@@ -64,13 +67,13 @@ jobs:
               git branch -D "$BRANCH_NAME"
               echo "$script" >> ./.github/failed.txt
               git add ./.github/failed.txt
-              git commit -m "$DATE"
+              git commit -m "$EMOJI $DATE"
             fi
           done
 
           sed -i "3s/.*/> Last updated: $DATE/" ./.github/README.md
           git add ./.github/README.md
-          git commit -m "$DATE"
+          git commit -m "$EMOJI $DATE"
 
       - name: Push Changes
         run: git push
