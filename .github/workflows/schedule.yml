@@ -82,6 +82,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      # comment out until there aren't more than 10 scripts
       - uses: actions/cache@v4
         with:
           path: ~/.bun/install/cache
