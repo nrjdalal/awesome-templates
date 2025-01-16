@@ -31,9 +31,6 @@ jobs:
         with:
           bun-version: latest
 
-      - name: Install Git
-        run: sudo apt-get update && sudo apt-get install -y git
-
       - name: Execute and Commit Scripts
         run: |
           set -e
