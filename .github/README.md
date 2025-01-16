@@ -15,6 +15,14 @@ Tired of repeatedly setting up and deleting test directories for various project
 
 Here's your solution: reference templates, updated every 8 hours to ensure they're the latest and greatest. 🚀
 
+## Clone a Template
+
+To clone a template, run the following command:
+
+```bash
+npx gitpick clone nrjdalal/awesome-templates <template-name> <target-directory>
+```
+
 ## Contributing
 
 We welcome contributions from the community! To contribute to this project, please follow these steps:
