@@ -73,7 +73,7 @@ jobs:
             fi
           done
 
-          sed -i "3s/.*/> Last updated: $EMOJI $DATE/" ./.github/README.md
+          sed -i "3s/.*/> $EMOJI Last updated: $DATE/" ./.github/README.md
           git add ./.github/README.md
           git commit -m "$EMOJI $DATE"
 
