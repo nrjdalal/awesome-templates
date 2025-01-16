@@ -1,1 +1,1 @@
-bunx create-expo-app "$TEMP_DIR"
+bunx create-expo-app@latest "$TEMP_DIR"
