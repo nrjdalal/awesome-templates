@@ -1,1 +1,1 @@
-bun create elysia "$TEMP_DIR"
+bun create elysia@latest "$TEMP_DIR"
