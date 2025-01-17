@@ -48,7 +48,7 @@ jobs:
             
             SCRIPT_NAME=$(basename "$script" .sh)
             BRANCH_NAME="template-$SCRIPT_NAME"
-            TEMP_DIR="$BRANCH_NAME"
+            TEMP_DIR=$(echo "$SCRIPT_NAME" | cut -d'-' -f1)/"$SCRIPT_NAME"
             
             git checkout -b "$BRANCH_NAME"
             
