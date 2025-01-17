@@ -1,1 +1,2 @@
 ./.github/.scripts/elysia.sh
+./.github/.scripts/elysia.sh
