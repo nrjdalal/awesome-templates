@@ -41,11 +41,8 @@ jobs:
           # replace "$TEMP_DIR" with " . " in all scripts
           for script in ./.github/.scripts/*.sh; do
             sed -i "s/ \$TEMP_DIR/ \./g" "$script"
+            echo "Cleanup $script"
           done
-          # # replace " . " with "$TEMP_DIR" in all scripts
-          # for script in ./.github/.scripts/*.sh; do
-          #   sed -i "s/ \./ \$TEMP_DIR/g" "$script"
-          # done
           git add .
           git commit -m "$EMOJI $DATE" || true
           git push
