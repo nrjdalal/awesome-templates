@@ -40,8 +40,7 @@ jobs:
           rm -rf ./.github/failed.txt
           # replace "$TEMP_DIR" with " . " in all scripts
           for script in ./.github/.scripts/*.sh; do
-            sed -i "s/ \$TEMP_DIR/ \./g" "$script"
-            cat "$script"
+            sed -i "s/ \\$TEMP_DIR/ \./g" "$script"
           done
           git add .
           git commit -m "$EMOJI $DATE" || true
