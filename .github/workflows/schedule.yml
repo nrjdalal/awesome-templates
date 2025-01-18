@@ -31,6 +31,15 @@ jobs:
         with:
           bun-version: latest
 
+      - name: Cleanup Logs
+        run: |
+          rm -rf ./.github/failed.txt
+          git add .
+          git commit -m "Cleanup logs"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Execute and Commit Scripts
         run: |
           set -e
@@ -38,10 +47,6 @@ jobs:
           EMOJIS=("🔴" "🟠" "🟡" "🟢" "🔵" "🟣" "🟤")
           DAY_OF_WEEK=$(date -u +"%w")
           EMOJI=${EMOJIS[$DAY_OF_WEEK]}
-
-          rm -f ./.github/failed.txt
-          git add .
-          git commit -m "$EMOJI $DATE"
 
           for script in ./.github/.scripts/*.sh; do
             echo -e "\033[33m--------------------------------------------------\033[0m"
