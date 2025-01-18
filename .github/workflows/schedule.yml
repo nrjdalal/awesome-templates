@@ -38,9 +38,9 @@ jobs:
           DAY_OF_WEEK=$(date -u +"%w")
           EMOJI=${EMOJIS[$DAY_OF_WEEK]}
           rm -rf ./.github/failed.txt
-          # replace "$TEMP_DIR" with " . " in all scripts
-          for script in ./.github/.scripts/*.sh; do
-            sed -i "s/ \\$TEMP_DIR/ \./g" "$script"
+            # replace "$TEMP_DIR" with " . " in all scripts
+            for script in ./.github/.scripts/*.sh; do
+            sed -i "s/\\$TEMP_DIR/\\./g" "$script"
           done
           git add .
           git commit -m "$EMOJI $DATE" || true
