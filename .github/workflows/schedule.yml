@@ -64,11 +64,8 @@ jobs:
             git checkout -b "$BRANCH_NAME"
             
             if TEMP_DIR="$TEMP_DIR" bash "$script"; then
-              rsync -a --delete --exclude=".git" "$TEMP_DIR/" "./$SCRIPT_NAME/"
+              rsync -a --delete --exclude=".git" "$TEMP_DIR/" "./${SCRIPT_NAME%%-*}/$SCRIPT_NAME/"
               rm -rf "$TEMP_DIR"
-              mkdir -p "./${SCRIPT_NAME%%-*}/$SCRIPT_NAME/"
-              rsync -a --delete --exclude=".git" "./$SCRIPT_NAME/" "./${SCRIPT_NAME%%-*}/$SCRIPT_NAME/"
-              rm -rf "./$SCRIPT_NAME/"
               git checkout main
               git merge "$BRANCH_NAME"
               git branch -d "$BRANCH_NAME"
