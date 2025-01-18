@@ -1,9 +1,9 @@
 .DS_Store
 
+node_modules/
+test/
+
 bun.lockb
 package-lock.json
 pnpm-lock.yaml
 yarn.lock
-
-node_modules/
-test/
