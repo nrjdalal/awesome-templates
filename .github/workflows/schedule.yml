@@ -57,11 +57,10 @@ jobs:
 
           for script in ./.github/.scripts/*.sh; do
             sed -i "s/ \. /\"\$TEMP_DIR\"/g" "$script"
+            cat "$script"
           done
 
           for script in ./.github/.scripts/*.sh; do
-            cat "$script"
-
             echo -e "\033[33m--------------------------------------------------\033[0m"
             echo -e "\033[33m$script\033[0m"
             echo -e "\033[33m--------------------------------------------------\033[0m"
