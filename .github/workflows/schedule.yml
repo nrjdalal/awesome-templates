@@ -38,9 +38,6 @@ jobs:
           DAY_OF_WEEK=$(date -u +"%w")
           EMOJI=${EMOJIS[$DAY_OF_WEEK]}
           rm -rf ./.github/failed.txt
-          for script in ./.github/.scripts/*.sh; do
-            sed -i "s/ \./ app/g" "$script"
-          done
           git add .
           git commit -m "$EMOJI $DATE" || true
           git push
