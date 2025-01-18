@@ -64,6 +64,7 @@ jobs:
             git checkout -b "$BRANCH_NAME"
             
             if TEMP_DIR="$TEMP_DIR" bash "$script"; then
+              mkdir -p "./${SCRIPT_NAME%%-*}/$SCRIPT_NAME/"
               rsync -a --delete --exclude=".git" "$TEMP_DIR/" "./${SCRIPT_NAME%%-*}/$SCRIPT_NAME/"
               rm -rf "$TEMP_DIR"
               git checkout main
