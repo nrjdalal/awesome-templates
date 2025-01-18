@@ -38,59 +38,63 @@ jobs:
           DAY_OF_WEEK=$(date -u +"%w")
           EMOJI=${EMOJIS[$DAY_OF_WEEK]}
           rm -rf ./.github/failed.txt
-          for script in ./.github/.scripts/*.sh; do
-            sed -i "s/\"\$TEMP_DIR\"/\./g" "$script"
-          done
+          # for script in ./.github/.scripts/*.sh; do
+          #   sed -i "s/\"\$TEMP_DIR\"/\./g" "$script"
+          # done
           git add .
           git commit -m "$EMOJI $DATE" || true
           git push
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # - name: Execute and Commit Scripts
-      #   run: |
-      #     set -e
-      #     DATE=$(date -u +"%b %d %H:%M UTC %y")
-      #     EMOJIS=("🔴" "🟠" "🟡" "🟢" "🔵" "🟣" "🟤")
-      #     DAY_OF_WEEK=$(date -u +"%w")
-      #     EMOJI=${EMOJIS[$DAY_OF_WEEK]}
+      - name: Execute and Commit Scripts
+        run: |
+          set -e
+          DATE=$(date -u +"%b %d %H:%M UTC %y")
+          EMOJIS=("🔴" "🟠" "🟡" "🟢" "🔵" "🟣" "🟤")
+          DAY_OF_WEEK=$(date -u +"%w")
+          EMOJI=${EMOJIS[$DAY_OF_WEEK]}
 
-      #     for script in ./.github/.scripts/*.sh; do
-      #       echo -e "\033[33m--------------------------------------------------\033[0m"
-      #       echo -e "\033[33m$script\033[0m"
-      #       echo -e "\033[33m--------------------------------------------------\033[0m"
+          for script in ./.github/.scripts/*.sh; do
+            sed -i "s/\ \.\ /\ \"\$TEMP_DIR\"\ /g" "$script"
+          done
 
-      #       SCRIPT_NAME=$(basename "$script" .sh)
-      #       BRANCH_NAME="template-$SCRIPT_NAME"
-      #       TEMP_DIR="$BRANCH_NAME"
+          for script in ./.github/.scripts/*.sh; do
+            echo -e "\033[33m--------------------------------------------------\033[0m"
+            echo -e "\033[33m$script\033[0m"
+            echo -e "\033[33m--------------------------------------------------\033[0m"
 
-      #       git checkout -b "$BRANCH_NAME"
+            SCRIPT_NAME=$(basename "$script" .sh)
+            BRANCH_NAME="template-$SCRIPT_NAME"
+            TEMP_DIR="$BRANCH_NAME"
 
-      #       if TEMP_DIR="$TEMP_DIR" bash "$script"; then
-      #         mkdir -p "./${SCRIPT_NAME%%-*}/$SCRIPT_NAME/"
-      #         rsync -a --delete --exclude=".git" "$TEMP_DIR/" "./${SCRIPT_NAME%%-*}/$SCRIPT_NAME/"
-      #         rm -rf "$TEMP_DIR"
-      #         git checkout main
-      #         git merge "$BRANCH_NAME"
-      #         git branch -d "$BRANCH_NAME"
-      #         echo "Committing changes for $script"
-      #         git add .
-      #         git commit -m "$EMOJI $DATE" || true
-      #       else
-      #         echo -e "\033[31mFailed $script\033[0m"
-      #         git reset --hard
-      #         git clean -fdx
-      #         git checkout main
-      #         git branch -D "$BRANCH_NAME"
-      #         echo "$script" >> ./.github/failed.txt
-      #         git add ./.github/failed.txt
-      #         git commit -m "$EMOJI $DATE"
-      #       fi
-      #     done
+            git checkout -b "$BRANCH_NAME"
 
-      #     sed -i "3s/.*/> $EMOJI Last updated: $DATE/" ./.github/README.md
-      #     git add ./.github/README.md
-      #     git commit -m "$EMOJI $DATE"
+            if TEMP_DIR="$TEMP_DIR" bash "$script"; then
+              mkdir -p "./${SCRIPT_NAME%%-*}/$SCRIPT_NAME/"
+              rsync -a --delete --exclude=".git" "$TEMP_DIR/" "./${SCRIPT_NAME%%-*}/$SCRIPT_NAME/"
+              rm -rf "$TEMP_DIR"
+              git checkout main
+              git merge "$BRANCH_NAME"
+              git branch -d "$BRANCH_NAME"
+              echo "Committing changes for $script"
+              git add "./${SCRIPT_NAME%%-*}/$SCRIPT_NAME/"
+              git commit -m "$EMOJI $DATE" || true
+            else
+              echo -e "\033[31mFailed $script\033[0m"
+              git reset --hard
+              git clean -fdx
+              git checkout main
+              git branch -D "$BRANCH_NAME"
+              echo "$script" >> ./.github/failed.txt
+              git add ./.github/failed.txt
+              git commit -m "$EMOJI $DATE"
+            fi
+          done
+
+          sed -i "3s/.*/> $EMOJI Last updated: $DATE/" ./.github/README.md
+          git add ./.github/README.md
+          git commit -m "$EMOJI $DATE"
 
       - name: Push Changes
         run: git push
