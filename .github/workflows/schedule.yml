@@ -33,9 +33,13 @@ jobs:
 
       - name: Cleanup Logs
         run: |
+          DATE=$(date -u +"%b %d %H:%M UTC %y")
+          EMOJIS=("🔴" "🟠" "🟡" "🟢" "🔵" "🟣" "🟤")
+          DAY_OF_WEEK=$(date -u +"%w")
+          EMOJI=${EMOJIS[$DAY_OF_WEEK]}
           rm -rf ./.github/failed.txt
           git add .
-          git commit -m "Cleanup logs" || true
+          git commit -m "$EMOJI $DATE" || true
           git push
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
