@@ -20,7 +20,7 @@ Here's your solution: reference templates, updated every 8 hours to ensure they'
 To clone a template, run the following command:
 
 ```bash
-npx gitpick clone nrjdalal/awesome-templates <template-folder>/<template-name> <target-directory>
+npx gitpick clone nrjdalal/awesome-templates "<template-folder>/<template-name>" "<target-directory>"
 ```
 
 ## Contributing
