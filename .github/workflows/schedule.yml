@@ -56,7 +56,7 @@ jobs:
           EMOJI=${EMOJIS[$DAY_OF_WEEK]}
 
           for script in ./.github/.scripts/*.sh; do
-            sed -i.bak "s/ \./ \"$TEMP_DIR\"/g" "$script" && rm "$script.bak"
+            sed -i.bak "s/ \./ \"\$TEMP_DIR\"/g" "$script" && rm "$script.bak"
             cat "$script"
           done
 
