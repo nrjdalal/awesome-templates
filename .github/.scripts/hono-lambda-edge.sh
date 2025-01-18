@@ -1,1 +1,1 @@
-bunx create-hono@latest -i -t lambda-edge "$TEMP_DIR"
+bunx create-hono@latest -i -t lambda-edge .

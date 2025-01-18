@@ -1,1 +1,1 @@
-bunx create-expo-app@latest --template bare-minimum "$TEMP_DIR"
+bunx create-expo-app@latest --template bare-minimum .

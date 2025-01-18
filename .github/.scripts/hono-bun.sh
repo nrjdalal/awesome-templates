@@ -1,1 +1,1 @@
-bunx create-hono@latest -i -t bun "$TEMP_DIR"
+bunx create-hono@latest -i -t bun .

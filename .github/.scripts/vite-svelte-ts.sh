@@ -1,1 +1,1 @@
-bun create vite@latest --template svelte-ts "$TEMP_DIR"
+bun create vite@latest --template svelte-ts .

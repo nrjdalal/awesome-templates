@@ -1,1 +1,1 @@
-bunx create-hono@latest -i -t fastly "$TEMP_DIR"
+bunx create-hono@latest -i -t fastly .

@@ -1,1 +1,1 @@
-bun create vite@latest --template vanilla "$TEMP_DIR"
+bun create vite@latest --template vanilla .

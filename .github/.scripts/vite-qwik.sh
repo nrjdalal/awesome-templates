@@ -1,1 +1,1 @@
-bun create vite@latest --template qwik "$TEMP_DIR"
+bun create vite@latest --template qwik .

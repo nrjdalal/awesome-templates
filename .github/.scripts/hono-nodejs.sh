@@ -1,1 +1,1 @@
-bunx create-hono@latest -i -t nodejs "$TEMP_DIR"
+bunx create-hono@latest -i -t nodejs .

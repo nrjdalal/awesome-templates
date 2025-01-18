@@ -1,1 +1,1 @@
-bun create vite@latest --template preact "$TEMP_DIR"
+bun create vite@latest --template preact .

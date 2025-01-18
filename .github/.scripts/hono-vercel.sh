@@ -1,1 +1,1 @@
-bunx create-hono@latest -i -t vercel "$TEMP_DIR"
+bunx create-hono@latest -i -t vercel .

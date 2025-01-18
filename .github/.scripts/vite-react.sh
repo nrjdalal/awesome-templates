@@ -1,1 +1,1 @@
-bun create vite@latest --template react "$TEMP_DIR"
+bun create vite@latest --template react .
