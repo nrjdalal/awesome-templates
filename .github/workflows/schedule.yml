@@ -38,7 +38,7 @@ jobs:
           DAY_OF_WEEK=$(date -u +"%w")
           EMOJI=${EMOJIS[$DAY_OF_WEEK]}
           rm -rf ./.github/failed.txt
-          git add ./.github/failed.txt
+          git add .
           git commit -m "$EMOJI $DATE" || true
           git push
         env:
