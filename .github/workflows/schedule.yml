@@ -53,6 +53,10 @@ jobs:
           EMOJI=${EMOJIS[$DAY_OF_WEEK]}
 
           for script in ./.github/.scripts/*.sh; do
+            sed -i "s/ \./ \"\$TEMP_DIR\"/g" "$script"
+          done
+
+          for script in ./.github/.scripts/*.sh; do
             echo -e "\033[33m--------------------------------------------------\033[0m"
             echo -e "\033[33m$script\033[0m"
             echo -e "\033[33m--------------------------------------------------\033[0m"
@@ -63,8 +67,7 @@ jobs:
 
             git checkout -b "$BRANCH_NAME"
 
-            if bash "$script"; then
-              mkdir "$TEMP_DIR" && cd "$TEMP_DIR"
+            if TEMP_DIR="$TEMP_DIR" bash "$script"; then
               mkdir -p "./${SCRIPT_NAME%%-*}/$SCRIPT_NAME/"
               rsync -a --delete --exclude=".git" "$TEMP_DIR/" "./${SCRIPT_NAME%%-*}/$SCRIPT_NAME/"
               rm -rf "$TEMP_DIR"
