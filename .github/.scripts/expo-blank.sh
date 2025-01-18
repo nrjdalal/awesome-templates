@@ -1,1 +1,1 @@
-bunx create-expo-app@latest --template blank .
+bunx create-expo-app@latest --template blank app

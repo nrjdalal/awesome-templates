@@ -1,1 +1,1 @@
-bunx create-next-app@canary . --ts --eslint --tailwind --src-dir --app --turbopack --import-alias "@/*"
+bunx create-next-app@canary app --ts --eslint --tailwind --src-dir --app --turbopack --import-alias "@/*"

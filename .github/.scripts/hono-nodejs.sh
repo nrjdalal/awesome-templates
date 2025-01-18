@@ -1,1 +1,1 @@
-bunx create-hono@latest -i -t nodejs .
+bunx create-hono@latest -i -t nodejs app

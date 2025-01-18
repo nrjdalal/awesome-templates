@@ -1,1 +1,1 @@
-bun create vite@latest --template react-swc-ts .
+bun create vite@latest --template react-swc-ts app

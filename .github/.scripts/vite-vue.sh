@@ -1,1 +1,1 @@
-bun create vite@latest --template vue .
+bun create vite@latest --template vue app

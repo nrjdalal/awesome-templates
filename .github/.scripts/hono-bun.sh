@@ -1,1 +1,1 @@
-bunx create-hono@latest -i -t bun .
+bunx create-hono@latest -i -t bun app

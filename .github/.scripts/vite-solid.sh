@@ -1,1 +1,1 @@
-bun create vite@latest --template solid .
+bun create vite@latest --template solid app

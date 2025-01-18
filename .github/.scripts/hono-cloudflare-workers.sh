@@ -1,1 +1,1 @@
-bunx create-hono@latest -i -t cloudflare-workers .
+bunx create-hono@latest -i -t cloudflare-workers app

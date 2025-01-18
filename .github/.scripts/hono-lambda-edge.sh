@@ -1,1 +1,1 @@
-bunx create-hono@latest -i -t lambda-edge .
+bunx create-hono@latest -i -t lambda-edge app

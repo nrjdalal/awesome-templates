@@ -1,1 +1,1 @@
-bunx create-expo-app@latest .
+bunx create-expo-app@latest app

@@ -1,1 +1,1 @@
-bun create vite@latest --template qwik-ts .
+bun create vite@latest --template qwik-ts app

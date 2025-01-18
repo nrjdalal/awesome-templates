@@ -1,1 +1,1 @@
-bunx create-expo-app@latest --template tabs .
+bunx create-expo-app@latest --template tabs app

@@ -1,1 +1,1 @@
-bunx create-hono@latest -i -t aws-lambda .
+bunx create-hono@latest -i -t aws-lambda app

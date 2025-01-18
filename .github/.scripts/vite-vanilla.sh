@@ -1,1 +1,1 @@
-bun create vite@latest --template vanilla .
+bun create vite@latest --template vanilla app

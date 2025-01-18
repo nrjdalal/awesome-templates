@@ -1,1 +1,1 @@
-bunx create-hono@latest -i -t netlify .
+bunx create-hono@latest -i -t netlify app

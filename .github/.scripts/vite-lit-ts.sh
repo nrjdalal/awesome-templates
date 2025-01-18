@@ -1,1 +1,1 @@
-bun create vite@latest --template lit-ts .
+bun create vite@latest --template lit-ts app

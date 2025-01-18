@@ -1,1 +1,1 @@
-bunx create-hono@latest -i -t fastly .
+bunx create-hono@latest -i -t fastly app

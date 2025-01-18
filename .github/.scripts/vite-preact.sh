@@ -1,1 +1,1 @@
-bun create vite@latest --template preact .
+bun create vite@latest --template preact app

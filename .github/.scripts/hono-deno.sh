@@ -1,1 +1,1 @@
-bunx create-hono@latest -i -t deno .
+bunx create-hono@latest -i -t deno app

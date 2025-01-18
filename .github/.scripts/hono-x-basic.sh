@@ -1,1 +1,1 @@
-bunx create-hono@latest -i -t x-basic .
+bunx create-hono@latest -i -t x-basic app

@@ -1,1 +1,1 @@
-bun create vite@latest --template svelte .
+bun create vite@latest --template svelte app

@@ -1,1 +1,1 @@
-bun create vite@latest --template react .
+bun create vite@latest --template react app
