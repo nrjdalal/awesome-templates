@@ -57,7 +57,6 @@ jobs:
 
           for script in ./.github/.scripts/*.sh; do
             sed -i "s/ \./ \"\$TEMP_DIR\"/g" "$script"
-            cat "$script"
           done
 
           for script in ./.github/.scripts/*.sh; do
