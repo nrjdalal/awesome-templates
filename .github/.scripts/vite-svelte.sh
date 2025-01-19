@@ -1,1 +1,1 @@
-bun create vite@latest --template svelte app
+bun create vite@latest --template svelte awesomeDir

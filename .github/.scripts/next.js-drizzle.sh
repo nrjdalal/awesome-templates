@@ -1,5 +1,5 @@
-bunx create-next-app@latest app --ts --eslint --tailwind --src-dir --app --turbopack --import-alias "@/*"
-cd app
+bunx create-next-app@latest awesomeDir --ts --eslint --tailwind --src-dir --app --turbopack --import-alias "@/*"
+cd awesomeDir
 bun add drizzle-orm drizzle-kit postgres
 
 cat <<EOF >.env.local

@@ -1,1 +1,1 @@
-bun create vite@latest --template preact-ts app
+bun create vite@latest --template preact-ts awesomeDir

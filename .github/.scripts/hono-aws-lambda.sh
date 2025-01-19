@@ -1,1 +1,1 @@
-bunx create-hono@latest -i -t aws-lambda app
+bunx create-hono@latest -i -t aws-lambda awesomeDir

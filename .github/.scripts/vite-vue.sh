@@ -1,1 +1,1 @@
-bun create vite@latest --template vue app
+bun create vite@latest --template vue awesomeDir

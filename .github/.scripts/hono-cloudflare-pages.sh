@@ -1,1 +1,1 @@
-bunx create-hono@latest -i -t cloudflare-pages app
+bunx create-hono@latest -i -t cloudflare-pages awesomeDir

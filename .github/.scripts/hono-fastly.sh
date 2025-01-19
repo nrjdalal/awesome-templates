@@ -1,1 +1,1 @@
-bunx create-hono@latest -i -t fastly app
+bunx create-hono@latest -i -t fastly awesomeDir
