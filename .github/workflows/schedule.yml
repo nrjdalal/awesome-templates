@@ -64,18 +64,19 @@ jobs:
             SCRIPT_NAME=$(basename "$script" .sh)
             BRANCH_NAME="template-$SCRIPT_NAME"
             TEMP_DIR="$BRANCH_NAME"
+            RESOLVE_DIR="./${SCRIPT_NAME%%-*}-apps/$SCRIPT_NAME/"
 
             git checkout -b "$BRANCH_NAME"
 
             if TEMP_DIR="$TEMP_DIR" bash "$script"; then
-              mkdir -p "./${SCRIPT_NAME%%-*}/$SCRIPT_NAME/"
-              rsync -a --delete --exclude=".git" "$TEMP_DIR/" "./${SCRIPT_NAME%%-*}/$SCRIPT_NAME/"
+              mkdir -p "$RESOLVE_DIR"
+              rsync -a --delete --exclude=".git" "$TEMP_DIR/" "$RESOLVE_DIR"
               rm -rf "$TEMP_DIR"
               git checkout main
               git merge "$BRANCH_NAME"
               git branch -d "$BRANCH_NAME"
               echo "Committing changes for $script"
-              git add "./${SCRIPT_NAME%%-*}/$SCRIPT_NAME/"
+              git add "$RESOLVE_DIR"
               git commit -m "$EMOJI $DATE" || true
             else
               echo -e "\033[31mFailed $script\033[0m"
