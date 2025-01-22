@@ -1,6 +1,6 @@
 name = "template-hono-cloudflare-workers"
 main = "src/index.ts"
-compatibility_date = "2025-01-21"
+compatibility_date = "2025-01-22"
 
 # compatibility_flags = [ "nodejs_compat" ]
 
