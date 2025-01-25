@@ -2,8 +2,3 @@
 
 node_modules/
 test/
-
-bun.lockb
-package-lock.json
-pnpm-lock.yaml
-yarn.lock

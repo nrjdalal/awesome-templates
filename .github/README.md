@@ -41,10 +41,10 @@ git checkout -b react-template
 > The script's name without the `.sh` extension will be used as the template directory.
 
 > [!IMPORTANT]
-> In the script, use `awesomeDir` as the target directory for the template.
+> In the script, use `awesomedir` as the target directory for the template.
 
 ```bash
-bunx creat-react-app awesomeDir
+bunx creat-react-app awesomedir
 ```
 
 4. **Make your changes and commit them with a clear and descriptive commit message.**

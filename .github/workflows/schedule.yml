@@ -39,7 +39,7 @@ jobs:
           EMOJI=${EMOJIS[$DAY_OF_WEEK]}
           rm -rf ./.github/failed.txt
           for script in ./.github/.scripts/*.sh; do
-            sed -i "s/ app/ awesomeDir/g" "$script"
+            sed -i "s/ app/ awesomedir/g" "$script"
           done
           git add .
           git commit -m "$EMOJI $DATE" || true
@@ -56,7 +56,7 @@ jobs:
           EMOJI=${EMOJIS[$DAY_OF_WEEK]}
 
           for script in ./.github/.scripts/*.sh; do
-            sed -i "s/ awesomeDir/ \"\$TEMP_DIR\"/g" "$script"
+            sed -i "s/ awesomedir/ \"\$TEMP_DIR\"/g" "$script"
           done
 
           for script in ./.github/.scripts/*.sh; do
