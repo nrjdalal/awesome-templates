@@ -75,12 +75,12 @@ jobs:
             if TEMP_DIR="$TEMP_DIR" bash "$script"; then
               mkdir -p "$RESOLVE_DIR"
               rsync -a --delete --exclude=".git" "$TEMP_DIR/" "$RESOLVE_DIR"
-              cd "$RESOLVE_DIR"
-              rm -rf package-lock.json "$TEMP_DIR"
+              rm -rf "$TEMP_DIR"
               git checkout main
               git merge "$BRANCH_NAME"
               git branch -d "$BRANCH_NAME"
               echo "Committing changes for $script"
+              git clean -fdX
               git add "$RESOLVE_DIR"
               git commit -m "$EMOJI $DATE" || true
             else
