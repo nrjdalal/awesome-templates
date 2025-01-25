@@ -80,13 +80,11 @@ jobs:
               git merge "$BRANCH_NAME"
               git branch -d "$BRANCH_NAME"
               echo "Committing changes for $script"
-              git clean -fdX
               git add "$RESOLVE_DIR"
               git commit -m "$EMOJI $DATE" || true
             else
               echo -e "\033[31mFailed $script\033[0m"
               git reset --hard
-              git clean -fdx
               git checkout main
               git branch -D "$BRANCH_NAME"
               echo "$script" >> ./.github/failed.txt
@@ -100,6 +98,8 @@ jobs:
           git commit -m "$EMOJI $DATE"
 
       - name: Push Changes
-        run: git push
+        run: |
+          git clean -fdX
+          git push
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
