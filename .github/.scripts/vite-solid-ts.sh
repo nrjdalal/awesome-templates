@@ -1,1 +1,1 @@
-bun create vite@latest --template solid-ts awesomeDir
+bun create vite@latest --template solid-ts awesomedir

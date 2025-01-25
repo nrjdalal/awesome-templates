@@ -1,1 +1,1 @@
-bun create vite@latest --template qwik awesomeDir
+bun create vite@latest --template qwik awesomedir

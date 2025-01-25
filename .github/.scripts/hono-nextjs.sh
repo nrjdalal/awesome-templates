@@ -1,1 +1,1 @@
-bunx create-hono@latest -i -t nextjs awesomeDir
+bunx create-hono@latest -i -t nextjs awesomedir

@@ -1,1 +1,1 @@
-bun create vite@latest --template svelte-ts awesomeDir
+bun create vite@latest --template svelte-ts awesomedir

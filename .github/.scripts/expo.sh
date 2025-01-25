@@ -1,1 +1,1 @@
-bunx create-expo-app@latest awesomeDir
+bunx create-expo-app@latest awesomedir

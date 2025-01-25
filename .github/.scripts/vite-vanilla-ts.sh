@@ -1,1 +1,1 @@
-bun create vite@latest --template vanilla-ts awesomeDir
+bun create vite@latest --template vanilla-ts awesomedir

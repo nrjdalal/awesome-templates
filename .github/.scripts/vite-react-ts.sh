@@ -1,1 +1,1 @@
-bun create vite@latest --template react-ts awesomeDir
+bun create vite@latest --template react-ts awesomedir

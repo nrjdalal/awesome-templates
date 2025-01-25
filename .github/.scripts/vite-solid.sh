@@ -1,1 +1,1 @@
-bun create vite@latest --template solid awesomeDir
+bun create vite@latest --template solid awesomedir

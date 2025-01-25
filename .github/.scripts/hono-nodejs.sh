@@ -1,1 +1,1 @@
-bunx create-hono@latest -i -t nodejs awesomeDir
+bunx create-hono@latest -i -t nodejs awesomedir

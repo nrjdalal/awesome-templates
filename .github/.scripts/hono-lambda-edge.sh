@@ -1,1 +1,1 @@
-bunx create-hono@latest -i -t lambda-edge awesomeDir
+bunx create-hono@latest -i -t lambda-edge awesomedir
