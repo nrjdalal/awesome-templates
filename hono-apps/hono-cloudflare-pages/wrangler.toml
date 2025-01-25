@@ -1,5 +1,5 @@
 name = "template-hono-cloudflare-pages"
-compatibility_date = "2025-01-22"
+compatibility_date = "2025-01-25"
 pages_build_output_dir = "./dist"
 compatibility_flags = [ "nodejs_compat" ]
 
