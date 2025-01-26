@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "template-tauri-react",
+  "productName": "awesometemplate",
   "version": "0.1.0",
-  "identifier": "com.template-tauri-react.app",
+  "identifier": "com.awesometemplate.app",
   "build": {
     "beforeDevCommand": "bun run dev",
     "devUrl": "http://localhost:1420",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "template-tauri-react",
+        "title": "awesometemplate",
         "width": 800,
         "height": 600
       }
