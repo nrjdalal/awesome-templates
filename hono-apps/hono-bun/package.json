@@ -1,5 +1,5 @@
 {
-  "name": "template-hono-bun",
+  "name": "awesometemplate",
   "scripts": {
     "dev": "bun run --hot src/index.ts"
   },
