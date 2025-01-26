@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "template-expo-blank-typescript",
-    "slug": "template-expo-blank-typescript",
+    "name": "awesometemplate",
+    "slug": "awesometemplate",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
