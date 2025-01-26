@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "template-expo",
-    "slug": "template-expo",
+    "name": "awesometemplate",
+    "slug": "awesometemplate",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
