@@ -40,7 +40,6 @@ jobs:
           rm -rf ./.github/failed.txt
           for script in ./.github/.scripts/*.sh; do
             sed -i "s/ awesomeDir/ awesomedir/g" "$script"
-            sed -i "s/ app/ awesomedir/g" "$script"
           done
           git add .
           git commit -m "$EMOJI $DATE" || true
@@ -65,8 +64,8 @@ jobs:
             sed -i "s/ awesomedir/ \"\$TEMP_DIR\"/g" "$script"
 
             SCRIPT_NAME=$(basename "$script" .sh)
-            BRANCH_NAME="template-$SCRIPT_NAME"
-            TEMP_DIR="$BRANCH_NAME"
+            # BRANCH_NAME="template-$SCRIPT_NAME"
+            TEMP_DIR="awesometemplate"
             RESOLVE_DIR="./${SCRIPT_NAME%%-*}-apps/$SCRIPT_NAME/"
 
             git checkout -b "$BRANCH_NAME"
