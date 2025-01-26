@@ -2,7 +2,7 @@
   "lockfileVersion": 1,
   "workspaces": {
     "": {
-      "name": "template-expo-blank",
+      "name": "awesometemplate",
       "dependencies": {
         "expo": "~52.0.27",
         "expo-status-bar": "~2.0.1",
