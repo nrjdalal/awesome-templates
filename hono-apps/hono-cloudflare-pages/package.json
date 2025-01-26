@@ -1,5 +1,5 @@
 {
-  "name": "template-hono-cloudflare-pages",
+  "name": "awesometemplate",
   "type": "module",
   "scripts": {
     "dev": "vite",
