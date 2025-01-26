@@ -1,5 +1,5 @@
 {
-  "name": "template-hono-nextjs",
+  "name": "awesometemplate",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
