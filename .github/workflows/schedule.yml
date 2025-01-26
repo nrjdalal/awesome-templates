@@ -51,6 +51,7 @@ jobs:
       - name: Execute and Commit Scripts
         run: |
           set -e
+
           DATE=$(date -u +"%b %d %H:%M UTC %y")
           EMOJIS=("🔴" "🟠" "🟡" "🟢" "🔵" "🟣" "🟤")
           DAY_OF_WEEK=$(date -u +"%w")
