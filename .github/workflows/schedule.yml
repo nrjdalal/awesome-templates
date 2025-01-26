@@ -58,13 +58,11 @@ jobs:
           EMOJI=${EMOJIS[$DAY_OF_WEEK]}
 
           for script in ./.github/.scripts/*.sh; do
-            sed -i "s/ awesomedir/ \"\$TEMP_DIR\"/g" "$script"
-          done
-
-          for script in ./.github/.scripts/*.sh; do
             echo -e "\033[33m--------------------------------------------------\033[0m"
             echo -e "\033[33m$script\033[0m"
             echo -e "\033[33m--------------------------------------------------\033[0m"
+
+            sed -i "s/ awesomedir/ \"\$TEMP_DIR\"/g" "$script"
 
             SCRIPT_NAME=$(basename "$script" .sh)
             BRANCH_NAME="template-$SCRIPT_NAME"
