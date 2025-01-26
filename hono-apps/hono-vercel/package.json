@@ -1,5 +1,5 @@
 {
-  "name": "template-hono-vercel",
+  "name": "awesometemplate",
   "scripts": {
     "start": "vercel dev",
     "deploy": "vercel"
