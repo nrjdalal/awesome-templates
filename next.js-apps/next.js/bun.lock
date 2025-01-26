@@ -2,7 +2,7 @@
   "lockfileVersion": 1,
   "workspaces": {
     "": {
-      "name": "template-next.js",
+      "name": "awesometemplate",
       "dependencies": {
         "next": "15.1.6",
         "react": "^19.0.0",
