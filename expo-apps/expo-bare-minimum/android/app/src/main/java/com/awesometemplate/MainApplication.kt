@@ -1,4 +1,4 @@
-package com.templateexpobareminimum
+package com.awesometemplate
 
 import android.app.Application
 import android.content.res.Configuration

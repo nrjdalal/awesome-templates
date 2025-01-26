@@ -86,9 +86,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace "com.templateexpobareminimum"
+    namespace "com.awesometemplate"
     defaultConfig {
-        applicationId "com.templateexpobareminimum"
+        applicationId "com.awesometemplate"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

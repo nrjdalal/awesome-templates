@@ -1,4 +1,4 @@
-package com.templateexpobareminimum
+package com.awesometemplate
 
 import android.os.Build
 import android.os.Bundle
