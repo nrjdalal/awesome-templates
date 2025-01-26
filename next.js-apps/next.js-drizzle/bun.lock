@@ -2,7 +2,7 @@
   "lockfileVersion": 1,
   "workspaces": {
     "": {
-      "name": "template-next.js-drizzle",
+      "name": "awesometemplate",
       "dependencies": {
         "drizzle-kit": "^0.30.2",
         "drizzle-orm": "^0.38.4",
