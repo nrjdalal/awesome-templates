@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    template_tauri_react_ts_lib::run()
+    awesometemplate_lib::run()
 }
