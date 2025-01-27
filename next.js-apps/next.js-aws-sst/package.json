@@ -12,7 +12,7 @@
     "next": "15.1.6",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "sst": "3.6.18"
+    "sst": "3.6.19"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
