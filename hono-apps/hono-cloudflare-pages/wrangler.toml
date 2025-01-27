@@ -1,5 +1,5 @@
 name = "awesometemplate"
-compatibility_date = "2025-01-26"
+compatibility_date = "2025-01-27"
 pages_build_output_dir = "./dist"
 compatibility_flags = [ "nodejs_compat" ]
 
