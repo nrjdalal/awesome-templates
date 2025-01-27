@@ -1,5 +1,7 @@
 bunx create-next-app@latest awesomedir --ts --eslint --tailwind --src-dir --app --turbopack --import-alias "@/*"
 cd awesomedir
+
+# custom best practices
 bun add -D @commitlint/cli @commitlint/config-conventional lint-staged prettier prettier-plugin-organize-imports prettier-plugin-tailwindcss simple-git-hooks sort-package-json
 cat <<EOF >.lintstagedrc
 {

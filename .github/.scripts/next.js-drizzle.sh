@@ -56,6 +56,8 @@ if (process.env.NODE_ENV === "production") {
 
 export { db }
 EOF
+
+# custom best practices
 bun add -D @commitlint/cli @commitlint/config-conventional lint-staged prettier prettier-plugin-organize-imports prettier-plugin-tailwindcss simple-git-hooks sort-package-json
 cat <<EOF >.lintstagedrc
 {

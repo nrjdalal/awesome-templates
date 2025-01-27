@@ -6,6 +6,8 @@ EOF
 bunx shadcn@latest add -a <<EOF
 
 EOF
+
+# custom best practices
 bun add -D @commitlint/cli @commitlint/config-conventional lint-staged prettier prettier-plugin-organize-imports prettier-plugin-tailwindcss simple-git-hooks sort-package-json
 cat <<EOF >.lintstagedrc
 {
