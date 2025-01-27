@@ -1,6 +1,6 @@
 .DS_Store
 
+awesomedir/
 node_modules/
-test/
 
 package-lock.json

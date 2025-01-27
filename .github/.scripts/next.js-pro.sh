@@ -12,14 +12,12 @@ cat <<EOF >.lintstagedrc
 {
   "*": ["prettier --write --ignore-unknown"]
 }
-
 EOF
 cat <<EOF >.prettierrc
 {
   "semi": false,
   "plugins": ["prettier-plugin-organize-imports", "prettier-plugin-tailwindcss"]
 }
-
 EOF
 cat <<EOF >.commitlintrc
 {
@@ -27,7 +25,7 @@ cat <<EOF >.commitlintrc
     "@commitlint/config-conventional"
   ]
 }
-
 EOF
 bunx json -I -f package.json -e 'this.scripts.prepare="if [ -z \"$VERCEL_ENV\" ]; then simple-git-hooks; fi"'
 bunx json -I -f package.json -e 'this["simple-git-hooks"]={"pre-commit":"npx lint-staged --verbose","commit-msg":"npx commitlint --edit $1"}'
+bunx prettier --write --ignore-unknown *
