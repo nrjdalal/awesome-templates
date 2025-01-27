@@ -7,10 +7,11 @@ bunx shadcn@latest add -a <<EOF
 
 EOF
 bunx @tailwindcss/upgrade@next --force
-bun add -D @commitlint/cli @commitlint/config-conventional lint-staged prettier prettier-plugin-organize-imports prettier-plugin-tailwindcss simple-git-hooks
+bun add -D @commitlint/cli @commitlint/config-conventional lint-staged prettier prettier-plugin-organize-imports prettier-plugin-tailwindcss simple-git-hooks sort-package-json
 cat <<EOF >.lintstagedrc
 {
-  "*": ["prettier --write --ignore-unknown"]
+  "*": ["prettier --write --ignore-unknown"],
+  "package.json": ["sort-package-json"]
 }
 EOF
 cat <<EOF >.prettierrc
@@ -29,3 +30,4 @@ EOF
 bunx json -I -f package.json -e 'this.scripts.prepare="if [ -z \"$VERCEL_ENV\" ]; then simple-git-hooks; fi"'
 bunx json -I -f package.json -e 'this["simple-git-hooks"]={"pre-commit":"npx lint-staged --verbose","commit-msg":"npx commitlint --edit $1"}'
 bunx prettier --write --ignore-unknown *
+bunx sort-package-json
