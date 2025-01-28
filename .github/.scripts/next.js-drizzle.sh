@@ -6,7 +6,7 @@ cat <<EOF >.env.local
 POSTGRES_URL=postgresql://postgres:postgres@localhost:5432/postgres
 EOF
 
-cat <<EOF >drizzle.config.js
+cat <<EOF >drizzle.config.ts
 import { defineConfig } from 'drizzle-kit'
 
 export default defineConfig({
