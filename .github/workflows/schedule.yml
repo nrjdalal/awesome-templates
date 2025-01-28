@@ -71,13 +71,6 @@ jobs:
             git checkout -b "$BRANCH_NAME"
 
             if TEMP_DIR="$TEMP_DIR" bash "$script"; then
-              if [ ! -f "$TEMP_DIR/README.md" ]; then
-                echo 'Generated using: ```sh' > "$TEMP_DIR/README.md"
-                cat "$script" >> "$TEMP_DIR/README.md"
-                echo '```' >> "$TEMP_DIR/README.md"
-              else
-                echo 'Generated using: ```sh' | cat - "$script" - <(echo '```') > temp && mv temp "$TEMP_DIR/README.md"
-              fi
               mkdir -p "$RESOLVE_DIR"
               rsync -a --delete --exclude=".git" "$TEMP_DIR/" "$RESOLVE_DIR"
               rm -rf "$TEMP_DIR"
