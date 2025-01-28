@@ -1,11 +1,3 @@
-To install dependencies:
-```sh
-bun install
+Generated using: ```sh
+bunx create-hono@latest -i -t bun "$TEMP_DIR"
 ```
-
-To run:
-```sh
-bun run dev
-```
-
-open http://localhost:3000
