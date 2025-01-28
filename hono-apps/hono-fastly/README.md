@@ -1,12 +1,3 @@
-```
-npm install
-npm run dev
-```
-
-```
-open http://localhost:7676
-```
-
-```
-npm run deploy
+Generated using: ```sh
+bunx create-hono@latest -i -t fastly "$TEMP_DIR"
 ```
