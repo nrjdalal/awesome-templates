@@ -1,8 +1,3 @@
-```txt
-npm install
-npm run dev
-```
-
-```txt
-npm run deploy
+Generated using: ```sh
+bunx create-hono@latest -i -t cloudflare-pages "$TEMP_DIR"
 ```
