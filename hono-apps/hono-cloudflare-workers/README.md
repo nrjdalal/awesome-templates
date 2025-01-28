@@ -1,8 +1,3 @@
-```
-npm install
-npm run dev
-```
-
-```
-npm run deploy
+Generated using: ```sh
+bunx create-hono@latest -i -t cloudflare-workers "$TEMP_DIR"
 ```
