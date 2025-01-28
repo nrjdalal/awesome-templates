@@ -31,5 +31,5 @@ cat <<EOF >.commitlintrc
 EOF
 bunx json -I -f package.json -e 'this.scripts.prepare="if [ -z \"$VERCEL_ENV\" ]; then simple-git-hooks; fi"'
 bunx json -I -f package.json -e 'this["simple-git-hooks"]={"pre-commit":"npx lint-staged --verbose","commit-msg":"npx commitlint --edit $1"}'
-bunx prettier --write --ignore-unknown *
 bunx sort-package-json
+bunx prettier --write --ignore-unknown *
