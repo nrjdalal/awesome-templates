@@ -14,7 +14,7 @@
     "commit-msg": "npx commitlint --edit $1"
   },
   "dependencies": {
-    "next": "15.2.0-canary.28",
+    "next": "15.2.0-canary.30",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
@@ -22,19 +22,19 @@
     "@commitlint/cli": "^19.6.1",
     "@commitlint/config-conventional": "^19.6.0",
     "@eslint/eslintrc": "^3",
+    "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "15.2.0-canary.28",
+    "eslint-config-next": "15.2.0-canary.30",
     "lint-staged": "^15.4.3",
-    "postcss": "^8",
     "prettier": "^3.4.2",
     "prettier-plugin-organize-imports": "^4.1.0",
     "prettier-plugin-tailwindcss": "^0.6.11",
     "simple-git-hooks": "^2.11.1",
     "sort-package-json": "^2.14.0",
-    "tailwindcss": "^3.4.1",
+    "tailwindcss": "^4",
     "typescript": "^5"
   }
 }
