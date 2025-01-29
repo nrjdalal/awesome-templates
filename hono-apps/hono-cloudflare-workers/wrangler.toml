@@ -1,6 +1,6 @@
 name = "awesometemplate"
 main = "src/index.ts"
-compatibility_date = "2025-01-28"
+compatibility_date = "2025-01-29"
 
 # compatibility_flags = [ "nodejs_compat" ]
 
