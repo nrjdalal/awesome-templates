@@ -14,7 +14,7 @@
     "commit-msg": "npx commitlint --edit $1"
   },
   "dependencies": {
-    "drizzle-kit": "^0.30.3",
+    "drizzle-kit": "^0.30.4",
     "drizzle-orm": "^0.39.0",
     "next": "15.1.6",
     "postgres": "^3.4.5",
