@@ -14,7 +14,7 @@
     "commit-msg": "npx commitlint --edit $1"
   },
   "dependencies": {
-    "next": "15.2.0-canary.33",
+    "next": "15.2.0-canary.37",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
@@ -27,7 +27,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "15.2.0-canary.33",
+    "eslint-config-next": "15.2.0-canary.37",
     "lint-staged": "^15.4.3",
     "prettier": "^3.4.2",
     "prettier-plugin-organize-imports": "^4.1.0",
