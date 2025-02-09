@@ -47,6 +47,12 @@ git checkout -b react-template
 bunx creat-react-app awesomedir
 ```
 
+Try to test locally if you can using [act](https://github.com/nektos/act) and the following command:
+
+```bash
+act -e .github/act.json
+```
+
 4. **Make your changes and commit them with a clear and descriptive commit message.**
 
 ```bash

@@ -72,11 +72,15 @@ jobs:
 
             git checkout -b "$BRANCH_NAME"
 
-            PREPEND="## Clone this template using the following command:
+            PREPEND="## Clone this template using the following command
 
-            \`\`\`bash
-            npx gitpick@latest https://github.com/${{ github.repository }}/tree/${{ github.ref_name }}/${SCRIPT_NAME%%-*}-apps/$SCRIPT_NAME
-            \`\`\`
+          \`\`\`bash
+          npx gitpick@latest https://github.com/${{ github.repository }}/tree/${{ github.ref_name }}/${SCRIPT_NAME%%-*}-apps/$SCRIPT_NAME
+          \`\`\`
+
+          This template is generated using [${SCRIPT_NAME}.sh](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/.github/.scripts/${SCRIPT_NAME}.sh) and is part of the [awesome-templates](https://github.com/${{ github.repository }}) repository.
+
+          If you wish to make changes to this template or add your own, please refer to the [contribution guidelines](https://github.com/${{ github.repository }}?tab=readme-ov-file#contributing).
             "
 
             if TEMP_DIR="$TEMP_DIR" bash "$script"; then
