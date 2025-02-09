@@ -41,9 +41,9 @@ git checkout -b react-template
 
 &nbsp;&nbsp;&nbsp;&nbsp;----- ./github/.scripts/react.sh -----
 <br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;bunx create-react-app awesomedir<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;cd awesomedir<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;rm -rf README.md
+&nbsp;&nbsp;&nbsp;&nbsp;bunx create-react-app awesomedir<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;cd awesomedir<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;rm -rf README.md
 <br/>
 &nbsp;&nbsp;&nbsp;&nbsp;------------------------------------
 
