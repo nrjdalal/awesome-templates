@@ -1,8 +1,9 @@
-name: update-templates
+name: schedule
 
 on:
   push:
     branches:
+      - act
       - main
   schedule:
     - cron: '0 */8 * * *'
@@ -41,9 +42,11 @@ jobs:
           for script in ./.github/.scripts/*.sh; do
             sed -i "s/ awesomeDir/ awesomedir/g" "$script"
           done
-          git add .
-          git commit -m "$EMOJI $DATE" || true
-          git push
+          if [[ "${GITHUB_REF}" != "refs/heads/act" ]]; then
+            git add .
+            git commit -m "$EMOJI $DATE" || true
+            git push
+          fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -70,10 +73,26 @@ jobs:
 
             git checkout -b "$BRANCH_NAME"
 
+            PREPEND="## Clone this template using the following command:
+
+            \`\`\`bash
+            npx gitpick@latest https://github.com/${{ github.repository }}/tree/${{ github.ref_name }}/${SCRIPT_NAME%%-*}-apps/$SCRIPT_NAME
+            \`\`\`
+            "
+
             if TEMP_DIR="$TEMP_DIR" bash "$script"; then
               mkdir -p "$RESOLVE_DIR"
-              rsync -a --delete --exclude=".git" "$TEMP_DIR/" "$RESOLVE_DIR"
+              if [[ "${GITHUB_REF}" == "refs/heads/act" ]]; then
+                cp -r "$TEMP_DIR/." "$RESOLVE_DIR"
+              else
+                rsync -a --delete --exclude=".git" "$TEMP_DIR/" "$RESOLVE_DIR"
+              fi
               rm -rf "$TEMP_DIR"
+              if [ ! -f "${RESOLVE_DIR}README.md" ]; then
+                echo "${PREPEND}" > "${RESOLVE_DIR}README.md"
+              else
+                sed -i "1s/^/${PREPEND}\n/" "${RESOLVE_DIR}README.md"
+              fi
               git checkout main
               git merge "$BRANCH_NAME"
               git branch -d "$BRANCH_NAME"
