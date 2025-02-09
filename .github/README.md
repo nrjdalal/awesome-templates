@@ -42,13 +42,13 @@ git checkout -b react-template
 > [!IMPORTANT]
 > In the script, use `awesomedir` as the target directory for the template.
 
------ ./github/.scripts/react.sh -----
+&nbsp;&nbsp;&nbsp;&nbsp;----- ./github/.scripts/react.sh -----
 <br/>
-bunx create-react-app awesomedir<br/>
-cd awesomedir<br/>
-rm -rf README.md
+&nbsp;&nbsp;&nbsp;&nbsp;bunx create-react-app awesomedir<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;cd awesomedir<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;rm -rf README.md
 <br/>
-\------------------------------------
+&nbsp;&nbsp;&nbsp;&nbsp;-------------------------------------
 
 > [!NOTE]
 > The script's name without the `.sh` extension will be used as the template directory.
