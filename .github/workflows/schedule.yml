@@ -22,6 +22,7 @@ jobs:
           fetch-depth: 0
 
       - name: Configure Git
+        if: ${{ github.event.inputs.ACT != 'true' }}
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
@@ -41,11 +42,12 @@ jobs:
           for script in ./.github/.scripts/*.sh; do
             sed -i "s/ awesomeDir/ awesomedir/g" "$script"
           done
-          if [[ "${GITHUB_REF}" != "refs/heads/act" ]]; then
+          if [[ "${{ github.event.inputs.ACT }}" != 'true' ]]; then
             git add .
             git commit -m "$EMOJI $DATE" || true
             git push
           fi
+        if: ${{ github.event.inputs.ACT != 'true' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -58,7 +60,13 @@ jobs:
           DAY_OF_WEEK=$(date -u +"%w")
           EMOJI=${EMOJIS[$DAY_OF_WEEK]}
 
-          for script in ./.github/.scripts/*.sh; do
+          if [[ -z "${{ github.event.inputs.SCRIPT }}" ]]; then
+            FILES=*
+          else
+            FILES="${{ github.event.inputs.SCRIPT }}"
+          fi
+
+          for script in ./.github/.scripts/$FILES; do
             echo -e "\033[33m--------------------------------------------------\033[0m"
             echo -e "\033[33m$script\033[0m"
             echo -e "\033[33m--------------------------------------------------\033[0m"
@@ -72,7 +80,7 @@ jobs:
 
             git checkout -b "$BRANCH_NAME"
 
-            PREPEND="## Clone this template using the following command
+            PREPEND="## Clone this template
 
           \`\`\`bash
           npx gitpick@latest https://github.com/${{ github.repository }}/tree/${{ github.ref_name }}/${SCRIPT_NAME%%-*}-apps/$SCRIPT_NAME
@@ -85,42 +93,50 @@ jobs:
 
             if TEMP_DIR="$TEMP_DIR" bash "$script"; then
               mkdir -p "$RESOLVE_DIR"
-              if [[ "${GITHUB_REF}" == "refs/heads/act" ]]; then
-                cp -r "$TEMP_DIR/." "$RESOLVE_DIR"
-              else
+              if [[ "${{ github.event.inputs.ACT }}" != 'true' ]]; then
                 rsync -a --delete --exclude=".git" "$TEMP_DIR/" "$RESOLVE_DIR"
+              else
+                rm -rf "$RESOLVE_DIR"
+                cp -r "$TEMP_DIR/." "$RESOLVE_DIR"
               fi
               rm -rf "$TEMP_DIR"
-              if [ ! -f "${RESOLVE_DIR}README.md" ]; then
+              if ! ls "${RESOLVE_DIR}" | grep -iq "readme.md"; then
                 echo "${PREPEND}" > "${RESOLVE_DIR}README.md"
-              else
+                else
                 {
                   echo "${PREPEND}"
-                  cat "${RESOLVE_DIR}README.md"
+                  cat "${RESOLVE_DIR}"$(ls "${RESOLVE_DIR}" | grep -i "readme.md")
                 } > temp_readme.md && mv temp_readme.md "${RESOLVE_DIR}README.md"
               fi
-              git checkout main
-              git merge "$BRANCH_NAME"
-              git branch -d "$BRANCH_NAME"
-              echo "Committing changes for $script"
-              git add "$RESOLVE_DIR"
-              git commit -m "$EMOJI $DATE" || true
+              if [[ "${{ github.event.inputs.ACT }}" != 'true' ]]; then
+                git checkout main
+                git merge "$BRANCH_NAME"
+                git branch -d "$BRANCH_NAME"
+                echo "Committing changes for $script"
+                git add "$RESOLVE_DIR"
+                git commit -m "$EMOJI $DATE" || true
+              fi
             else
               echo -e "\033[31mFailed $script\033[0m"
-              git reset --hard
-              git checkout main
-              git branch -D "$BRANCH_NAME"
-              echo "$script" >> ./.github/failed.txt
-              git add ./.github/failed.txt
-              git commit -m "$EMOJI $DATE"
+              if [[ "${{ github.event.inputs.ACT }}" != 'true' ]]; then
+                git reset --hard
+                git checkout main
+                git branch -D "$BRANCH_NAME"
+                echo "$script" >> ./.github/failed.txt
+                git add ./.github/failed.txt
+                git commit -m "$EMOJI $DATE"
+              fi
             fi
           done
 
-          sed -i "3s/.*/> $EMOJI Last updated: $DATE/" ./.github/README.md
-          git add ./.github/README.md
-          git commit -m "$EMOJI $DATE"
+          if [[ "${{ github.event.inputs.ACT }}" != 'true' ]]; then
+            sed -i "3s/.*/> $EMOJI Last updated: $DATE/" ./.github/README.md
+            git add ./.github/README.md
+            git commit -m "$EMOJI $DATE"
+          fi
 
       - name: Push Changes
+        if: ${{ github.event.inputs.ACT != 'true' }}
         run: |
           git push
         env:

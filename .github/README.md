@@ -20,8 +20,10 @@ Here's your solution: reference templates, updated every 8 hours to ensure they'
 To clone a template, run the following command:
 
 ```bash
-npx gitpick clone nrjdalal/awesome-templates/tree/main/<template-folder>/<template-name> <target-directory>
+npx gitpick clone nrjdalal/awesome-templates/tree/main/<template-folder>/<template-name>
 ```
+
+The command to clone a template also exists in the `README.md` of each template.
 
 ## Contributing
 
@@ -47,10 +49,16 @@ git checkout -b react-template
 bunx creat-react-app awesomedir
 ```
 
-Try to test locally if you can using [act](https://github.com/nektos/act) and the following command:
+Try to test locally if you can, using [act](https://github.com/nektos/act) and the following command:
 
 ```bash
-act -e .github/act.json
+act --input ACT=true --input SCRIPT=react.sh
+```
+
+If you want to test all scripts, use the following command:
+
+```bash
+act --input ACT=true
 ```
 
 4. **Make your changes and commit them with a clear and descriptive commit message.**
