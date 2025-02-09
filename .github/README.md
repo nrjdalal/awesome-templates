@@ -31,25 +31,29 @@ We welcome contributions from the community! To contribute to this project, plea
 
 1. **Fork the repository on GitHub.**
 
-2. **Create a new branch from `main` for your new template.**
+2. **Create a new branch**
 
 ```bash
 git checkout -b react-template
 ```
 
-3. **Add your new script in the `./.scripts/` directory.** For example, `./.scripts/react.sh`.
-
-> [!NOTE]
-> The script's name without the `.sh` extension will be used as the template directory.
+3. **Add your new script in the `.github/.scripts/` directory.** For example, `.github/.scripts/react.sh`.
 
 > [!IMPORTANT]
 > In the script, use `awesomedir` as the target directory for the template.
 
-```bash
-bunx creat-react-app awesomedir
-```
+----- ./github/.scripts/react.sh -----
+<br/>
+bunx create-react-app awesomedir<br/>
+cd awesomedir<br/>
+rm -rf README.md
+<br/>
+\------------------------------------
 
-Try to test locally if you can, using [act](https://github.com/nektos/act) and the following command:
+> [!NOTE]
+> The script's name without the `.sh` extension will be used as the template directory.
+
+4. Try to test locally if you can, using [act](https://github.com/nektos/act) and the following command:
 
 ```bash
 act --input ACT=true --input SCRIPT=react.sh
@@ -61,16 +65,16 @@ If you want to test all scripts, use the following command:
 act --input ACT=true
 ```
 
-4. **Make your changes and commit them with a clear and descriptive commit message.**
+5. **Make your changes and commit them with a clear and descriptive commit message.**
 
 ```bash
 git commit -am 'added new template for react'
 ```
 
-5. **Push your branch to your forked repository.**
+6. **Push your branch to your forked repository.**
 
 ```bash
 git push origin react-template
 ```
 
-6. **Open a pull request on the original repository and provide a detailed description of your changes.**
+7. **Open a pull request on the original repository and provide a detailed description of your changes.**
