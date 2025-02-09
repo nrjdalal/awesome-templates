@@ -48,7 +48,7 @@ git checkout -b react-template
 &nbsp;&nbsp;&nbsp;&nbsp;------------------------------------
 
 > [!IMPORTANT]
-> In the script, use `awesomedir` as the target directory for the template.
+> In the script, use `awesomedir` as the target directory for the template. If you need to run some further commands, then make sure to `cd` into the target directory first.
 
 > [!NOTE]
 > The script's name without the `.sh` extension will be used as the template directory.
