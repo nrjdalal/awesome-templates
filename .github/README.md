@@ -39,16 +39,16 @@ git checkout -b react-template
 
 3. **Add your new script in the `.github/.scripts/` directory.** For example, `.github/.scripts/react.sh`.
 
-> [!IMPORTANT]
-> In the script, use `awesomedir` as the target directory for the template.
-
 &nbsp;&nbsp;&nbsp;&nbsp;----- ./github/.scripts/react.sh -----
 <br/>
-&nbsp;&nbsp;&nbsp;&nbsp;bunx create-react-app awesomedir<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;cd awesomedir<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;rm -rf README.md
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;bunx create-react-app awesomedir<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;cd awesomedir<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;rm -rf README.md
 <br/>
-&nbsp;&nbsp;&nbsp;&nbsp;-------------------------------------
+&nbsp;&nbsp;&nbsp;&nbsp;------------------------------------
+
+> [!IMPORTANT]
+> In the script, use `awesomedir` as the target directory for the template.
 
 > [!NOTE]
 > The script's name without the `.sh` extension will be used as the template directory.
