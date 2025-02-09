@@ -90,7 +90,10 @@ jobs:
               if [ ! -f "${RESOLVE_DIR}README.md" ]; then
                 echo "${PREPEND}" > "${RESOLVE_DIR}README.md"
               else
-                sed -i "1s/^/${PREPEND}\\n/" "${RESOLVE_DIR}README.md"
+                {
+                  echo "${PREPEND}"
+                  cat "${RESOLVE_DIR}README.md"
+                } > temp_readme.md && mv temp_readme.md "${RESOLVE_DIR}README.md"
               fi
               git checkout main
               git merge "$BRANCH_NAME"
