@@ -1,0 +1,118 @@
+name: schedule
+
+on:
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: '0 */8 * * *'
+
+concurrency: ${{ github.workflow }}-${{ github.ref }}
+
+permissions:
+  contents: write
+
+jobs:
+  update-templates:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Execute and Commit Scripts
+        run: |
+          set -e
+
+          rm -rf ./.github/failed.txt
+
+          if [[ -z "${{ github.event.inputs.SCRIPT }}" ]]; then
+            FILES=*
+          else
+            FILES="${{ github.event.inputs.SCRIPT }}"
+          fi
+
+          for script in ./.github/.scripts/$FILES; do
+            echo -e "\033[33m--------------------------------------------------\033[0m"
+            echo -e "\033[33m$script\033[0m"
+            echo -e "\033[33m--------------------------------------------------\033[0m"
+
+            sed -i "s/ awesomeDir/ awesomedir/g" "$script"
+            sed -i "s/ awesomedir/ \"\$TEMP_DIR\"/g" "$script"
+
+            SCRIPT_NAME=$(basename "$script" .sh)
+            BRANCH_NAME="template-$SCRIPT_NAME"
+            TEMP_DIR="awesometemplate"
+            RESOLVE_DIR="./${SCRIPT_NAME%%-*}-apps/$SCRIPT_NAME/"
+
+            git checkout -b "$BRANCH_NAME"
+
+            PREPEND="## Clone this template
+
+          \`\`\`bash
+          npx gitpick@latest https://github.com/${{ github.repository }}/tree/${{ github.ref_name }}/${SCRIPT_NAME%%-*}-apps/$SCRIPT_NAME
+          \`\`\`
+
+          This template is generated using [${SCRIPT_NAME}.sh](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/.github/.scripts/${SCRIPT_NAME}.sh) and is part of the [awesome-templates](https://github.com/${{ github.repository }}) repository.
+
+          If you wish to make changes to this template or add your own, please refer to the [contribution guidelines](https://github.com/${{ github.repository }}?tab=readme-ov-file#contributing).
+            "
+
+            if TEMP_DIR="$TEMP_DIR" bash "$script"; then
+              mkdir -p "$RESOLVE_DIR"
+              if [[ "${{ github.event.inputs.ACT }}" != 'true' ]]; then
+                rsync -a --delete --exclude=".git" "$TEMP_DIR/" "$RESOLVE_DIR"
+              else
+                rm -rf "$RESOLVE_DIR"
+                cp -r "$TEMP_DIR/." "$RESOLVE_DIR"
+              fi
+              rm -rf "$TEMP_DIR"
+              if ! ls "${RESOLVE_DIR}" | grep -iq "readme.md"; then
+                echo "${PREPEND}" > "${RESOLVE_DIR}README.md"
+                else
+                {
+                  echo "${PREPEND}"
+                  cat "${RESOLVE_DIR}"$(ls "${RESOLVE_DIR}" | grep -i "readme.md")
+                } > temp_readme.md && mv temp_readme.md "${RESOLVE_DIR}README.md"
+              fi
+              if [[ "${{ github.event.inputs.ACT }}" != 'true' ]]; then
+                git checkout main
+                git merge "$BRANCH_NAME"
+                git branch -d "$BRANCH_NAME"
+              fi
+            else
+              echo -e "\033[31mFailed $script\033[0m"
+              if [[ "${{ github.event.inputs.ACT }}" != 'true' ]]; then
+                git reset --hard
+                git checkout main
+                git branch -D "$BRANCH_NAME"
+                echo "$script" >> .github/failed.txt
+              fi
+            fi
+          done
+
+      - name: Push Changes
+        if: ${{ github.event.inputs.ACT != 'true' }}
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+
+          DATE=$(date -u +"%b %d %H:%M UTC %y")
+          EMOJIS=("🔴" "🟠" "🟡" "🟢" "🔵" "🟣" "🟤")
+          DAY_OF_WEEK=$(date -u +"%w")
+          EMOJI=${EMOJIS[$DAY_OF_WEEK]}
+
+          sed -i "3s/.*/> $EMOJI Last updated: $DATE/" .github/README.md
+
+          git add .
+          git restore --staged .github/.scripts/*
+          git commit -m "$EMOJI $DATE"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
