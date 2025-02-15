@@ -1,11 +1,9 @@
 bunx create-next-app@latest awesomedir --ts --eslint --tailwind --src-dir --app --turbopack --import-alias "@/*"
 cd awesomedir
 bun add drizzle-orm drizzle-kit postgres
-
 cat <<EOF >.env.local
 POSTGRES_URL=postgresql://postgres:postgres@localhost:5432/postgres
 EOF
-
 cat <<EOF >drizzle.config.ts
 import { defineConfig } from 'drizzle-kit'
 
@@ -18,9 +16,7 @@ export default defineConfig({
   out: './src/db/drizzle',
 })
 EOF
-
 mkdir -p src/db
-
 cat <<EOF >src/db/index.ts
 import { drizzle, type PostgresJsDatabase } from "drizzle-orm/postgres-js"
 import postgres from "postgres"
@@ -56,29 +52,13 @@ if (process.env.NODE_ENV === "production") {
 
 export { db }
 EOF
-
 # custom best practices
-bun add -D @commitlint/cli @commitlint/config-conventional lint-staged prettier prettier-plugin-organize-imports prettier-plugin-tailwindcss simple-git-hooks sort-package-json
-cat <<EOF >.lintstagedrc
-{
-  "*": ["prettier --write --ignore-unknown"],
-  "package.json": ["sort-package-json"]
-}
-EOF
-cat <<EOF >.prettierrc
-{
-  "semi": false,
-  "plugins": ["prettier-plugin-organize-imports", "prettier-plugin-tailwindcss"]
-}
-EOF
-cat <<EOF >.commitlintrc
-{
-  "extends": [
-    "@commitlint/config-conventional"
-  ]
-}
-EOF
-bunx json -I -f package.json -e 'this.scripts.prepare="if [ -z \"$VERCEL_ENV\" ]; then simple-git-hooks; fi"'
-bunx json -I -f package.json -e 'this["simple-git-hooks"]={"pre-commit":"npx lint-staged --verbose","commit-msg":"npx commitlint --edit $1"}'
+bun add -D @commitlint/cli @commitlint/config-conventional @ianvs/prettier-plugin-sort-imports lint-staged prettier prettier-plugin-tailwindcss simple-git-hooks sort-package-json
+bunx json -I -f package.json \
+  -e 'this["lint-staged"]={"*": "prettier --write --ignore-unknown","package.json": "sort-package-json"}' \
+  -e 'this["prettier"]={"semi": false,"plugins": ["@ianvs/prettier-plugin-sort-imports", "prettier-plugin-tailwindcss"]}' \
+  -e 'this["commitlint"]={"extends": ["@commitlint/config-conventional"]}' \
+  -e 'this.scripts.prepare="if [ -z \"$VERCEL_ENV\" ]; then simple-git-hooks; fi"' \
+  -e 'this["simple-git-hooks"]={"pre-commit":"npx lint-staged --verbose","commit-msg":"npx commitlint --edit $1"}'
 bunx sort-package-json
 bunx prettier --write --ignore-unknown *
