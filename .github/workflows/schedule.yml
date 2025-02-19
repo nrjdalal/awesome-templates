@@ -110,14 +110,18 @@ jobs:
 
           sed -i "3s/.*/> $EMOJI Last updated: $DATE/" .github/README.md
 
-          git add .
-          git restore --staged .github/.scripts/*
-          FILE_COUNT=$(($(git diff --cached --name-only | wc -l | xargs) - 1))
-          if [ "$FILE_COUNT" -eq "1" ]; then
-            git commit -m "$EMOJI $FILE_COUNT file changed"
-          else
-            git commit -m "$EMOJI $FILE_COUNT files changed"
-          fi
+          git add .github/README.md
+          git commit -m "$EMOJI $DATE"
+          FOLDERS=($(find . -maxdepth 1 -type d ! -name '.' ! -name '.git' ! -name '.github' -exec basename {} \;))
+          for folder in "${FOLDERS[@]}"; do
+            git add "$folder"
+            FILE_COUNT=$(git diff --cached --name-only "$folder" | wc -l | xargs)
+            if [ "$FILE_COUNT" -eq "1" ]; then
+              git commit -m "$EMOJI $FILE_COUNT file changed"
+            else
+              git commit -m "$EMOJI $FILE_COUNT files changed"
+            fi
+          done
           git push
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
