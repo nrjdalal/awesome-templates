@@ -112,7 +112,8 @@ jobs:
 
           git add .
           git restore --staged .github/.scripts/*
-          git commit -m "$EMOJI $DATE"
+          FILE_COUNT=$(($(git diff --cached --name-only | wc -l | xargs) - 1))
+          git commit -m "$EMOJI $FILE_COUNT files changed"
           git push
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
