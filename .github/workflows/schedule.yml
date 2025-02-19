@@ -113,7 +113,11 @@ jobs:
           git add .
           git restore --staged .github/.scripts/*
           FILE_COUNT=$(($(git diff --cached --name-only | wc -l | xargs) - 1))
-          git commit -m "$EMOJI $FILE_COUNT files changed"
+          if [ "$FILE_COUNT" -eq "1" ]; then
+            git commit -m "$EMOJI $FILE_COUNT file changed"
+          else
+            git commit -m "$EMOJI $FILE_COUNT files changed"
+          fi
           git push
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
