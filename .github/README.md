@@ -1,6 +1,6 @@
 # Awesome Templates
 
-> 🟣 Last updated: Feb 21 16:04 UTC 25
+> Re-run actions to update the templates.
 
 Explore a curated collection of up-to-date templates for various projects and frameworks, refreshed every 8 hours.
 
