@@ -6,7 +6,9 @@ npx gitpick@latest https://github.com/nrjdalal/awesome-templates/tree/main/next.
 
 This template is generated using [next.js-canary.sh](https://github.com/nrjdalal/awesome-templates/blob/main/.github/.scripts/next.js-canary.sh) and is part of the [awesome-templates](https://github.com/nrjdalal/awesome-templates) repository.
 
-If you wish to make changes to this template or add your own, please refer to the [contribution guidelines](https://github.com/nrjdalal/awesome-templates?tab=readme-ov-file#contributing).\n
+If you wish to make changes to this template or add your own, please refer to the [contribution guidelines](https://github.com/nrjdalal/awesome-templates?tab=readme-ov-file#contributing).
+
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
