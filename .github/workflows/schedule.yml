@@ -103,15 +103,6 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
 
-          DATE=$(date -u +"%b %d %H:%M UTC %y")
-          EMOJIS=("🔴" "🟠" "🟡" "🟢" "🔵" "🟣" "🟤")
-          DAY_OF_WEEK=$(date -u +"%w")
-          EMOJI=${EMOJIS[$DAY_OF_WEEK]}
-
-          sed -i "3s/.*/> $EMOJI Last updated: $DATE/" .github/README.md
-
-          git add .github/README.md
-          git commit -m "$EMOJI $DATE"
           FOLDERS=($(find . -maxdepth 1 -type d ! -name '.' ! -name '.git' ! -name '.github' -exec basename {} \;))
           for folder in "${FOLDERS[@]}"; do
             git add "$folder"
@@ -122,6 +113,15 @@ jobs:
               git commit -m "$EMOJI $FILE_COUNT files changed" || true
             fi
           done
+
+          DATE=$(date -u +"%b %d %H:%M UTC %y")
+          EMOJIS=("🔴" "🟠" "🟡" "🟢" "🔵" "🟣" "🟤")
+          DAY_OF_WEEK=$(date -u +"%w")
+          EMOJI=${EMOJIS[$DAY_OF_WEEK]}
+          sed -i "3s/.*/> $EMOJI Last updated: $DATE/" .github/README.md
+          git add .github/README.md
+          git commit -m "$EMOJI $DATE"
+
           git push
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
