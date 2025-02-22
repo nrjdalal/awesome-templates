@@ -103,6 +103,10 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
 
+          DATE=$(date -u +"%b %d %H:%M UTC %y")
+          EMOJIS=("🔴" "🟠" "🟡" "🟢" "🔵" "🟣" "🟤")
+          EMOJI=${EMOJIS[$(date -u +"%w")]}
+
           FOLDERS=($(find . -maxdepth 1 -type d ! -name '.' ! -name '.git' ! -name '.github' -exec basename {} \;))
           for folder in "${FOLDERS[@]}"; do
             git add "$folder"
@@ -114,10 +118,6 @@ jobs:
             fi
           done
 
-          DATE=$(date -u +"%b %d %H:%M UTC %y")
-          EMOJIS=("🔴" "🟠" "🟡" "🟢" "🔵" "🟣" "🟤")
-          DAY_OF_WEEK=$(date -u +"%w")
-          EMOJI=${EMOJIS[$DAY_OF_WEEK]}
           sed -i "3s/.*/> $EMOJI Last updated: $DATE/" .github/README.md
           git add .github/README.md
           git commit -m "$EMOJI $DATE"
