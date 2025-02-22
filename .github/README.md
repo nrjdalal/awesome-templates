@@ -2,7 +2,7 @@
 
 > 🟤 Last updated: Feb 22 09:38 UTC 25
 
-Explore a curated collection of up-to-date templates for various projects and frameworks, refreshed every 8 hours.
+Explore a curated collection of up-to-date templates for various projects and frameworks, refreshed every hour.
 
 > [!NOTE]
 > If there are no changes to a template, the last updated timestamp will not change for that template.
@@ -13,7 +13,7 @@ Deep into a project and need to refer back to the initial or starter version? �
 
 Tired of repeatedly setting up and deleting test directories for various projects? It's a mess. 😭
 
-Here's your solution: reference templates, updated every 8 hours to ensure they're the latest and greatest. 🚀
+Here's your solution: reference templates, updated every hour to ensure they're the latest and greatest. 🚀
 
 ## Clone a Template
 
