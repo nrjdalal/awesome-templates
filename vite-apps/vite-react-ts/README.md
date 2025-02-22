@@ -8,7 +8,6 @@ This template is generated using [vite-react-ts.sh](https://github.com/nrjdalal/
 
 If you wish to make changes to this template or add your own, please refer to the [contribution guidelines](https://github.com/nrjdalal/awesome-templates?tab=readme-ov-file#contributing).
 
-
 # React + TypeScript + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
