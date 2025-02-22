@@ -8,7 +8,6 @@ This template is generated using [tauri-react.sh](https://github.com/nrjdalal/aw
 
 If you wish to make changes to this template or add your own, please refer to the [contribution guidelines](https://github.com/nrjdalal/awesome-templates?tab=readme-ov-file#contributing).
 
-
 # Tauri + React
 
 This template should help get you started developing with Tauri and React in Vite.
