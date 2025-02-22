@@ -8,7 +8,6 @@ This template is generated using [nextron-typescript.sh](https://github.com/nrjd
 
 If you wish to make changes to this template or add your own, please refer to the [contribution guidelines](https://github.com/nrjdalal/awesome-templates?tab=readme-ov-file#contributing).
 
-
 <p align="center"><img src="https://i.imgur.com/NZfsD1p.png"></p>
 
 ## Usage
