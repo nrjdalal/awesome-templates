@@ -8,7 +8,6 @@ This template is generated using [tsrouter-tailwind-file-router.sh](https://gith
 
 If you wish to make changes to this template or add your own, please refer to the [contribution guidelines](https://github.com/nrjdalal/awesome-templates?tab=readme-ov-file#contributing).
 
-
 Welcome to your new TanStack app! 
 
 # Getting Started
