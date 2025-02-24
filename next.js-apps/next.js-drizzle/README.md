@@ -5,10 +5,12 @@ This template is bootstrapped with [next.js-drizzle.sh](https://github.com/nrjda
 ## Clone this template
 
 ```bash
-npx gitpick@latest https://github.com/nrjdalal/awesome-templates/tree/main/next.js-apps/next.js-drizzle
+npx gitpick@latest nrjdalal/awesome-templates/tree/main/next.js-apps/next.js-drizzle
 ```
 
 If you wish to make changes to this template or add your own, please refer to the [contribution guidelines](https://github.com/nrjdalal/awesome-templates?tab=readme-ov-file#contributing).
+
+[![GitHub](https://img.shields.io/github/stars/nrjdalal/awesome-templates?color=blue)](https://github.com/nrjdalal/awesome-templates)
   
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
