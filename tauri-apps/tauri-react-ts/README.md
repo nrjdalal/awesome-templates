@@ -5,10 +5,12 @@ This template is bootstrapped with [tauri-react-ts.sh](https://github.com/nrjdal
 ## Clone this template
 
 ```bash
-npx gitpick@latest https://github.com/nrjdalal/awesome-templates/tree/main/tauri-apps/tauri-react-ts
+npx gitpick@latest nrjdalal/awesome-templates/tree/main/tauri-apps/tauri-react-ts
 ```
 
 If you wish to make changes to this template or add your own, please refer to the [contribution guidelines](https://github.com/nrjdalal/awesome-templates?tab=readme-ov-file#contributing).
+
+[![GitHub](https://img.shields.io/github/stars/nrjdalal/awesome-templates?color=blue)](https://github.com/nrjdalal/awesome-templates)
   
 # Tauri + React + Typescript
 
