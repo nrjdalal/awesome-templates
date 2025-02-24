@@ -60,10 +60,12 @@ jobs:
           ## Clone this template
 
           \`\`\`bash
-          npx gitpick@latest https://github.com/${{ github.repository }}/tree/${{ github.ref_name }}/${SCRIPT_NAME%%-*}-apps/$SCRIPT_NAME
+          npx gitpick@latest ${{ github.repository }}/tree/${{ github.ref_name }}/${SCRIPT_NAME%%-*}-apps/$SCRIPT_NAME
           \`\`\`
 
           If you wish to make changes to this template or add your own, please refer to the [contribution guidelines](https://github.com/${{ github.repository }}?tab=readme-ov-file#contributing).
+
+          [![GitHub](https://img.shields.io/github/stars/${{ github.repository }}?color=blue)](https://github.com/${{ github.repository }})
             "
 
             if TEMP_DIR="$TEMP_DIR" bash "$script"; then
