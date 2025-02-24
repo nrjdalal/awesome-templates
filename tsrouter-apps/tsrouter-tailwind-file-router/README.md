@@ -5,10 +5,12 @@ This template is bootstrapped with [tsrouter-tailwind-file-router.sh](https://gi
 ## Clone this template
 
 ```bash
-npx gitpick@latest https://github.com/nrjdalal/awesome-templates/tree/main/tsrouter-apps/tsrouter-tailwind-file-router
+npx gitpick@latest nrjdalal/awesome-templates/tree/main/tsrouter-apps/tsrouter-tailwind-file-router
 ```
 
 If you wish to make changes to this template or add your own, please refer to the [contribution guidelines](https://github.com/nrjdalal/awesome-templates?tab=readme-ov-file#contributing).
+
+[![GitHub](https://img.shields.io/github/stars/nrjdalal/awesome-templates?color=blue)](https://github.com/nrjdalal/awesome-templates)
   
 Welcome to your new TanStack app! 
 
