@@ -5,10 +5,12 @@ This template is bootstrapped with [nextron-tailwindcss.sh](https://github.com/n
 ## Clone this template
 
 ```bash
-npx gitpick@latest https://github.com/nrjdalal/awesome-templates/tree/main/nextron-apps/nextron-tailwindcss
+npx gitpick@latest nrjdalal/awesome-templates/tree/main/nextron-apps/nextron-tailwindcss
 ```
 
 If you wish to make changes to this template or add your own, please refer to the [contribution guidelines](https://github.com/nrjdalal/awesome-templates?tab=readme-ov-file#contributing).
+
+[![GitHub](https://img.shields.io/github/stars/nrjdalal/awesome-templates?color=blue)](https://github.com/nrjdalal/awesome-templates)
   
 <p align="center"><img src="https://i.imgur.com/a9QWW0v.png"></p>
 
