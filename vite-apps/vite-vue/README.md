@@ -5,10 +5,12 @@ This template is bootstrapped with [vite-vue.sh](https://github.com/nrjdalal/awe
 ## Clone this template
 
 ```bash
-npx gitpick@latest https://github.com/nrjdalal/awesome-templates/tree/main/vite-apps/vite-vue
+npx gitpick@latest nrjdalal/awesome-templates/tree/main/vite-apps/vite-vue
 ```
 
 If you wish to make changes to this template or add your own, please refer to the [contribution guidelines](https://github.com/nrjdalal/awesome-templates?tab=readme-ov-file#contributing).
+
+[![GitHub](https://img.shields.io/github/stars/nrjdalal/awesome-templates?color=blue)](https://github.com/nrjdalal/awesome-templates)
   
 # Vue 3 + Vite
 

@@ -5,10 +5,12 @@ This template is bootstrapped with [vite-svelte.sh](https://github.com/nrjdalal/
 ## Clone this template
 
 ```bash
-npx gitpick@latest https://github.com/nrjdalal/awesome-templates/tree/main/vite-apps/vite-svelte
+npx gitpick@latest nrjdalal/awesome-templates/tree/main/vite-apps/vite-svelte
 ```
 
 If you wish to make changes to this template or add your own, please refer to the [contribution guidelines](https://github.com/nrjdalal/awesome-templates?tab=readme-ov-file#contributing).
+
+[![GitHub](https://img.shields.io/github/stars/nrjdalal/awesome-templates?color=blue)](https://github.com/nrjdalal/awesome-templates)
   
 # Svelte + Vite
 
