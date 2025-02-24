@@ -1,11 +1,14 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "awesometemplate",
+  "main": "./dist/index.js",
   "compatibility_date": "2025-02-24",
-  "pages_build_output_dir": "./dist",
   "compatibility_flags": [
     "nodejs_compat"
-  ]
+  ],
+  "assets": {
+    "directory": "./dist"
+  }
   // "vars": {
   //   "MY_VAR": "my-variable"
   // },
