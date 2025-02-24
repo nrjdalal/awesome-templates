@@ -1,14 +1,14 @@
 # Awesome Template
 
-  This template is bootstrapped with [vite-vue-ts.sh](https://github.com/nrjdalal/awesome-templates/blob/main/.github/.scripts/vite-vue-ts.sh) and is part of the [awesome-templates](https://github.com/nrjdalal/awesome-templates) repository i.e. explore a curated collection of up-to-date templates for various projects and frameworks, refreshed every hour.
-  
-  ## Clone this template
+This template is bootstrapped with [vite-vue-ts.sh](https://github.com/nrjdalal/awesome-templates/blob/main/.github/.scripts/vite-vue-ts.sh) and is part of the [awesome-templates](https://github.com/nrjdalal/awesome-templates) repository, to explore a curated collection of up-to-date templates for various projects and frameworks, refreshed every hour.
 
-  ```bash
-  npx gitpick@latest https://github.com/nrjdalal/awesome-templates/tree/main/vite-apps/vite-vue-ts
-  ```
+## Clone this template
 
-  If you wish to make changes to this template or add your own, please refer to the [contribution guidelines](https://github.com/nrjdalal/awesome-templates?tab=readme-ov-file#contributing).
+```bash
+npx gitpick@latest https://github.com/nrjdalal/awesome-templates/tree/main/vite-apps/vite-vue-ts
+```
+
+If you wish to make changes to this template or add your own, please refer to the [contribution guidelines](https://github.com/nrjdalal/awesome-templates?tab=readme-ov-file#contributing).
   
 # Vue 3 + TypeScript + Vite
 
