@@ -1,13 +1,15 @@
-## Clone this template
+# Awesome Template
 
-```bash
-npx gitpick@latest https://github.com/nrjdalal/awesome-templates/tree/main/expo-apps/expo
-```
+  This template is bootstrapped with [expo.sh](https://github.com/nrjdalal/awesome-templates/blob/main/.github/.scripts/expo.sh) and is part of the [awesome-templates](https://github.com/nrjdalal/awesome-templates) repository i.e. explore a curated collection of up-to-date templates for various projects and frameworks, refreshed every hour.
+  
+  ## Clone this template
 
-This template is generated using [expo.sh](https://github.com/nrjdalal/awesome-templates/blob/main/.github/.scripts/expo.sh) and is part of the [awesome-templates](https://github.com/nrjdalal/awesome-templates) repository.
+  ```bash
+  npx gitpick@latest https://github.com/nrjdalal/awesome-templates/tree/main/expo-apps/expo
+  ```
 
-If you wish to make changes to this template or add your own, please refer to the [contribution guidelines](https://github.com/nrjdalal/awesome-templates?tab=readme-ov-file#contributing).
-
+  If you wish to make changes to this template or add your own, please refer to the [contribution guidelines](https://github.com/nrjdalal/awesome-templates?tab=readme-ov-file#contributing).
+  
 # Welcome to your Expo app 👋
 
 This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
