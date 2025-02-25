@@ -45,6 +45,9 @@ npm run test
 
 This project uses [Tailwind CSS](https://tailwindcss.com/) for styling.
 
+
+
+
 ## Routing
 This project uses [TanStack Router](https://tanstack.com/router). The initial setup is a file based router. Which means that the routes are managed as fiels in `src/routes`.
 
@@ -293,6 +296,10 @@ We use the `Derived` class to create a new store that is derived from another st
 Once we've created the derived store we can use it in the `App` component just like we would any other store using the `useStore` hook.
 
 You can find out everything you need to know on how to use TanStack Store in the [TanStack Store documentation](https://tanstack.com/store/latest).
+
+# Demo files
+
+Files prefixed with `demo` can be safely deleted. They are there to provide a starting point for you to play around with the features you've installed.
 
 # Learn More
 

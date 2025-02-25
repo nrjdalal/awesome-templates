@@ -9,6 +9,7 @@ import {
 } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/router-devtools";
 
+
 import "./styles.css";
 import reportWebVitals from "./reportWebVitals.js";
 
@@ -17,8 +18,12 @@ import App from "./App.jsx";
 const rootRoute = createRootRoute({
   component: () => (
     <>
+    
+    
       <Outlet />
       <TanStackRouterDevtools />
+      
+    
     </>
   ),
 });
