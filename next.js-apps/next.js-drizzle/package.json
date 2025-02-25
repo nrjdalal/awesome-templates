@@ -30,7 +30,7 @@
     "semi": false
   },
   "dependencies": {
-    "drizzle-kit": "^0.30.4",
+    "drizzle-kit": "^0.30.5",
     "drizzle-orm": "^0.39.3",
     "next": "15.1.7",
     "postgres": "^3.4.5",
