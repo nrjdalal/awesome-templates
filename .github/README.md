@@ -22,7 +22,7 @@ Here's your solution: reference templates, updated every hour to ensure they're 
 Easily clone a template using [gitpick](https://github.com/nrjdalal/gitpick) with the following command:
 
 ```bash
-npx gitpick clone nrjdalal/awesome-templates/tree/main/<template-folder>/<template-name>
+npx gitpick@latest nrjdalal/awesome-templates/tree/main/<template-folder>/<template-name>
 ```
 
 The command to clone a template also exists at the `README.md` of each template.
