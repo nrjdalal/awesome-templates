@@ -264,7 +264,7 @@ import "./styles.css";
 import reportWebVitals from "./reportWebVitals.js";
 
 // Create a new router instance
-const router = createRouter({ routeTree });
+const router = createRouter({ routeTree, defaultPreload: "intent", scrollRestoration: true, defaultStructuralSharing: true });
 
 // Render the app
 const rootElement = document.getElementById("app");

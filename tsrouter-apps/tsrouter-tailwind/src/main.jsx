@@ -40,6 +40,7 @@ const router = createRouter({
   routeTree,
   defaultPreload: "intent",
   scrollRestoration: true,
+  defaultStructuralSharing: true,
 });
 
 const rootElement = document.getElementById("app");

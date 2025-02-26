@@ -9,7 +9,12 @@ import './styles.css'
 import reportWebVitals from './reportWebVitals.ts'
 
 // Create a new router instance
-const router = createRouter({ routeTree })
+const router = createRouter({
+  routeTree,
+  defaultPreload: 'intent',
+  scrollRestoration: true,
+  defaultStructuralSharing: true,
+})
 
 // Register the router instance for type safety
 declare module '@tanstack/react-router' {
