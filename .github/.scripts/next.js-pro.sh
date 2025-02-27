@@ -2,7 +2,6 @@ bunx create-next-app@latest awesomedir --ts --eslint --tailwind --src-dir --app 
 cd awesomedir
 bunx shadcn@latest init -d
 bunx shadcn@latest add -a
-bunx @tailwindcss/upgrade@next --force
 # custom best practices
 bun add -D @commitlint/cli @commitlint/config-conventional @ianvs/prettier-plugin-sort-imports lint-staged prettier prettier-plugin-tailwindcss simple-git-hooks sort-package-json
 echo "$(bunx fx package.json '{
