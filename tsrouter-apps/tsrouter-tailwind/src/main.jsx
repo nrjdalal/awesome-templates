@@ -44,7 +44,7 @@ const router = createRouter({
 });
 
 const rootElement = document.getElementById("app");
-if (!rootElement.innerHTML) {
+if (rootElement && !rootElement.innerHTML) {
   const root = ReactDOM.createRoot(rootElement);
   root.render(
     <StrictMode>

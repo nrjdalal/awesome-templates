@@ -48,6 +48,7 @@ This project uses [Tailwind CSS](https://tailwindcss.com/) for styling.
 
 
 
+
 ## Routing
 This project uses [TanStack Router](https://tanstack.com/router). The initial setup is a file based router. Which means that the routes are managed as fiels in `src/routes`.
 
