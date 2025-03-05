@@ -7,12 +7,12 @@ import { Slot } from "@radix-ui/react-slot"
 import * as React from "react"
 import {
   Controller,
-  ControllerProps,
-  FieldPath,
-  FieldValues,
   FormProvider,
   useFormContext,
   useFormState,
+  type ControllerProps,
+  type FieldPath,
+  type FieldValues,
 } from "react-hook-form"
 
 const Form = FormProvider
