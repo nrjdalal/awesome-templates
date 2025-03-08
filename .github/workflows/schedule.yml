@@ -89,6 +89,7 @@ jobs:
               fi
               if [[ "${{ github.event.inputs.ACT }}" != 'true' ]]; then
                 git checkout main
+                git restore $script
                 git merge "$BRANCH_NAME"
                 git branch -d "$BRANCH_NAME"
               fi
