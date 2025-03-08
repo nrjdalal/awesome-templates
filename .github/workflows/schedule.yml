@@ -118,14 +118,9 @@ jobs:
             diff_summary=$(git diff HEAD --shortstat | sed -E 's/ insertions?[^)]*\)/+/g; s/ deletions?[^)]*\)/-/g; s/ changed//g' | xargs | tr -d ',')
             changed_files=$(git diff HEAD --name-only)
             files_list=$(echo "$changed_files" | awk -F'/' '{print $NF}' | sort -u | tr '\n' ' ')
-
-            commit_message=$(echo "$EMOJI $diff_summary 📄 $files_list" | cut -c1-98)
-            [[ ${#commit_message} -eq 98 ]] && commit_message="$commit_message ..."
-
-            commit_message="$commit_message
+            commit_message="$EMOJI $diff_summary 📄 $files_list
             
           $changed_files"
-
             git commit -m "$commit_message" || true
           }
 
