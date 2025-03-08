@@ -135,7 +135,7 @@ jobs:
           FOLDERS=($(find . -maxdepth 1 -type d ! -name '.' ! -name '.git' ! -name '.github' -exec basename {} \;))
           for folder in "${FOLDERS[@]}"; do
             git add "$folder"
-            g()
+            g
           done
 
           sed -i "5s/.*/> $EMOJI Last updated: $DATE/" .github/README.md
