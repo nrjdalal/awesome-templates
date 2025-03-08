@@ -48,7 +48,7 @@ jobs:
             sed -i "s/ awesomedir/ \"\$TEMP_DIR\"/g" "$script"
 
             SCRIPT_NAME=$(basename "$script" .sh)
-            BRANCH_NAME="template-$SCRIPT_NAME"
+            BRANCH_NAME="${{ github.event.inputs.BASE_REF }}-$SCRIPT_NAME"
             TEMP_DIR="awesometemplate"
             RESOLVE_DIR="./${SCRIPT_NAME%%-*}-apps/$SCRIPT_NAME/"
 
