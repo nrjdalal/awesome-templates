@@ -48,7 +48,7 @@ jobs:
             sed -i "s/ awesomedir/ \"\$TEMP_DIR\"/g" "$script"
 
             SCRIPT_NAME=$(basename "$script" .sh)
-            BRANCH_NAME="${{ github.event.inputs.BASE_REF }}-$SCRIPT_NAME"
+            BRANCH_NAME="${{ github.ref_name }}-$SCRIPT_NAME"
             TEMP_DIR="awesometemplate"
             RESOLVE_DIR="./${SCRIPT_NAME%%-*}-apps/$SCRIPT_NAME/"
 
@@ -89,7 +89,7 @@ jobs:
                 } > temp_readme.md && mv temp_readme.md "${RESOLVE_DIR}README.md"
               fi
               if [[ "${{ github.event.inputs.ACT }}" != 'true' ]]; then
-                git checkout ${{ github.event.inputs.BASE_REF }}
+                git checkout ${{ github.ref_name }}
                 git restore $script
                 git merge "$BRANCH_NAME"
                 git branch -d "$BRANCH_NAME"
@@ -98,7 +98,7 @@ jobs:
               echo -e "\033[31mFailed $script\033[0m"
               if [[ "${{ github.event.inputs.ACT }}" != 'true' ]]; then
                 git reset --hard
-                git checkout ${{ github.event.inputs.BASE_REF }}
+                git checkout ${{ github.ref_name }}
                 git branch -D "$BRANCH_NAME"
                 echo "$script" >> .github/failed.txt
               fi
