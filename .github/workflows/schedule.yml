@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - test
   schedule:
     - cron: "0 * * * *"
 
@@ -88,7 +89,7 @@ jobs:
                 } > temp_readme.md && mv temp_readme.md "${RESOLVE_DIR}README.md"
               fi
               if [[ "${{ github.event.inputs.ACT }}" != 'true' ]]; then
-                git checkout main
+                git checkout ${{ github.event.inputs.BASE_REF }}
                 git restore $script
                 git merge "$BRANCH_NAME"
                 git branch -d "$BRANCH_NAME"
@@ -97,7 +98,7 @@ jobs:
               echo -e "\033[31mFailed $script\033[0m"
               if [[ "${{ github.event.inputs.ACT }}" != 'true' ]]; then
                 git reset --hard
-                git checkout main
+                git checkout ${{ github.event.inputs.BASE_REF }}
                 git branch -D "$BRANCH_NAME"
                 echo "$script" >> .github/failed.txt
               fi
