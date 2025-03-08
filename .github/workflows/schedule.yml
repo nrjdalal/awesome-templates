@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - test
   schedule:
     - cron: "0 * * * *"
 
@@ -47,7 +48,7 @@ jobs:
             sed -i "s/ awesomedir/ \"\$TEMP_DIR\"/g" "$script"
 
             SCRIPT_NAME=$(basename "$script" .sh)
-            BRANCH_NAME="template-$SCRIPT_NAME"
+            BRANCH_NAME="${{ github.ref_name }}-$SCRIPT_NAME"
             TEMP_DIR="awesometemplate"
             RESOLVE_DIR="./${SCRIPT_NAME%%-*}-apps/$SCRIPT_NAME/"
 
@@ -57,12 +58,12 @@ jobs:
 
           [![Twitter](https://img.shields.io/twitter/follow/nrjdalal_com?label=%40nrjdalal_com)](https://twitter.com/nrjdalal_com) [![Awesome](https://awesome.re/badge.svg)](https://github.com/nrjdalal/awesome-templates) [![GitHub](https://img.shields.io/github/stars/nrjdalal/awesome-templates?color=blue)](https://github.com/nrjdalal/awesome-templates)
 
-          This template is bootstrapped with script [${SCRIPT_NAME}.sh](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/.github/.scripts/${SCRIPT_NAME}.sh) and is part of the [awesome-templates](https://github.com/${{ github.repository }}) repository, to explore a curated collection of up-to-date templates for various projects and frameworks, refreshed every hour.
+          This template is bootstrapped with script [${SCRIPT_NAME}.sh](https://github.com/${{ github.repository }}/blob/main/.github/.scripts/${SCRIPT_NAME}.sh) and is part of the [awesome-templates](https://github.com/${{ github.repository }}) repository, to explore a curated collection of up-to-date templates for various projects and frameworks, refreshed every hour.
 
           ## Clone this template
 
           \`\`\`bash
-          npx gitpick@latest ${{ github.repository }}/tree/${{ github.ref_name }}/${SCRIPT_NAME%%-*}-apps/$SCRIPT_NAME
+          npx gitpick@latest ${{ github.repository }}/tree/main/${SCRIPT_NAME%%-*}-apps/$SCRIPT_NAME
           \`\`\`
 
           If you wish to make changes to this template or add your own, please refer to the [contribution guidelines](https://github.com/${{ github.repository }}?tab=readme-ov-file#contributing).
@@ -88,7 +89,8 @@ jobs:
                 } > temp_readme.md && mv temp_readme.md "${RESOLVE_DIR}README.md"
               fi
               if [[ "${{ github.event.inputs.ACT }}" != 'true' ]]; then
-                git checkout main
+                git checkout ${{ github.ref_name }}
+                git restore $script
                 git merge "$BRANCH_NAME"
                 git branch -d "$BRANCH_NAME"
               fi
@@ -96,7 +98,7 @@ jobs:
               echo -e "\033[31mFailed $script\033[0m"
               if [[ "${{ github.event.inputs.ACT }}" != 'true' ]]; then
                 git reset --hard
-                git checkout main
+                git checkout ${{ github.ref_name }}
                 git branch -D "$BRANCH_NAME"
                 echo "$script" >> .github/failed.txt
               fi
@@ -113,21 +115,30 @@ jobs:
           EMOJIS=("🔴" "🟠" "🟡" "🟢" "🔵" "🟣" "🟤")
           EMOJI=${EMOJIS[$(date -u +"%w")]}
 
+          g() {
+            diff_summary=$(git diff HEAD --shortstat | sed -E 's/ insertions?[^)]*\)/+/g; s/ deletions?[^)]*\)/-/g; s/ changed//g' | xargs | tr -d ',')
+            changed_files=$(git diff HEAD --name-only)
+            files_list=$(echo "$changed_files" | awk -F'/' '{print $NF}' | sort -u | tr '\n' ' ')
+
+            commit_message=$(echo "$EMOJI $diff_summary 📄 $files_list" | cut -c1-98)
+            [[ ${#commit_message} -eq 98 ]] && commit_message="$commit_message ..."
+
+            commit_message="$commit_message
+            
+          $changed_files"
+
+            git commit -m "$commit_message" || true
+          }
+
           FOLDERS=($(find . -maxdepth 1 -type d ! -name '.' ! -name '.git' ! -name '.github' -exec basename {} \;))
           for folder in "${FOLDERS[@]}"; do
             git add "$folder"
-            FILE_COUNT=$(git diff --cached --name-only "$folder" | wc -l | xargs)
-            if [ "$FILE_COUNT" -eq "1" ]; then
-              git commit -m "$EMOJI $FILE_COUNT file changed" || true
-            else
-              git commit -m "$EMOJI $FILE_COUNT files changed" || true
-            fi
+            g
           done
 
           sed -i "5s/.*/> $EMOJI Last updated: $DATE/" .github/README.md
           git add .github/README.md
-          git commit -m "$EMOJI $DATE"
-          git pull
+          git commit -m "$EMOJI $DATE" || true
           git push
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
