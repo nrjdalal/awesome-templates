@@ -141,7 +141,6 @@ jobs:
           sed -i "5s/.*/> $EMOJI Last updated: $DATE/" .github/README.md
           git add .github/README.md
           git commit -m "$EMOJI $DATE"
-          git pull
           git push
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
