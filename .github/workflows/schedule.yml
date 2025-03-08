@@ -120,7 +120,7 @@ jobs:
             files_list=$(echo "$changed_files" | awk -F'/' '{print $NF}' | sort -u | tr '\n' ' ')
 
             commit_message=$(echo "$EMOJI $diff_summary 📄 $files_list" | cut -c1-101)
-            # [[ ${#commit_message} -eq 99 ]] && commit_message="$commit_message ..."
+
 
             commit_message="$commit_message
             
