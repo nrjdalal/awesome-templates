@@ -72,7 +72,7 @@ jobs:
             "
 
             if TEMP_DIR="$TEMP_DIR" bash "$script"; then
-              mkdir -p "$RESOLVE_DIR"
+              git restore $script && mkdir -p "$RESOLVE_DIR"
               if [[ "${{ github.event.inputs.ACT }}" != 'true' ]]; then
                 rsync -a --delete --exclude=".git" "$TEMP_DIR/" "$RESOLVE_DIR"
               else
@@ -90,7 +90,6 @@ jobs:
               fi
               if [[ "${{ github.event.inputs.ACT }}" != 'true' ]]; then
                 git checkout ${{ github.ref_name }}
-                git restore $script
                 git merge "$BRANCH_NAME"
                 git branch -d "$BRANCH_NAME"
               fi
