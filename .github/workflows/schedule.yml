@@ -113,15 +113,29 @@ jobs:
           EMOJIS=("🔴" "🟠" "🟡" "🟢" "🔵" "🟣" "🟤")
           EMOJI=${EMOJIS[$(date -u +"%w")]}
 
+          g() {
+            diff_summary=$(git diff HEAD --shortstat | sed -E 's/ insertions?[^)]*\)/+/g; s/ deletions?[^)]*\)/-/g; s/ changed//g' | xargs | tr -d ',')
+            changed_files=$(git diff HEAD --name-only)
+            files_list=$(echo "$changed_files" | awk -F'/' '{print $NF}' | tr '\n' ' ')
+
+            commit_message="$EMOJI"
+
+            commit_message=$(echo "$commit_message |~ $diff_summary|$files_list" | cut -c1-98)
+            [[ ${#commit_message} -eq 98 ]] && commit_message="$commit_message... "
+            IFS='|' read -r msg_part1 msg_part2 msg_part3 <<<"$commit_message"
+            commit_message="$msg_part1$msg_part3$msg_part2"
+
+            commit_message="$commit_message
+            
+          $changed_files"
+
+            git commit -m "$commit_message" || true
+          }
+
           FOLDERS=($(find . -maxdepth 1 -type d ! -name '.' ! -name '.git' ! -name '.github' -exec basename {} \;))
           for folder in "${FOLDERS[@]}"; do
             git add "$folder"
-            FILE_COUNT=$(git diff --cached --name-only "$folder" | wc -l | xargs)
-            if [ "$FILE_COUNT" -eq "1" ]; then
-              git commit -m "$EMOJI $FILE_COUNT file changed" || true
-            else
-              git commit -m "$EMOJI $FILE_COUNT files changed" || true
-            fi
+            g()
           done
 
           sed -i "5s/.*/> $EMOJI Last updated: $DATE/" .github/README.md
