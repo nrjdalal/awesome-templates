@@ -86,7 +86,7 @@ Here is an example layout that includes a header:
 
 ```tsx
 import { createRootRoute, Outlet } from '@tanstack/react-router'
-import { TanStackRouterDevtools } from '@tanstack/router-devtools'
+import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
 
 import { Link } from "@tanstack/react-router";
 

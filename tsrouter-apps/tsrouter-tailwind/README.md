@@ -189,7 +189,7 @@ Then you'll need to create a `src/routes/__root.jsx` file with the contents of t
 
 ```tsx
 import { createRootRoute, Outlet } from "@tanstack/react-router";
-import { TanStackRouterDevtools } from "@tanstack/router-devtools";
+import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 
 export const Route = createRootRoute({
   component: () => (
