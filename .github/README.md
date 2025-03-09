@@ -55,7 +55,7 @@ git checkout -b react-template
 > [!NOTE]
 > The script's name without the `.sh` extension will be used as the template directory.
 
-4. Try to test locally if you can, using [act](https://github.com/nektos/act) and the following command:
+4. Try to test locally if you can, using [act](https://github.com/nektos/act) medium image and the following command:
 
 ```bash
 act --input ACT=true --input SCRIPT=react.sh
