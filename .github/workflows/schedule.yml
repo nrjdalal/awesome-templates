@@ -73,7 +73,7 @@ jobs:
 
             if TEMP_DIR="$TEMP_DIR" bash "$script"; then
               git restore $script && mkdir -p "$RESOLVE_DIR"
-              if [[ "${{ github.event.inputs.ACT }}" != 'true' ]]; then
+              if [[ "${{ github.event.repository.default_branch }}" != 'master' ]]; then
                 rsync -a --delete --exclude=".git" "$TEMP_DIR/" "$RESOLVE_DIR"
               else
                 rm -rf "$RESOLVE_DIR"
@@ -88,14 +88,14 @@ jobs:
                   cat "${RESOLVE_DIR}"$(ls "${RESOLVE_DIR}" | grep -i "readme.md")
                 } > temp_readme.md && mv temp_readme.md "${RESOLVE_DIR}README.md"
               fi
-              if [[ "${{ github.event.inputs.ACT }}" != 'true' ]]; then
+              if [[ "${{ github.event.repository.default_branch }}" != 'master' ]]; then
                 git checkout ${{ github.ref_name }}
                 git merge "$BRANCH_NAME"
                 git branch -d "$BRANCH_NAME"
               fi
             else
               echo -e "\033[31mFailed $script\033[0m"
-              if [[ "${{ github.event.inputs.ACT }}" != 'true' ]]; then
+              if [[ "${{ github.event.repository.default_branch }}" != 'master' ]]; then
                 git reset --hard
                 git checkout ${{ github.ref_name }}
                 git branch -D "$BRANCH_NAME"
@@ -105,7 +105,7 @@ jobs:
           done
 
       - name: Push Changes
-        if: ${{ github.event.inputs.ACT != 'true' }}
+        if: ${{ github.event.repository.default_branch != 'master' }}
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
