@@ -2,7 +2,7 @@
 
 [![Twitter](https://img.shields.io/twitter/follow/nrjdalal_com?label=%40nrjdalal_com)](https://twitter.com/nrjdalal_com) [![Awesome](https://awesome.re/badge.svg)](https://github.com/nrjdalal/awesome-templates) [![GitHub](https://img.shields.io/github/stars/nrjdalal/awesome-templates?color=blue)](https://github.com/nrjdalal/awesome-templates)
 
-> 🔴 Last updated: Mar 09 01:45 UTC 25
+> 🔴 Last updated: Mar 09 00:20 UTC 25
 
 Explore a curated collection of up-to-date templates for various projects and frameworks, refreshed every hour.
 
@@ -55,17 +55,16 @@ git checkout -b react-template
 > [!NOTE]
 > The script's name without the `.sh` extension will be used as the template directory.
 
-4. Try to test locally if you can, using [act](https://github.com/nektos/act) and the following command:
+4. Try to test locally if you can, using [act](https://github.com/nektos/act) medium/large image and the following command:
 
 ```bash
-act --input ACT=true --input SCRIPT=react.sh
+act --input SCRIPT=react.sh
 ```
 
-If you want to test all scripts, use the following command:
+If you want to test all scripts, just run `act` without any arguments.
 
-```bash
-act --input ACT=true
-```
+> [!NOTE]
+> If you mistakenly chose the wrong image, check out this [issue](https://github.com/nektos/act/issues/2219) for solution.
 
 5. **Make your changes and commit them with a clear and descriptive commit message.**
 
