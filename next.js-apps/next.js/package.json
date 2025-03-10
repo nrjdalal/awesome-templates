@@ -1,0 +1,56 @@
+{
+  "name": "awesometemplate",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "next build",
+    "dev": "next dev --turbopack",
+    "lint": "next lint",
+    "prepare": "if [ -z \"$VERCEL_ENV\" ]; then simple-git-hooks; fi",
+    "start": "next start"
+  },
+  "simple-git-hooks": {
+    "pre-commit": "npx lint-staged --verbose",
+    "commit-msg": "npx commitlint --edit $1"
+  },
+  "commitlint": {
+    "extends": [
+      "@commitlint/config-conventional"
+    ]
+  },
+  "lint-staged": {
+    "*": "prettier --write --ignore-unknown",
+    "package.json": "sort-package-json"
+  },
+  "prettier": {
+    "plugins": [
+      "@ianvs/prettier-plugin-sort-imports",
+      "prettier-plugin-tailwindcss"
+    ],
+    "semi": false
+  },
+  "dependencies": {
+    "next": "15.2.1",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^19.8.0",
+    "@commitlint/config-conventional": "^19.8.0",
+    "@eslint/eslintrc": "^3",
+    "@ianvs/prettier-plugin-sort-imports": "^4.4.1",
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "15.2.1",
+    "lint-staged": "^15.4.3",
+    "prettier": "^3.5.3",
+    "prettier-plugin-tailwindcss": "^0.6.11",
+    "simple-git-hooks": "^2.11.1",
+    "sort-package-json": "^3.0.0",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}
