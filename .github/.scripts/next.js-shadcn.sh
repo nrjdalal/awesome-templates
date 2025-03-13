@@ -1,6 +1,8 @@
 bunx create-next-app@latest --ts --eslint --tailwind --src-dir --app --turbopack --import-alias "@/*" awesomedir
 cd awesomedir
-bunx shadcn@latest init <<EOF
+bunx shadcn@latest init -d
+# hack if the command above fails
+[ ! -f components.json ] && bunx shadcn@latest init <<EOF
 
 EOF
 bunx shadcn@latest add -a
