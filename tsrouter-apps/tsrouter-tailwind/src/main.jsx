@@ -44,6 +44,7 @@ const router = createRouter({
   defaultPreload: "intent",
   scrollRestoration: true,
   defaultStructuralSharing: true,
+  defaultPreloadStaleTime: 0,
 });
 
 const rootElement = document.getElementById("app");

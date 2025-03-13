@@ -37,6 +37,7 @@ const router = createRouter({
   defaultPreload: 'intent',
   scrollRestoration: true,
   defaultStructuralSharing: true,
+  defaultPreloadStaleTime: 0,
 })
 
 declare module '@tanstack/react-router' {
