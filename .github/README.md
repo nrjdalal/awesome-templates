@@ -4,7 +4,7 @@
 
 > 🔵 Last updated: Mar 13 16:10 UTC 25
 
-Explore a curated collection of up-to-date templates for various projects and frameworks, refreshed 8 hours.
+Explore a curated collection of up-to-date templates for various projects and frameworks, refreshed every 8 hours.
 
 > [!NOTE]
 > If there are no changes to a template, the last updated timestamp will not change for that template.
