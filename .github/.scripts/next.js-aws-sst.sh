@@ -1,4 +1,4 @@
-bunx create-next-app@latest awesomedir --ts --eslint --tailwind --src-dir --app --turbopack --import-alias "@/*"
+bunx create-next-app@latest --ts --eslint --tailwind --src-dir --app --turbopack --import-alias "@/*" awesomedir
 cd awesomedir
 bunx sst@latest init --yes
 # custom best practices
