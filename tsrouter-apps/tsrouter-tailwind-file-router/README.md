@@ -108,7 +108,7 @@ export const Route = createRootRoute({
 
 The `<TanStackRouterDevtools />` component is not required so you can remove it if you don't want it in your layout.
 
-More information on layouts can be found in the [Layouts documentation](hthttps://tanstack.com/router/latest/docs/framework/react/guide/routing-concepts#layouts).
+More information on layouts can be found in the [Layouts documentation](https://tanstack.com/router/latest/docs/framework/react/guide/routing-concepts#layouts).
 
 
 ## Data Fetching
@@ -154,7 +154,7 @@ First add your dependencies:
 bun install @tanstack/react-query @tanstack/react-query-devtools
 ```
 
-Next we'll need to creata query client and provider. We recommend putting those in `main.tsx`.
+Next we'll need to create a query client and provider. We recommend putting those in `main.tsx`.
 
 ```tsx
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
