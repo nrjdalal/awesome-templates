@@ -14,3 +14,11 @@ If you wish to make changes to this template or add your own, please refer to th
 
 ---
   
+```txt
+npm install
+npm run dev
+```
+
+```txt
+npm run deploy
+```
