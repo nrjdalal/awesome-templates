@@ -1,1 +1,1 @@
-bunx create-hono@latest -i -t fastly awesomedir
+bunx create-hono@latest -p bun -i -t fastly awesomedir

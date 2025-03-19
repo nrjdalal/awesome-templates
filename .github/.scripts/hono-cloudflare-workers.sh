@@ -1,1 +1,1 @@
-bunx create-hono@latest -i -t cloudflare-workers awesomedir
+bunx create-hono@latest -p bun -i -t cloudflare-workers awesomedir

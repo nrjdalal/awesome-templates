@@ -1,1 +1,1 @@
-bunx create-hono@latest -i -t vercel awesomedir
+bunx create-hono@latest -p bun -i -t vercel awesomedir

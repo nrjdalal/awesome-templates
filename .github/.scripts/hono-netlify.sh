@@ -1,1 +1,1 @@
-bunx create-hono@latest -i -t netlify awesomedir
+bunx create-hono@latest -p bun -i -t netlify awesomedir

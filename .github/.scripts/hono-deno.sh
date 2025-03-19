@@ -1,1 +1,1 @@
-bunx create-hono@latest -i -t deno awesomedir
+bunx create-hono@latest -p bun -i -t deno awesomedir
