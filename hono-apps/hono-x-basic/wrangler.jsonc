@@ -2,7 +2,7 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "awesometemplate",
   "main": "./dist/index.js",
-  "compatibility_date": "2025-03-18",
+  "compatibility_date": "2025-03-19",
   "compatibility_flags": [
     "nodejs_compat"
   ],
