@@ -7,7 +7,7 @@ bunx shadcn@latest init -d
 EOF
 bunx shadcn@latest add -a
 # hack to move devDependencies from dependencies to devDependencies
-bunx fx package.json 'x => { if (x.dependencies["tw-animate-css"]) { const version = x.dependencies["tw-animate-css"]; delete x.dependencies["tw-animate-css"]; x.devDependencies["tw-animate-css"] = version; } return x; }'
+echo "$(bunx fx package.json 'x => { if (x.dependencies["tw-animate-css"]) { const version = x.dependencies["tw-animate-css"]; delete x.dependencies["tw-animate-css"]; x.devDependencies["tw-animate-css"] = version; } return x; }')" >package.json
 # custom best practices
 bun add -D @commitlint/cli @commitlint/config-conventional @ianvs/prettier-plugin-sort-imports lint-staged prettier prettier-plugin-tailwindcss simple-git-hooks sort-package-json
 echo "$(bunx fx package.json '{
