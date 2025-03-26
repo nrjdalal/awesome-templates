@@ -15,6 +15,6 @@
     "@hono/vite-build": "^1.2.0",
     "@hono/vite-dev-server": "^0.18.2",
     "vite": "^6.1.1",
-    "wrangler": "^3.109.2"
+    "wrangler": "^4.4.0"
   }
 }
