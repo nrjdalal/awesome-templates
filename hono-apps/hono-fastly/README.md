@@ -16,7 +16,7 @@ If you wish to make changes to this template or add your own, please refer to th
   
 ```
 npm install
-npm run dev
+npm run start
 ```
 
 ```
