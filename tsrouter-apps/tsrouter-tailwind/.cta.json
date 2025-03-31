@@ -1,0 +1,13 @@
+{
+  "framework": "react",
+  "projectName": "awesometemplate",
+  "typescript": false,
+  "tailwind": true,
+  "packageManager": "bun",
+  "toolchain": "none",
+  "mode": "code-router",
+  "git": false,
+  "variableValues": {},
+  "version": 1,
+  "existingAddOns": []
+}
