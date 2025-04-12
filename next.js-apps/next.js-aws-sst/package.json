@@ -33,7 +33,7 @@
     "next": "15.3.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "sst": "3.13.9"
+    "sst": "3.13.10"
   },
   "devDependencies": {
     "@commitlint/cli": "^19.8.0",
@@ -46,7 +46,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "15.3.0",
-    "lint-staged": "^15.5.0",
+    "lint-staged": "^15.5.1",
     "prettier": "^3.5.3",
     "prettier-plugin-tailwindcss": "^0.6.11",
     "simple-git-hooks": "^2.12.1",
