@@ -14,7 +14,7 @@ echo "$(bunx fx package.json '{
   ...x,
   "scripts": {
     ...x.scripts,
-    "prepare": "if [ -z \"$VERCEL_ENV\" ]; then simple-git-hooks; fi",
+    "prepare": "simple-git-hooks",
   },
   "simple-git-hooks": {
     "pre-commit": "npx lint-staged --verbose",
