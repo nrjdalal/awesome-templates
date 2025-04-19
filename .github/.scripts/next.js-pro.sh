@@ -6,6 +6,7 @@ bunx shadcn@latest init -d
 
 EOF
 bunx shadcn@latest add -a
+bunx tailwind-replace-colors src/app/globals.css
 # hack to move devDependencies from dependencies to devDependencies
 echo "$(bunx fx package.json 'x => { if (x.dependencies["tw-animate-css"]) { const version = x.dependencies["tw-animate-css"]; delete x.dependencies["tw-animate-css"]; x.devDependencies["tw-animate-css"] = version; } return x; }')" >package.json
 # custom best practices
