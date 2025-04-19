@@ -6,7 +6,7 @@
     "build": "next build",
     "dev": "next dev --turbopack",
     "lint": "next lint",
-    "prepare": "if [ -z \"$VERCEL_ENV\" ]; then simple-git-hooks; fi",
+    "prepare": "simple-git-hooks",
     "start": "next start"
   },
   "simple-git-hooks": {
