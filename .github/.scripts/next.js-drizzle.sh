@@ -58,7 +58,7 @@ echo "$(bunx fx package.json '{
   ...x,
   "scripts": {
     ...x.scripts,
-    "prepare": "simple-git-hooks",
+    "prepare": "npx simple-git-hooks",
   },
   "simple-git-hooks": {
     "pre-commit": "npx lint-staged --verbose",
