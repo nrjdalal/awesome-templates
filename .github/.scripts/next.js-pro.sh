@@ -1,14 +1,8 @@
 bunx create-next-app@latest --ts --eslint --tailwind --src-dir --app --turbopack --import-alias "@/*" awesomedir
 cd awesomedir
-bunx shadcn@latest init -d
-# hack if the command above fails
-[ ! -f components.json ] && bunx shadcn@latest init <<EOF
-
-EOF
-bunx colorwindcss@latest
+bunx shadcn@latest init --base-color neutral -d
 bunx shadcn@latest add -a
-# hack to move devDependencies from dependencies to devDependencies
-echo "$(bunx fx package.json 'x => { if (x.dependencies["tw-animate-css"]) { const version = x.dependencies["tw-animate-css"]; delete x.dependencies["tw-animate-css"]; x.devDependencies["tw-animate-css"] = version; } return x; }')" >package.json
+bunx colorwindcss@latest
 # custom best practices
 bun add -D @commitlint/cli @commitlint/config-conventional @ianvs/prettier-plugin-sort-imports lint-staged prettier prettier-plugin-tailwindcss simple-git-hooks sort-package-json
 echo "$(bunx fx package.json '{
