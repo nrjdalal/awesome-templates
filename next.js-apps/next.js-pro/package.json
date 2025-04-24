@@ -81,6 +81,8 @@
     "@commitlint/cli": "^19.8.0",
     "@commitlint/config-conventional": "^19.8.0",
     "@eslint/eslintrc": "^3",
+    "@fontsource-variable/dm-sans": "^5.2.5",
+    "@fontsource-variable/jetbrains-mono": "^5.2.5",
     "@ianvs/prettier-plugin-sort-imports": "^4.4.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
