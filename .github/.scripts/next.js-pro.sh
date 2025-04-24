@@ -4,7 +4,10 @@ bunx shadcn@latest init --base-color neutral -d
 bunx shadcn@latest add -a
 bunx colorwindcss@latest
 # custom best practices
-bun add -D @commitlint/cli @commitlint/config-conventional @fontsource-variable/dm-sans @fontsource-variable/jetbrains-mono @ianvs/prettier-plugin-sort-imports lint-staged prettier prettier-plugin-tailwindcss simple-git-hooks sort-package-json
+curl -sSL https://raw.githubusercontent.com/nrjdalal/the-next-starter/refs/heads/main/src/components/devtools.tsx -o src/components/devtools.tsx
+curl -sSL https://raw.githubusercontent.com/nrjdalal/the-next-starter/refs/heads/main/src/app/providers.tsx -o src/app/providers.tsx
+bun add @tanstack/react-query
+bun add -D @commitlint/cli @commitlint/config-conventional @fontsource-variable/dm-sans @fontsource-variable/jetbrains-mono @ianvs/prettier-plugin-sort-imports @tanstack/react-query-devtools lint-staged prettier prettier-plugin-tailwindcss simple-git-hooks sort-package-json
 sed -i '' \
   -e 's/font-\[family-name:[^]]*\] *//g' \
   src/app/page.tsx
@@ -12,9 +15,15 @@ sed -i '' \
   -e '/import { Geist, Geist_Mono }.*/d' \
   -e '/const geistSans = Geist({/,/})/d' \
   -e '/const geistMono = Geist_Mono({/,/})/d' \
+  -e '2i\
+import { InnerProvider, OuterProvider } from "@/app/providers";
+' \
   -e 's/lang="en"/lang="en" suppressHydrationWarning/' \
   -e 's/${geistSans.variable} //g' \
   -e 's/${geistMono.variable} //g' \
+  -e 's|<html|<OuterProvider><html|' \
+  -e 's|{children}|<InnerProvider>{children}</InnerProvider>|' \
+  -e 's|/html>|/html></OuterProvider>|' \
   src/app/layout.tsx
 awk '
   /@import/ { l = NR }
