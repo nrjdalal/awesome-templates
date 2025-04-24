@@ -1,3 +1,4 @@
+import { InnerProvider, OuterProvider } from "@/app/providers"
 import type { Metadata } from "next"
 import "./globals.css"
 
