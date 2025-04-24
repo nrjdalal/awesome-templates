@@ -6,6 +6,9 @@ bunx colorwindcss@latest
 # custom best practices
 bun add -D @commitlint/cli @commitlint/config-conventional @fontsource-variable/dm-sans @fontsource-variable/jetbrains-mono @ianvs/prettier-plugin-sort-imports lint-staged prettier prettier-plugin-tailwindcss simple-git-hooks sort-package-json
 sed -i '' \
+  -e 's/font-\[family-name:[^]]*\] *//g' \
+  src/app/page.tsx
+sed -i '' \
   -e '/import { Geist, Geist_Mono }.*/d' \
   -e '/const geistSans = Geist({/,/})/d' \
   -e '/const geistMono = Geist_Mono({/,/})/d' \
