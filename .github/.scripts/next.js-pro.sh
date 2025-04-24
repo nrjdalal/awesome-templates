@@ -8,7 +8,7 @@ curl -sSL https://raw.githubusercontent.com/nrjdalal/the-next-starter/refs/heads
 curl -sSL https://raw.githubusercontent.com/nrjdalal/the-next-starter/refs/heads/main/src/app/providers.tsx -o src/app/providers.tsx
 bun add @tanstack/react-query
 bun add -D @commitlint/cli @commitlint/config-conventional @fontsource-variable/dm-sans @fontsource-variable/jetbrains-mono @ianvs/prettier-plugin-sort-imports @tanstack/react-query-devtools lint-staged prettier prettier-plugin-tailwindcss simple-git-hooks sort-package-json
-awk 'NR == 1 { print; print "import { InnerProvider, OuterProvider } from \"@/app/providers\";" } NR > 1' src/app/layout.tsx >_ && mv _ src/app/layout.tsx
+awk 'NR == 1 { print; print "import { InnerProvider, OuterProvider } from \"@/app/providers\"" } NR > 1' src/app/layout.tsx >_ && mv _ src/app/layout.tsx
 sed -i '' \
   -e 's/font-\[family-name:[^]]*\] *//g' \
   src/app/page.tsx
@@ -16,9 +16,10 @@ sed -i '' \
   -e '/import { Geist, Geist_Mono }.*/d' \
   -e '/const geistSans = Geist({/,/})/d' \
   -e '/const geistMono = Geist_Mono({/,/})/d' \
-  -e 's/lang="en"/lang="en" suppressHydrationWarning/' \
+  -e 's/lang="en">/lang="en" suppressHydrationWarning>/' \
   -e 's/${geistSans.variable} //g' \
   -e 's/${geistMono.variable} //g' \
+  -e 's/{`antialiased`}/"min-h-dvh antialiased"/g' \
   -e 's|<html|<OuterProvider><html|' \
   -e 's|{children}|<InnerProvider>{children}</InnerProvider>|' \
   -e 's|/html>|/html></OuterProvider>|' \
