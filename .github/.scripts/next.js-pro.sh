@@ -4,10 +4,9 @@ bunx shadcn@latest init --base-color neutral -d
 bunx shadcn@latest add -a
 bunx colorwindcss@latest
 # custom best practices
-curl -sSL https://raw.githubusercontent.com/nrjdalal/the-next-starter/refs/heads/main/src/components/devtools.tsx -o src/components/devtools.tsx
-curl -sSL https://raw.githubusercontent.com/nrjdalal/the-next-starter/refs/heads/main/src/app/providers.tsx -o src/app/providers.tsx
-bun add @tanstack/react-query
-bun add -D @commitlint/cli @commitlint/config-conventional @fontsource-variable/dm-sans @fontsource-variable/jetbrains-mono @ianvs/prettier-plugin-sort-imports @tanstack/react-query-devtools lint-staged prettier prettier-plugin-tailwindcss simple-git-hooks sort-package-json
+bunx shadcn@latest add https://raw.githubusercontent.com/nrjdalal/the-next-starter/refs/heads/main/public/r/app-api-auth.json
+bunx shadcn@latest add https://raw.githubusercontent.com/nrjdalal/the-next-starter/refs/heads/main/public/r/app-providers.json
+bun add -D @commitlint/cli @commitlint/config-conventional @fontsource-variable/dm-sans @fontsource-variable/jetbrains-mono @ianvs/prettier-plugin-sort-imports lint-staged prettier prettier-plugin-tailwindcss simple-git-hooks sort-package-json
 awk 'NR == 1 { print; print "import { InnerProvider, OuterProvider } from \"@/app/providers\"" } NR > 1' src/app/layout.tsx >_ && mv _ src/app/layout.tsx
 sed -i '' \
   -e 's/font-\[family-name:[^]]*\] *//g' \
@@ -46,6 +45,10 @@ echo "$(bunx fx package.json '{
   "scripts": {
     ...x.scripts,
     "prepare": "npx simple-git-hooks",
+    "drizzle": "bun --env-file=.env.development drizzle-kit push",
+    "drizzle:prod": "bun --env-file=.env.production drizzle-kit push",
+    "studio": "bun --env-file=.env.development drizzle-kit studio",
+    "studio:prod": "bun --env-file=.env.production drizzle-kit studio",
   },
   "simple-git-hooks": {
     "pre-commit": "npx lint-staged --verbose",
