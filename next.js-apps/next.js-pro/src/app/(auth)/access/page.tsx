@@ -45,7 +45,7 @@ export default function Page() {
                   Or
                 </span>
               </div>
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-4">
                 <Button
                   variant="outline"
                   type="button"
@@ -53,7 +53,7 @@ export default function Page() {
                   onClick={async () => {
                     await signIn.social({
                       provider: "github",
-                      callbackURL: "/dashboard",
+                      callbackURL: "/x",
                     })
                   }}
                 >
@@ -67,7 +67,7 @@ export default function Page() {
                   onClick={async () => {
                     await signIn.social({
                       provider: "google",
-                      callbackURL: "/dashboard",
+                      callbackURL: "/x",
                     })
                   }}
                 >
