@@ -1,11 +1,10 @@
 bunx create-next-app@latest --ts --eslint --tailwind --src-dir --app --turbopack --import-alias "@/*" awesomedir
 cd awesomedir
 bunx shadcn@latest init --base-color neutral -d
-bunx shadcn@latest add -a
-bunx colorwindcss@latest
-# custom best practices
 bunx shadcn@latest add https://raw.githubusercontent.com/nrjdalal/the-next-starter/refs/heads/main/public/r/app-api-auth.json
 bunx shadcn@latest add https://raw.githubusercontent.com/nrjdalal/the-next-starter/refs/heads/main/public/r/app-providers.json
+bunx shadcn@latest add -a -o
+bunx colorwindcss@latest
 bun add -D @commitlint/cli @commitlint/config-conventional @fontsource-variable/dm-sans @fontsource-variable/jetbrains-mono @ianvs/prettier-plugin-sort-imports lint-staged prettier prettier-plugin-tailwindcss simple-git-hooks sort-package-json
 awk 'NR == 1 { print; print "import { InnerProvider, OuterProvider } from \"@/app/providers\"" } NR > 1' src/app/layout.tsx >_ && mv _ src/app/layout.tsx
 sed -i '' \
