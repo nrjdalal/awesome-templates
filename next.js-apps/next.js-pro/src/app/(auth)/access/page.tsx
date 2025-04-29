@@ -1,13 +1,15 @@
 "use client"
 
+import { useState } from "react"
+
+import { RiGithubFill, RiGoogleFill } from "@remixicon/react"
+import { GalleryVerticalEnd, Loader2 } from "lucide-react"
+import { toast } from "sonner"
+
+import { signIn } from "@/lib/auth/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { signIn } from "@/lib/auth/client"
-import { RiGithubFill, RiGoogleFill } from "@remixicon/react"
-import { GalleryVerticalEnd, Loader2 } from "lucide-react"
-import { useState } from "react"
-import { toast } from "sonner"
 
 export default function Page() {
   const [loader, setLoader] = useState<"email" | "github" | "google" | null>(

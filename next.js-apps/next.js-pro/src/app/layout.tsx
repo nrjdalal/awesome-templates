@@ -1,5 +1,7 @@
-import { InnerProvider, OuterProvider } from "@/app/providers"
 import type { Metadata } from "next"
+
+import { InnerProvider, OuterProvider } from "@/app/providers"
+
 import "./globals.css"
 
 export const metadata: Metadata = {
