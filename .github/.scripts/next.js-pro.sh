@@ -5,7 +5,6 @@ bunx shadcn@latest add https://raw.githubusercontent.com/nrjdalal/the-next-start
 bunx shadcn@latest add https://raw.githubusercontent.com/nrjdalal/the-next-starter/refs/heads/main/public/r/app-providers.json
 bunx shadcn@latest add -a -o
 bunx colorwindcss@latest
-bun add -D @commitlint/cli @commitlint/config-conventional @fontsource-variable/dm-sans @fontsource-variable/jetbrains-mono @ianvs/prettier-plugin-sort-imports lint-staged prettier prettier-plugin-tailwindcss simple-git-hooks sort-package-json
 awk 'NR == 1 { print; print "import { InnerProvider, OuterProvider } from \"@/app/providers\"" } NR > 1' src/app/layout.tsx >_ && mv _ src/app/layout.tsx
 sed -i \
   -e 's/font-\[family-name:[^]]*\] *//g' \
@@ -39,6 +38,7 @@ awk '
     }
   }
 ' src/app/globals.css >_ && mv _ src/app/globals.css
+bun add -D @commitlint/cli @commitlint/config-conventional @fontsource-variable/dm-sans @fontsource-variable/jetbrains-mono @ianvs/prettier-plugin-sort-imports lint-staged prettier prettier-plugin-tailwindcss simple-git-hooks sort-package-json
 echo "$(bunx fx package.json '{
   ...x,
   "scripts": {
