@@ -5,9 +5,11 @@
   "scripts": {
     "build": "next build",
     "dev": "next dev --turbopack",
+    "drizzle": "bun --env-file=.env.development drizzle-kit push",
     "lint": "next lint",
     "prepare": "npx simple-git-hooks",
-    "start": "next start"
+    "start": "next start",
+    "studio": "bun --env-file=.env.development drizzle-kit studio"
   },
   "simple-git-hooks": {
     "pre-commit": "npx lint-staged --verbose",
