@@ -6,6 +6,7 @@ bunx shadcn@latest add https://raw.githubusercontent.com/nrjdalal/the-next-start
 # add next-theme sonner tanstack-query
 bunx shadcn@latest add https://raw.githubusercontent.com/nrjdalal/the-next-starter/refs/heads/main/public/r/app-providers.json
 bunx shadcn@latest add -a -o
+bunx smart-registry@latest --codemod-radix
 bunx colorwindcss@latest
 awk 'NR == 1 { print; print "import { InnerProvider, OuterProvider } from \"@/app/providers\"" } NR > 1' src/app/layout.tsx >_ && mv _ src/app/layout.tsx
 sed -i \
