@@ -32,9 +32,7 @@
     "semi": false
   },
   "dependencies": {
-    "drizzle-orm": "^0.43.1",
     "next": "15.3.1",
-    "postgres": "^3.4.5",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
@@ -47,7 +45,6 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "drizzle-kit": "^0.31.0",
     "eslint": "^9",
     "eslint-config-next": "15.3.1",
     "lint-staged": "^15.5.1",
