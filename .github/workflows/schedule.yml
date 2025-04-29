@@ -33,22 +33,18 @@ jobs:
 
           rm -rf ./.github/failed.txt
 
-          if [[ -z "${{ github.event.inputs.SCRIPT }}" ]]; then
-            if [[ "${{ github.event_name }}" == "schedule" ]]; then
-              FILES=*
-            else
-              CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD | grep '^.github/.scripts/' || true)
-              if [[ -z "$CHANGED_FILES" ]]; then
-                FILES=*
-              else
-                FILES=$(echo "$CHANGED_FILES" | sed 's|^.github/.scripts/||' | tr '\n' ' ')
-              fi
-            fi
+          if [[ "${{ github.event_name }}" == "schedule" ]]; then
+            FILES=.github/.scripts/*
           else
-            FILES="${{ github.event.inputs.SCRIPT }}"
+            CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD | grep '^.github/.scripts/' || true)
+            if [[ -z "$CHANGED_FILES" ]]; then
+              FILES=.github/.scripts/*
+            else
+              FILES=$CHANGED_FILES
+            fi
           fi
 
-          for script in ./.github/.scripts/$FILES; do
+          for script in $FILES; do
             echo -e "\033[33m--------------------------------------------------\033[0m"
             echo -e "\033[33m$script\033[0m"
             echo -e "\033[33m--------------------------------------------------\033[0m"
