@@ -7,10 +7,10 @@ bunx shadcn@latest add -a -o
 bunx colorwindcss@latest
 bun add -D @commitlint/cli @commitlint/config-conventional @fontsource-variable/dm-sans @fontsource-variable/jetbrains-mono @ianvs/prettier-plugin-sort-imports lint-staged prettier prettier-plugin-tailwindcss simple-git-hooks sort-package-json
 awk 'NR == 1 { print; print "import { InnerProvider, OuterProvider } from \"@/app/providers\"" } NR > 1' src/app/layout.tsx >_ && mv _ src/app/layout.tsx
-sed -i '' \
+sed -i \
   -e 's/font-\[family-name:[^]]*\] *//g' \
   src/app/page.tsx
-sed -i '' \
+sed -i \
   -e '/import { Geist, Geist_Mono }.*/d' \
   -e '/const geistSans = Geist({/,/})/d' \
   -e '/const geistMono = Geist_Mono({/,/})/d' \
