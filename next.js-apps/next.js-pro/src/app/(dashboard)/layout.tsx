@@ -1,23 +1,37 @@
+import SidebarUser from "@/components/sidebar/user"
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
-  SidebarGroup,
   SidebarHeader,
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
+import { auth } from "@/lib/auth"
+import { headers } from "next/headers"
+import { redirect } from "next/navigation"
 
-export default function Layout({ children }: { children: React.ReactNode }) {
+export default async function Layout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  })
+
+  if (!session?.user) {
+    redirect("/access")
+  }
+
   return (
     <SidebarProvider>
-      <Sidebar>
+      <Sidebar collapsible="icon">
         <SidebarHeader />
-        <SidebarContent>
-          <SidebarGroup />
-          <SidebarGroup />
-        </SidebarContent>
-        <SidebarFooter />
+        <SidebarContent>{/* Content Goes Here */}</SidebarContent>
+        <SidebarFooter>
+          <SidebarUser user={session.user} />
+        </SidebarFooter>
       </Sidebar>
       <main>
         <SidebarTrigger />
