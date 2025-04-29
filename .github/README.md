@@ -58,10 +58,10 @@ git checkout -b react-template
 4. Try to test locally if you can, using [act](https://github.com/nektos/act) medium/large image and the following command:
 
 ```bash
-act --input SCRIPT=react.sh
+act
 ```
 
-If you want to test all scripts, just run `act` without any arguments.
+This process will execute only for the modified script, ensuring efficient testing and validation.
 
 > [!NOTE]
 > If you mistakenly chose the wrong image, check out this [issue](https://github.com/nektos/act/issues/2219) for solution.

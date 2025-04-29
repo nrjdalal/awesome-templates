@@ -59,6 +59,8 @@ echo "$(bunx fx package.json '{
   "scripts": {
     ...x.scripts,
     "prepare": "npx simple-git-hooks",
+    "drizzle": "bun --env-file=.env.development drizzle-kit push",
+    "studio": "bun --env-file=.env.development drizzle-kit studio",
   },
   "simple-git-hooks": {
     "pre-commit": "npx lint-staged --verbose",
