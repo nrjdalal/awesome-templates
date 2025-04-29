@@ -74,7 +74,7 @@ jobs:
           If you wish to make changes to this template or add your own, please refer to the [contribution guidelines](https://github.com/${{ github.repository }}?tab=readme-ov-file#contributing).
 
           ---
-            "
+          "
 
             if TEMP_DIR="$TEMP_DIR" bash "$script"; then
               git restore $script && mkdir -p "$RESOLVE_DIR"
