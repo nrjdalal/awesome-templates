@@ -4,7 +4,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -19,14 +18,7 @@ import {
 import { signOut } from "@/lib/auth/client"
 import { cn } from "@/lib/utils"
 import { type User } from "better-auth/types"
-import {
-  BadgeCheck,
-  Bell,
-  ChevronsUpDown,
-  CreditCard,
-  LogOut,
-  Sparkles,
-} from "lucide-react"
+import { ChevronsUpDown, LogOut } from "lucide-react"
 import { redirect } from "next/navigation"
 
 export default function Component({ user }: { user: User }) {
@@ -55,7 +47,7 @@ export default function Component({ user }: { user: User }) {
           <DropdownMenuContent
             className={cn(
               "w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg",
-              isMobile ? "mb-1" : "ml-1",
+              isMobile ? "mb-1" : "ml-3",
             )}
             side={isMobile ? "top" : "right"}
             align="end"
@@ -73,28 +65,6 @@ export default function Component({ user }: { user: User }) {
                 </div>
               </div>
             </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <Sparkles />
-                Upgrade to Pro
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <BadgeCheck />
-                Account
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <CreditCard />
-                Billing
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Bell />
-                Notifications
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem
               className="cursor-pointer"

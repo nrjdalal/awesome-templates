@@ -5,9 +5,15 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { signIn } from "@/lib/auth/client"
 import { RiGithubFill, RiGoogleFill } from "@remixicon/react"
-import { GalleryVerticalEnd } from "lucide-react"
+import { GalleryVerticalEnd, Loader2 } from "lucide-react"
+import { useState } from "react"
+import { toast } from "sonner"
 
 export default function Page() {
+  const [loader, setLoader] = useState<"email" | "github" | "google" | null>(
+    null,
+  )
+
   return (
     <div className="bg-background flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10">
       <div className="w-full max-w-sm">
@@ -36,7 +42,19 @@ export default function Page() {
                     required
                   />
                 </div>
-                <Button type="submit" className="w-full">
+                <Button
+                  type="submit"
+                  className="w-full cursor-pointer"
+                  onClick={async () => {
+                    setLoader("email")
+                    toast.info("Login with email is not implemented yet!")
+                    setLoader(null)
+                  }}
+                  disabled={loader === "email"}
+                >
+                  {loader === "email" ? (
+                    <Loader2 className="size-5 animate-spin" />
+                  ) : null}
                   Login
                 </Button>
               </div>
@@ -49,29 +67,49 @@ export default function Page() {
                 <Button
                   variant="outline"
                   type="button"
-                  className="w-full"
+                  className="w-full cursor-pointer"
                   onClick={async () => {
-                    await signIn.social({
+                    setLoader("github")
+                    const res = await signIn.social({
                       provider: "github",
                       callbackURL: "/x",
                     })
+                    if (res.error) {
+                      toast.error(res.error.message)
+                      setLoader(null)
+                    }
                   }}
+                  disabled={loader === "github"}
                 >
-                  <RiGithubFill className="size-5" />
+                  {loader === "github" ? (
+                    <Loader2 className="size-5 animate-spin" />
+                  ) : (
+                    <RiGithubFill className="size-5" />
+                  )}
                   Continue with Github
                 </Button>
                 <Button
                   variant="outline"
                   type="button"
-                  className="w-full"
+                  className="w-full cursor-pointer"
                   onClick={async () => {
-                    await signIn.social({
+                    setLoader("google")
+                    const res = await signIn.social({
                       provider: "google",
                       callbackURL: "/x",
                     })
+                    if (res.error) {
+                      toast.error(res.error.message)
+                      setLoader(null)
+                    }
                   }}
+                  disabled={loader === "google"}
                 >
-                  <RiGoogleFill className="size-5" />
+                  {loader === "google" ? (
+                    <Loader2 className="size-5 animate-spin" />
+                  ) : (
+                    <RiGoogleFill className="size-5" />
+                  )}
                   Continue with Google
                 </Button>
               </div>
