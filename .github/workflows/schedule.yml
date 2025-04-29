@@ -34,7 +34,16 @@ jobs:
           rm -rf ./.github/failed.txt
 
           if [[ -z "${{ github.event.inputs.SCRIPT }}" ]]; then
-            FILES=*
+            if [[ "${{ github.event_name }}" == "schedule" ]]; then
+              FILES=*
+            else
+              CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD | grep '^.github/.scripts/' || true)
+              if [[ -z "$CHANGED_FILES" ]]; then
+                FILES=*
+              else
+                FILES=$(echo "$CHANGED_FILES" | sed 's|^.github/.scripts/||' | tr '\n' ' ')
+              fi
+            fi
           else
             FILES="${{ github.event.inputs.SCRIPT }}"
           fi
