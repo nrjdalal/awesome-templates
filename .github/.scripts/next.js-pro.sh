@@ -15,8 +15,8 @@ sed -i '' \
   -e '/const geistSans = Geist({/,/})/d' \
   -e '/const geistMono = Geist_Mono({/,/})/d' \
   -e 's/lang="en">/lang="en" suppressHydrationWarning>/' \
-  -e 's/${geistSans.variable} //g' \
-  -e 's/${geistMono.variable} //g' \
+  -e 's/\${geistSans.variable} //g' \
+  -e 's/\${geistMono.variable} //g' \
   -e 's/{`antialiased`}/"min-h-dvh antialiased"/g' \
   -e 's|<html|<OuterProvider><html|' \
   -e 's|{children}|<InnerProvider>{children}</InnerProvider>|' \
