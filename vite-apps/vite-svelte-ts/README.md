@@ -13,7 +13,7 @@ npx gitpick@latest nrjdalal/awesome-templates/tree/main/vite-apps/vite-svelte-ts
 If you wish to make changes to this template or add your own, please refer to the [contribution guidelines](https://github.com/nrjdalal/awesome-templates?tab=readme-ov-file#contributing).
 
 ---
-  
+
 # Svelte + TS + Vite
 
 This template should help get you started developing with Svelte and TypeScript in Vite.

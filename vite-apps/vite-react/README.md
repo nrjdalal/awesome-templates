@@ -13,7 +13,7 @@ npx gitpick@latest nrjdalal/awesome-templates/tree/main/vite-apps/vite-react
 If you wish to make changes to this template or add your own, please refer to the [contribution guidelines](https://github.com/nrjdalal/awesome-templates?tab=readme-ov-file#contributing).
 
 ---
-  
+
 # React + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.

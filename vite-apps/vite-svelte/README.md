@@ -13,7 +13,7 @@ npx gitpick@latest nrjdalal/awesome-templates/tree/main/vite-apps/vite-svelte
 If you wish to make changes to this template or add your own, please refer to the [contribution guidelines](https://github.com/nrjdalal/awesome-templates?tab=readme-ov-file#contributing).
 
 ---
-  
+
 # Svelte + Vite
 
 This template should help get you started developing with Svelte in Vite.
