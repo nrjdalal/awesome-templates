@@ -1,9 +1,5 @@
 bunx create-next-app@latest --ts --eslint --tailwind --src-dir --app --turbopack --import-alias "@/*" awesomedir
 cd awesomedir
-bun add drizzle-orm drizzle-kit postgres
-cat <<EOF >.env.local
-POSTGRES_URL=postgresql://postgres:postgres@localhost:5432/postgres
-EOF
 cat <<EOF >drizzle.config.ts
 import { defineConfig } from 'drizzle-kit'
 
@@ -53,7 +49,8 @@ if (process.env.NODE_ENV === "production") {
 export { db }
 EOF
 # custom best practices
-bun add -D @commitlint/cli @commitlint/config-conventional @ianvs/prettier-plugin-sort-imports lint-staged prettier prettier-plugin-tailwindcss simple-git-hooks sort-package-json
+bun add drizzle-orm postgres
+bun add -D @commitlint/cli @commitlint/config-conventional @ianvs/prettier-plugin-sort-imports drizzle-kit lint-staged prettier prettier-plugin-tailwindcss simple-git-hooks sort-package-json
 echo "$(bunx fx package.json '{
   ...x,
   "scripts": {
