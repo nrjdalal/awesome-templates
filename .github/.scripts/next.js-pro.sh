@@ -65,6 +65,25 @@ echo "$(bunx fx package.json '{
     "package.json": "sort-package-json"
   },
   "prettier": {
+    "importOrder": [
+      "<BUILTIN_MODULES>",
+      "",
+      "^react/(.*)$|^react$",
+      "^next/(.*)$|^next$",
+      "",
+      "<THIRD_PARTY_MODULES>",
+      "",
+      "^@/types/(.*)$",
+      "^@/config/(.*)$",
+      "^@/lib/(.*)$",
+      "^@/hooks/(.*)$",
+      "^@/db/(.*)$",
+      "^@/components/ui/(.*)$",
+      "^@/components/(.*)$",
+      "^@/app/(.*)$",
+      "",
+      "^[./]"
+    ],
     "plugins": [
       "@ianvs/prettier-plugin-sort-imports",
       "prettier-plugin-tailwindcss"
