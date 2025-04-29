@@ -2,10 +2,10 @@ bunx create-next-app@latest --ts --eslint --tailwind --src-dir --app --turbopack
 cd awesomedir
 # test
 awk 'NR == 1 { print; print "import { InnerProvider, OuterProvider } from \"@/app/providers\"" } NR > 1' src/app/layout.tsx >_ && mv _ src/app/layout.tsx
-sed -i \
+sed -i '' \
   -e 's/font-\[family-name:[^]]*\] *//g' \
   src/app/page.tsx
-sed -i \
+sed -i '' \
   -e '/import { Geist, Geist_Mono }.*/d' \
   -e '/const geistSans = Geist({/,/})/d' \
   -e '/const geistMono = Geist_Mono({/,/})/d' \
