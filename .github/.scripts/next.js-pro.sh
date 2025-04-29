@@ -1,7 +1,9 @@
 bunx create-next-app@latest --ts --eslint --tailwind --src-dir --app --turbopack --import-alias "@/*" awesomedir
 cd awesomedir
 bunx shadcn@latest init --base-color neutral -d
+# add better-auth
 bunx shadcn@latest add https://raw.githubusercontent.com/nrjdalal/the-next-starter/refs/heads/main/public/r/app-api-auth.json
+# add next-theme sonner tanstack-query
 bunx shadcn@latest add https://raw.githubusercontent.com/nrjdalal/the-next-starter/refs/heads/main/public/r/app-providers.json
 bunx shadcn@latest add -a -o
 bunx colorwindcss@latest
