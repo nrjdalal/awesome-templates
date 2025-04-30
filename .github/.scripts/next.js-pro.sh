@@ -90,5 +90,5 @@ echo "$(bunx fx package.json '{
     "semi": false
   },
 }')" >package.json
-bunx sort-package-json
-bunx prettier --write --ignore-unknown *
+bunx sort-package-json@latest
+bunx prettier@latest --write --ignore-unknown *
