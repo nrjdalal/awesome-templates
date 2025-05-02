@@ -1,3 +1,11 @@
+## Update the UI components
+
+```sh
+npx shadcn@latest add -o https://raw.githubusercontent.com/nrjdalal/awesome-templates/refs/heads/main/next.js-apps/next.js-pro/public/r/ui.json
+```
+
+---
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
