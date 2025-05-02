@@ -101,12 +101,12 @@ npx shadcn@latest add -o https://dub.sh/ui.json
 
 ---
 "
-if ! ls | grep -iq "readme.md"; then
+if ! ls | grep -iq "^readme\.md$"; then
   echo "${PREPEND}" >"README.md"
 else
   {
     echo "${PREPEND}"
-    cat "$(ls | grep -i "readme.md")"
+    cat "$(ls | grep -i "^readme\.md$")"
   } >temp_readme.md && mv temp_readme.md "README.md"
 fi
 bunx prettier@latest --write --ignore-unknown *
