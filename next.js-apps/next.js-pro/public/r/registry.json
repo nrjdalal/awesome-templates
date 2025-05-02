@@ -1045,70 +1045,8 @@
     },
     {
       "$schema": "https://ui.shadcn.com/schema/registry-item.json",
-      "name": "use-mobile",
-      "type": "registry:hook",
-      "dependencies": ["react"],
-      "files": [
-        {
-          "type": "registry:hook",
-          "target": "hooks/use-mobile.ts",
-          "path": "src/hooks/use-mobile.ts"
-        }
-      ]
-    },
-    {
-      "$schema": "https://ui.shadcn.com/schema/registry-item.json",
-      "name": "auth",
-      "type": "registry:lib",
-      "dependencies": ["better-auth", "drizzle-orm", "postgres"],
-      "files": [
-        {
-          "type": "registry:lib",
-          "target": "lib/auth/index.ts",
-          "path": "src/lib/auth/index.ts"
-        },
-        {
-          "type": "registry:file",
-          "target": "db/index.ts",
-          "path": "src/db/index.ts"
-        },
-        {
-          "type": "registry:file",
-          "target": "db/schema/auth.ts",
-          "path": "src/db/schema/auth.ts"
-        }
-      ]
-    },
-    {
-      "$schema": "https://ui.shadcn.com/schema/registry-item.json",
-      "name": "auth-client",
-      "type": "registry:lib",
-      "dependencies": ["better-auth"],
-      "files": [
-        {
-          "type": "registry:lib",
-          "target": "lib/auth/client.ts",
-          "path": "src/lib/auth/client.ts"
-        }
-      ]
-    },
-    {
-      "$schema": "https://ui.shadcn.com/schema/registry-item.json",
-      "name": "utils",
-      "type": "registry:lib",
-      "dependencies": ["clsx", "tailwind-merge"],
-      "files": [
-        {
-          "type": "registry:lib",
-          "target": "lib/utils.ts",
-          "path": "src/lib/utils.ts"
-        }
-      ]
-    },
-    {
-      "$schema": "https://ui.shadcn.com/schema/registry-item.json",
       "name": "ui",
-      "type": "registry:file",
+      "type": "registry:ui",
       "dependencies": [
         "class-variance-authority",
         "clsx",
@@ -1367,6 +1305,68 @@
           "type": "registry:ui",
           "target": "components/ui/tooltip.tsx",
           "path": "src/components/ui/tooltip.tsx"
+        }
+      ]
+    },
+    {
+      "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+      "name": "use-mobile",
+      "type": "registry:hook",
+      "dependencies": ["react"],
+      "files": [
+        {
+          "type": "registry:hook",
+          "target": "hooks/use-mobile.ts",
+          "path": "src/hooks/use-mobile.ts"
+        }
+      ]
+    },
+    {
+      "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+      "name": "auth",
+      "type": "registry:lib",
+      "dependencies": ["better-auth", "drizzle-orm", "postgres"],
+      "files": [
+        {
+          "type": "registry:lib",
+          "target": "lib/auth/index.ts",
+          "path": "src/lib/auth/index.ts"
+        },
+        {
+          "type": "registry:file",
+          "target": "db/index.ts",
+          "path": "src/db/index.ts"
+        },
+        {
+          "type": "registry:file",
+          "target": "db/schema/auth.ts",
+          "path": "src/db/schema/auth.ts"
+        }
+      ]
+    },
+    {
+      "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+      "name": "auth-client",
+      "type": "registry:lib",
+      "dependencies": ["better-auth"],
+      "files": [
+        {
+          "type": "registry:lib",
+          "target": "lib/auth/client.ts",
+          "path": "src/lib/auth/client.ts"
+        }
+      ]
+    },
+    {
+      "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+      "name": "utils",
+      "type": "registry:lib",
+      "dependencies": ["clsx", "tailwind-merge"],
+      "files": [
+        {
+          "type": "registry:lib",
+          "target": "lib/utils.ts",
+          "path": "src/lib/utils.ts"
         }
       ]
     },
