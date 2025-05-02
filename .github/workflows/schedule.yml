@@ -85,12 +85,12 @@ jobs:
                 cp -r "$TEMP_DIR/." "$RESOLVE_DIR"
               fi
               rm -rf "$TEMP_DIR"
-              if ! ls "${RESOLVE_DIR}" | grep -iq "readme.md"; then
+              if ! ls "${RESOLVE_DIR}" | grep -iq "^readme\.md$"; then
                 echo "${PREPEND}" > "${RESOLVE_DIR}README.md"
                 else
                 {
                   echo "${PREPEND}"
-                  cat "${RESOLVE_DIR}"$(ls "${RESOLVE_DIR}" | grep -i "readme.md")
+                  cat "${RESOLVE_DIR}"$(ls "${RESOLVE_DIR}" | grep -i "^readme\.md$")
                 } > temp_readme.md && mv temp_readme.md "${RESOLVE_DIR}README.md"
               fi
               if [[ "${{ github.event.repository.default_branch }}" != 'master' ]]; then
