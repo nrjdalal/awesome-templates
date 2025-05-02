@@ -93,14 +93,14 @@ echo "$(bunx fx package.json '{
   },
 }')" >package.json
 bunx sort-package-json@latest
-PREPEND='## Update the UI components
+PREPEND="## Update the UI components
 
 \`\`\`sh
-npx shadcn@latest add -o https://raw.githubusercontent.com/nrjdalal/awesome-templates/refs/heads/main/next.js-apps/next.js-pro/public/r/ui.json
+npx shadcn@latest add -o https://dub.sh/ui.json
 \`\`\`
 
 ---
-'
+"
 if ! ls | grep -iq "readme.md"; then
   echo "${PREPEND}" >"README.md"
 else
