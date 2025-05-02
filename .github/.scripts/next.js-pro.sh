@@ -93,4 +93,20 @@ echo "$(bunx fx package.json '{
   },
 }')" >package.json
 bunx sort-package-json@latest
+PREPEND='## Update the UI components
+
+```sh
+npx shadcn@latest add -o https://raw.githubusercontent.com/nrjdalal/awesome-templates/refs/heads/main/next.js-apps/next.js-pro/public/r/ui.json
+```
+
+---
+'
+if ! ls | grep -iq "readme.md"; then
+  echo "${PREPEND}" >"README.md"
+else
+  {
+    echo "${PREPEND}"
+    cat $(ls | grep -i "readme.md")
+  } >temp_readme.md && mv temp_readme.md "README.md"
+fi
 bunx prettier@latest --write --ignore-unknown *
