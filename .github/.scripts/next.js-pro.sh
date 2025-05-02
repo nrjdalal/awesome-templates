@@ -89,10 +89,14 @@ echo "$(bunx fx package.json '{
       "@ianvs/prettier-plugin-sort-imports",
       "prettier-plugin-tailwindcss"
     ],
+    "printWidth": 100,
     "semi": false
   },
 }')" >package.json
 bunx sort-package-json@latest
+bunx prettier@latest --write --ignore-unknown *
+
+# custom update for the README.md file
 PREPEND="## Update the UI components
 
 \`\`\`sh
@@ -109,4 +113,3 @@ else
     cat "$(ls | grep -i "^readme\.md$")"
   } >temp_readme.md && mv temp_readme.md "README.md"
 fi
-bunx prettier@latest --write --ignore-unknown *
