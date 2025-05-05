@@ -96,7 +96,7 @@ echo "$(bunx fx package.json '{
 bunx sort-package-json@latest
 bunx prettier@latest --write --ignore-unknown *
 
-# custom update for the README.md file
+# custom updates for the README.md file
 PREPEND="## Update the UI components
 
 \`\`\`sh
