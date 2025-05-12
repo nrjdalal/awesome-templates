@@ -1,13 +1,11 @@
 {
-  "framework": "react",
   "projectName": "awesometemplate",
+  "mode": "code-router",
   "typescript": true,
   "tailwind": true,
   "packageManager": "bun",
-  "toolchain": "none",
-  "mode": "code-router",
   "git": false,
-  "variableValues": {},
   "version": 1,
-  "existingAddOns": []
+  "framework": "react-cra",
+  "chosenAddOns": []
 }

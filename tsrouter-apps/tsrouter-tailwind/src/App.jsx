@@ -1,4 +1,4 @@
-import logo from "./logo.svg";
+import logo from './logo.svg'
 
 function App() {
   return (
@@ -30,9 +30,7 @@ function App() {
         </a>
       </header>
     </div>
-  );
+  )
 }
 
-
-export default App;
-
+export default App
