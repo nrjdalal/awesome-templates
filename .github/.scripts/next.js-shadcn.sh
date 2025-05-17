@@ -5,7 +5,7 @@ bunx shadcn@latest add -a
 bunx colorwindcss@latest
 # custom best practices
 bun add -D @commitlint/cli @commitlint/config-conventional @ianvs/prettier-plugin-sort-imports lint-staged prettier prettier-plugin-tailwindcss simple-git-hooks sort-package-json
-echo "$(bunx fx package.json '{
+bunx fx package.json '{
   ...x,
   "scripts": {
     ...x.scripts,
@@ -31,6 +31,6 @@ echo "$(bunx fx package.json '{
     ],
     "semi": false
   },
-}')" >package.json
+}' save
 bunx sort-package-json
 bunx prettier --write --ignore-unknown *

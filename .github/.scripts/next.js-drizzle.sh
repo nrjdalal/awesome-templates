@@ -51,7 +51,7 @@ EOF
 # custom best practices
 bun add drizzle-orm postgres
 bun add -D @commitlint/cli @commitlint/config-conventional @ianvs/prettier-plugin-sort-imports drizzle-kit lint-staged prettier prettier-plugin-tailwindcss simple-git-hooks sort-package-json
-echo "$(bunx fx package.json '{
+bunx fx package.json '{
   ...x,
   "scripts": {
     ...x.scripts,
@@ -79,6 +79,6 @@ echo "$(bunx fx package.json '{
     ],
     "semi": false
   },
-}')" >package.json
+}' save
 bunx sort-package-json
 bunx prettier --write --ignore-unknown *
