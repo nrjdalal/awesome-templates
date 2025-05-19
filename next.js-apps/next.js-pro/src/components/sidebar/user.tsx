@@ -72,7 +72,7 @@ export default function Component({ user }: { user: User }) {
               className="cursor-pointer"
               onClick={async () => {
                 await signOut()
-                redirect("/access")
+                redirect("/")
               }}
             >
               <LogOut />

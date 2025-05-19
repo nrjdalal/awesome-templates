@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 
+import Navbar from "@/components/navbar/home"
 import { InnerProvider, OuterProvider } from "@/app/providers"
 
 import "./globals.css"
@@ -18,7 +19,10 @@ export default function RootLayout({
     <OuterProvider>
       <html lang="en" suppressHydrationWarning>
         <body className="min-h-dvh antialiased">
-          <InnerProvider>{children}</InnerProvider>
+          <InnerProvider>
+            <Navbar />
+            {children}
+          </InnerProvider>
         </body>
       </html>
     </OuterProvider>
