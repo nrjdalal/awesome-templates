@@ -67,7 +67,13 @@ export default function Component() {
           Login
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-md sm:max-w-md">
+      <DialogContent
+        className="max-w-md sm:max-w-md"
+        tabIndex={-1}
+        onOpenAutoFocus={(event) => {
+          event.preventDefault()
+        }}
+      >
         <DialogHeader className="sr-only">
           <DialogTitle className="text-center">Sign in/up</DialogTitle>
         </DialogHeader>
