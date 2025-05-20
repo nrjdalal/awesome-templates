@@ -4,6 +4,8 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 
+import { Loader2 } from "lucide-react"
+
 import { useSession } from "@/lib/auth/client"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -15,6 +17,7 @@ export default function Component() {
   const { data: session } = useSession()
 
   const [scrolled, setScrolled] = useState(false)
+  const [toDashboard, setToDashboard] = useState(false)
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 0)
@@ -44,8 +47,13 @@ export default function Component() {
         <div className="flex items-center gap-2.5">
           {session?.user ? (
             <Link href="/x">
-              <Button className="w-24 cursor-pointer" size="sm" variant="outline">
-                Dashboard
+              <Button
+                className="w-24 cursor-pointer"
+                size="sm"
+                variant="outline"
+                onClick={() => setToDashboard(true)}
+              >
+                {toDashboard ? <Loader2 className="animate-spin" /> : "Dashboard"}
               </Button>
             </Link>
           ) : (
