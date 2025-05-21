@@ -1,6 +1,7 @@
 import { db } from "@/db"
 import { betterAuth } from "better-auth"
 import { drizzleAdapter } from "better-auth/adapters/drizzle"
+import { nextCookies } from "better-auth/next-js"
 import { magicLink } from "better-auth/plugins"
 import { Resend } from "resend"
 
@@ -23,6 +24,7 @@ export const auth = betterAuth({
     },
   },
   plugins: [
+    nextCookies(),
     magicLink({
       sendMagicLink: async ({ email, url }) => {
         const resend = new Resend(process.env.RESEND_API_KEY as string)
