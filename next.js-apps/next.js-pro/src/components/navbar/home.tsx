@@ -31,14 +31,14 @@ export default function Component() {
   return (
     <div
       className={cn(
-        "fixed left-1/2 top-0 w-full -translate-x-1/2",
-        !scrolled ? "px-5 pt-5" : "border-b bg-sidebar pt-0",
+        "fixed top-0 left-1/2 w-full -translate-x-1/2",
+        !scrolled ? "px-5 pt-5" : "bg-sidebar border-b pt-0",
       )}
     >
       <div
         className={cn(
           "mx-auto flex min-h-14 max-w-screen-lg items-center justify-between px-5",
-          !scrolled && "rounded-md border bg-sidebar",
+          !scrolled && "bg-sidebar rounded-md border",
         )}
       >
         <Link href="/" className="font-bold">
