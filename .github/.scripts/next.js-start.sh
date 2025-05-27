@@ -23,3 +23,16 @@ export default function Home() {
   )
 }
 EOF
+# custom updates to the README.md
+PREPEND="## This is a starter template to test migration of Next.js to TanStack Start
+
+---
+"
+if ! ls | grep -iq "^readme\.md$"; then
+  echo "${PREPEND}" >"README.md"
+else
+  {
+    echo "${PREPEND}"
+    cat "$(ls | grep -i "^readme\.md$")"
+  } >temp_readme.md && mv temp_readme.md "README.md"
+fi
