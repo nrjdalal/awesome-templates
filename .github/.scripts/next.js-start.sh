@@ -25,7 +25,6 @@ export default function Home() {
 EOF
 
 # custom updates to the README.md
-
 PREPEND="## This is a special starter template to test migration of Next.js to TanStack Start
 
 More information can be found at [TanStack Start - Migrate from Next.js App Router](https://tanstack.com/start/latest).
