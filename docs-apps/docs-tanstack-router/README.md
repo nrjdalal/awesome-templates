@@ -14,75 +14,93 @@ If you wish to make changes to this template or add your own, please refer to th
 
 ---
 
-# Welcome to TanStack.com!
+<img src="https://static.scarf.sh/a.png?x-pxid=d988eb79-b0fc-4a2b-8514-6a1ab932d188" />
 
-This site is built with TanStack Router!
+![TanStack Router Header](https://github.com/tanstack/router/raw/main/media/header.png)
 
-- [TanStack Router Docs](https://tanstack.com/router)
+🤖 Type-safe router w/ built-in caching & URL state management for React!
 
-It's deployed automagically with Netlify!
+<a href="https://twitter.com/intent/tweet?button_hashtag=TanStack" target="\_parent">
+  <img alt="#TanStack" src="https://img.shields.io/twitter/url?color=%2308a0e9&label=%23TanStack&style=social&url=https%3A%2F%2Ftwitter.com%2Fintent%2Ftweet%3Fbutton_hashtag%3DTanStack">
+</a><a href="https://discord.com/invite/WrRKjPJ" target="\_parent">
+  <img alt="" src="https://img.shields.io/badge/Discord-TanStack-%235865F2" />
+</a><a href="https://npmjs.com/package/@tanstack/react-router" target="\_parent">
+  <img alt="" src="https://img.shields.io/npm/dm/@tanstack/react-router.svg" />
+</a><a href="https://bundlephobia.com/result?p=@tanstack/react-router" target="\_parent">
+  <img alt="" src="https://badgen.net/bundlephobia/minzip/@tanstack/react-router" />
+</a><a href="#badge">
+    <img alt="semantic-release" src="https://img.shields.io/badge/%20%20%F0%9F%93%A6%F0%9F%9A%80-semantic--release-e10079.svg">
+  </a><a href="https://github.com/tanstack/router/discussions">
+  <img alt="Join the discussion on Github" src="https://img.shields.io/badge/Github%20Discussions%20%26%20Support-Chat%20now!-blue" />
+</a><a href="https://bestofjs.org/projects/router"><img alt="Best of JS" src="https://img.shields.io/endpoint?url=https://bestofjs-serverless.now.sh/api/project-badge?fullName=tanstack%2Frouter%26since=daily" /></a><a href="https://github.com/tanstack/router" target="\_parent">
+  <img alt="" src="https://img.shields.io/github/stars/tanstack/router.svg?style=social&label=Star" />
+</a><a href="https://twitter.com/tan_stack" target="\_parent">
+  <img alt="" src="https://img.shields.io/twitter/follow/tan_stack.svg?style=social&label=Follow @TanStack" />
+</a><a href="https://twitter.com/tannerlinsley" target="\_parent">
+  <img alt="" src="https://img.shields.io/twitter/follow/tannerlinsley.svg?style=social&label=Follow @TannerLinsley" />
+</a>
 
-- [Netlify](https://netlify.com/)
+Enjoy this library? Try the entire [TanStack](https://tanstack.com)! [React Query](https://github.com/tannerlinsley/react-query), [React Table](https://github.com/tanstack/react-table), [React Charts](https://github.com/tannerlinsley/react-charts), [React Virtual](https://github.com/tannerlinsley/react-virtual)
 
-## Development
+## Visit [tanstack.com/router](https://tanstack.com/router) for docs, guides, API and more!
 
-From your terminal:
+## Partners
 
-```sh
-pnpm install
-pnpm dev
-```
+<div><a href="https://go.clerk.com/wOwHtuJ">
+  <img alt="Clerk" src="https://raw.githubusercontent.com/tannerlinsley/files/master/partners/clerk.svg" height="40"
+</a></div><br />
+<div><a href="https://ag-grid.com/react-data-grid/?utm_source=reacttable&utm_campaign=githubreacttable">
+  <img alt="AG Grid" src="https://raw.githubusercontent.com/tannerlinsley/files/master/partners/ag-grid.svg" height="40"
+</a></div><br />
+<div><a href="https://netlify.com?utm_source=tanstack">
+  <img alt="Netlify" src="https://raw.githubusercontent.com/tannerlinsley/files/master/partners/netlify.svg" height="40"
+</a></div><br />
+<div><a href="https://neon.tech?utm_source=tanstack">
+  <img alt="Neon" src="https://raw.githubusercontent.com/tannerlinsley/files/master/partners/neon.svg" height="40"
+</a></div><br />
+<div><a href="https://convex.dev?utm_source=tanstack">
+  <img alt="Convex" src="https://raw.githubusercontent.com/tannerlinsley/files/master/partners/convex.svg" height="40"
+</a></div><br />
+<div><a href="https://sentry.io?utm_source=tanstack">
+  <img alt="Sentry" src="https://raw.githubusercontent.com/tannerlinsley/files/master/partners/sentry.svg" height="40"
+</a></div><br />
+<div><a href="https://speakeasy.com/?utm_source=tanstack&utm_campaign=tanstack">
+  <img alt="Speakeasy" src="https://raw.githubusercontent.com/tannerlinsley/files/master/partners/speakeasy.svg" height="40"
+</a></div><br />
+<div><a href="https://nozzle.io/?utm_source=tanstack&utm_campaign=tanstack">
+  <img alt="Nozzle.io" src="https://raw.githubusercontent.com/tannerlinsley/files/master/partners/nozzle.svg" height="40"
+</a></div><br />
 
-This starts your app in development mode, rebuilding assets on file changes.
+## Quick Features
 
-## Editing and previewing the docs of TanStack projects locally
+- 100% TypeSafe
+  - Route Defs
+  - Navigation
+  - Relative Navigation
+  - Search Params
+  - Path Params
+  - Loaders
+- 1st Class Search Params
+  - Schemas + Validation
+  - Parsing + Serialization
+  - Immutable
+  - Structural Sharing
+  - Pre/Post Processing
+- Built-in Caching
+  - Stale-While-Revalidate
+  - Max-Age
+  - Auto Garbage Collection
+  - Invalidation
+- Prefetching
+- Automatic Prefetching
+- Transitions
+- Error Boundaries
+- Code Splitting
+- Layout Routes
+- Easy Integration w/ external caches and storage (eg. React Query, Apollo, SWR, RTKQuery)
 
-The documentations for all TanStack projects except for `React Charts` are hosted on [https://tanstack.com](https://tanstack.com), powered by this TanStack Router app.
-In production, the markdown doc pages are fetched from the GitHub repos of the projects, but in development they are read from the local file system.
+## Example Usage
 
-Follow these steps if you want to edit the doc pages of a project (in these steps we'll assume it's [`TanStack/form`](https://github.com/tanstack/form)) and preview them locally :
+To run example React projects with Tanstack Router, see [CONTRIBUTING.md](./CONTRIBUTING.md)
 
-1. Create a new directory called `tanstack`.
-
-```sh
-mkdir tanstack
-```
-
-2. Enter the directory and clone this repo and the repo of the project there.
-
-```sh
-cd tanstack
-git clone git@github.com:TanStack/tanstack.com.git
-git clone git@github.com:TanStack/form.git
-```
-
-> [!NOTE]
-> Your `tanstack` directory should look like this:
->
-> ```
-> tanstack/
->    |
->    +-- form/
->    |
->    +-- tanstack.com/
-> ```
-
-> [!WARNING]
-> Make sure the name of the directory in your local file system matches the name of the project's repo. For example, `tanstack/form` must be cloned into `form` (this is the default) instead of `some-other-name`, because that way, the doc pages won't be found.
-
-3. Enter the `tanstack/tanstack.com` directory, install the dependencies and run the app in dev mode:
-
-```sh
-cd tanstack.com
-pnpm i
-# The app will run on https://localhost:3000 by default
-pnpm dev
-```
-
-4. Now you can visit http://localhost:3000/form/latest/docs/overview in the browser and see the changes you make in `tanstack/form/docs`.
-
-> [!NOTE]
-> The updated pages need to be manually reloaded in the browser.
-
-> [!WARNING]
-> You will need to update the `docs/config.json` file (in the project's repo) if you add a new doc page!
+<!-- Use the force, Luke!!! -->
