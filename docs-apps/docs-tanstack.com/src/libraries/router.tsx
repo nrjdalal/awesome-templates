@@ -29,7 +29,7 @@ export const routerProject = {
   latestBranch: 'main',
   latestVersion: 'v1',
   availableVersions: ['v1'],
-  docsRoot: 'docs-apps/docs-tanstack-router/docs/router',
+  docsRoot: 'docs-apps/docs-tanstack.com/router-docs/router',
   colorFrom: 'from-emerald-500',
   colorTo: 'to-lime-600',
   textColor: textStyles,

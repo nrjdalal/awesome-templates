@@ -24,7 +24,7 @@ export const startProject = {
   latestBranch: 'main',
   latestVersion: 'v0',
   availableVersions: ['v0'],
-  docsRoot: 'docs-apps/docs-tanstack-router/docs/start',
+  docsRoot: 'docs-apps/docs-tanstack.com/router-docs/start',
   colorFrom: 'from-teal-500',
   colorTo: 'to-cyan-500',
   textColor: 'text-cyan-600',
