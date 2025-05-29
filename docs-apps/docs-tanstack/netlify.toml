@@ -1,2 +1,0 @@
-[context.production]
-  command = "npx convex deploy --cmd 'pnpm run build'"
