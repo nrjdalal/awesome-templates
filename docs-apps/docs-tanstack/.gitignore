@@ -1,0 +1,28 @@
+node_modules
+package-lock.json
+yarn.lock
+
+.DS_Store
+.cache
+.env
+.vercel
+.output
+.vinxi
+.tanstack-start/build
+.nitro/*
+.netlify/*
+
+/build/
+/api/
+/server/build
+/public/build
+
+# Sentry Config File
+.env.sentry-build-plugin
+dist
+.vscode/
+.env.local
+
+# Content Collections generated files
+.content-collections
+
