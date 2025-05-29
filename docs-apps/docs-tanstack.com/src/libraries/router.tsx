@@ -26,7 +26,7 @@ export const routerProject = {
   textStyle: textStyles,
   badge: undefined,
   repo,
-  latestBranch: 'preview-alpha',
+  latestBranch: 'alpha-with-next-migration-doc',
   latestVersion: 'v1',
   availableVersions: ['v1'],
   docsRoot: 'docs/router',

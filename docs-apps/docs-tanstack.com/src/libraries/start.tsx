@@ -21,7 +21,7 @@ export const startProject = {
   textStyle: 'text-cyan-500',
   badge: 'beta',
   repo,
-  latestBranch: 'preview-alpha',
+  latestBranch: 'alpha-with-next-migration-doc',
   latestVersion: 'v0',
   availableVersions: ['v0'],
   docsRoot: 'docs/start',
