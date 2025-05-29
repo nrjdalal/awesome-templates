@@ -348,6 +348,7 @@ This guide provides a step-by-step process to migrate a project from the Next.js
 - ### Fetching Data
 
   ```tsx
+  - export default async function Page() { // [!code --]
   + export const Route = createFileRoute({ // [!code ++]
   +   component: Page, // [!code ++]
   +   loader: async () => { // [!code ++]
@@ -356,7 +357,6 @@ This guide provides a step-by-step process to migrate a project from the Next.js
   +   }, // [!code ++]
   + }) // [!code ++]
 
-  - export default async function Page() { // [!code --]
   + function Page() { // [!code ++]
   -   const data = await fetch('https://api.vercel.app/blog') // [!code --]
   -   const posts = await data.json() // [!code --]
@@ -371,3 +371,9 @@ This guide provides a step-by-step process to migrate a project from the Next.js
     )
   }
   ```
+
+## Contributing
+
+If you have suggestions or improvements for this migration guide, please feel free to contribute.
+
+> You can open an issue or submit a pull request at the upstream [next-to-start](https://github.com/nrjdalal/next-to-start) repository.
