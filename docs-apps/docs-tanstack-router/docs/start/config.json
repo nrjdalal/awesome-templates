@@ -159,6 +159,21 @@
       ]
     },
     {
+      "label": "Guides",
+      "children": [],
+      "frameworks": [
+        {
+          "label": "react",
+          "children": [
+            {
+              "label": "Migrate from Next.js",
+              "to": "framework/react/migrate-from-next-js"
+            }
+          ]
+        }
+      ]
+    },
+    {
       "label": "Examples",
       "children": [],
       "frameworks": [

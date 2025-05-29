@@ -8,7 +8,7 @@ import { TbZoomQuestion } from 'react-icons/tb'
 import { twMerge } from 'tailwind-merge'
 import { redirect } from '@tanstack/react-router'
 
-const repo = 'nrjdalal/router'
+const repo = 'nrjdalal/awesome-templates'
 
 const textStyles = 'text-emerald-500 dark:text-emerald-400'
 
@@ -26,10 +26,10 @@ export const routerProject = {
   textStyle: textStyles,
   badge: undefined,
   repo,
-  latestBranch: 'alpha-with-next-migration-doc',
+  latestBranch: 'main',
   latestVersion: 'v1',
   availableVersions: ['v1'],
-  docsRoot: 'docs/router',
+  docsRoot: 'docs-apps/docs-tanstack-router/docs/router',
   colorFrom: 'from-emerald-500',
   colorTo: 'to-lime-600',
   textColor: textStyles,

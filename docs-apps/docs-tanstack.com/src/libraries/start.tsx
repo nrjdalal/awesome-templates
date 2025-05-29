@@ -6,7 +6,7 @@ import { PiRocketLaunchDuotone, PiTreeStructureBold } from 'react-icons/pi'
 import { TbServerBolt } from 'react-icons/tb'
 import { twMerge } from 'tailwind-merge'
 
-const repo = 'nrjdalal/router'
+const repo = 'nrjdalal/awesome-templates'
 
 const textStyles = 'text-cyan-600 dark:text-cyan-500'
 
@@ -21,10 +21,10 @@ export const startProject = {
   textStyle: 'text-cyan-500',
   badge: 'beta',
   repo,
-  latestBranch: 'alpha-with-next-migration-doc',
+  latestBranch: 'main',
   latestVersion: 'v0',
   availableVersions: ['v0'],
-  docsRoot: 'docs/start',
+  docsRoot: 'docs-apps/docs-tanstack-router/docs/start',
   colorFrom: 'from-teal-500',
   colorTo: 'to-cyan-500',
   textColor: 'text-cyan-600',
