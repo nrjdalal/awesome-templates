@@ -2,7 +2,7 @@ bunx gitpick https://github.com/TanStack/tanstack.com awesomedir
 cd awesomedir
 ## router/start alpha docs
 bunx gitpick https://github.com/TanStack/router/tree/alpha/docs router-docs
-bunx gitpick https://github.com/nrjdalal/router/blob/migrate-from-next-js-app-router/docs/start/framework/react/migrate-from-next-js.md router-docs/start/framework/react
+bunx gitpick https://github.com/TanStack/router/blob/main/docs/start/framework/react/migrate-from-next-js.md router-docs/start/framework/react
 jq '.sections |= (
     .[:1]
   + [
