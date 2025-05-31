@@ -1,7 +1,7 @@
 bunx gitpick https://github.com/nrjdalal/tanstack.com -b revamp awesomedir
 cd awesomedir
-# sed -i "s/latestBranch: 'main'/latestBranch: 'revamp'/g" src/libraries/router.tsx
-# sed -i "s/latestBranch: 'main'/latestBranch: 'revamp'/g" src/libraries/start.tsx
+sed -i "s/latestBranch: 'main'/latestBranch: 'alpha'/g" src/libraries/router.tsx
+sed -i "s/latestBranch: 'main'/latestBranch: 'alpha'/g" src/libraries/start.tsx
 ## router/start alpha docs
 # bunx gitpick https://github.com/TanStack/router/tree/alpha/docs router-docs
 # bunx gitpick https://github.com/TanStack/router/blob/main/docs/start/framework/react/migrate-from-next-js.md router-docs/start/framework/react
