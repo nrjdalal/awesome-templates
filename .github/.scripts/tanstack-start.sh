@@ -1,4 +1,4 @@
-mkdir awesomedir && cd awesomedir
+mkdir -p awesomedir/src/routes && cd awesomedir
 bunx gitpick nrjdalal/next-to-start/blob/main/.gitignore
 bun add react react-dom && bun add -D @types/node @types/react @types/react-dom
 bun add @tanstack/react-router@alpha @tanstack/react-start@alpha vite
