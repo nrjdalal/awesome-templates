@@ -116,10 +116,10 @@ function RootLayout() {
 EOF
 cat <<EOF >src/routes/index.tsx
 export const Route = createFileRoute({
-  component: Home,
+  component: Component,
 })
 
-function Home() {
+function Component() {
   return (
     <main className="flex min-h-dvh w-screen flex-col items-center justify-center gap-y-4 p-4">
       <img
