@@ -4,6 +4,49 @@ bun add react react-dom && bun add -D @types/node @types/react @types/react-dom 
 bun add @tanstack/react-router@alpha @tanstack/react-start@alpha vite
 bun add -D @tailwindcss/vite tailwindcss vite-tsconfig-paths
 bun add -D prettier prettier-plugin-tailwindcss
+cat <<EOF >tsconfig.json
+{
+  "compilerOptions": {
+    "target": "ES2017",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "react-jsx",
+    "incremental": true,
+    "types": ["vite/client"],
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["**/*.ts", "**/*.tsx"],
+  "exclude": ["node_modules"]
+}
+EOF
+cat <<EOF >src/router.tsx
+import { createRouter as createTanStackRouter } from "@tanstack/react-router"
+import { routeTree } from "./routeTree.gen"
+
+export function createRouter() {
+  const router = createTanStackRouter({
+    routeTree,
+    scrollRestoration: true,
+  })
+  return router
+}
+
+declare module "@tanstack/react-router" {
+  interface Register {
+    router: ReturnType<typeof createRouter>
+  }
+}
+EOF
 cat <<EOF >vite.config.ts
 import tailwindcss from "@tailwindcss/vite"
 import { tanstackStart } from "@tanstack/react-start/plugin/vite"
@@ -98,25 +141,6 @@ function Home() {
   )
 }
 EOF
-cat <<EOF >src/router.tsx
-import { createRouter as createTanStackRouter } from "@tanstack/react-router"
-import { routeTree } from "./routeTree.gen"
-
-export function createRouter() {
-  const router = createTanStackRouter({
-    routeTree,
-    scrollRestoration: true,
-  })
-  return router
-}
-
-declare module "@tanstack/react-router" {
-  interface Register {
-    router: ReturnType<typeof createRouter>
-  }
-}
-EOF
-# do this stuff last
 bunx fx package.json '{
   ...x,
   "type": "module",
