@@ -1,14 +1,14 @@
+import * as React from 'react'
 import {
-  autoUpdate,
-  flip,
-  FloatingPortal,
-  offset,
-  shift,
   useFloating,
   useHover,
   useInteractions,
+  FloatingPortal,
+  offset,
+  shift,
+  flip,
+  autoUpdate,
 } from '@floating-ui/react'
-import * as React from 'react'
 
 interface TooltipProps {
   content: React.ReactNode

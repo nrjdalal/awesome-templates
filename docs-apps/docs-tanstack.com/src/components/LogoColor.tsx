@@ -2,7 +2,7 @@ export function LogoColor(props: React.HTMLProps<HTMLDivElement>) {
   return (
     <div {...props}>
       <svg
-        className="h-full w-full"
+        className="w-full h-full"
         width="634px"
         height="633px"
         viewBox="0 0 634 633"

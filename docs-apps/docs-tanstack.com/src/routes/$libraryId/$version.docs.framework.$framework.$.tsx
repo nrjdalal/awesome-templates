@@ -1,9 +1,9 @@
-import { Doc } from '~/components/Doc'
-import { DocContainer } from '~/components/DocContainer'
-import { getBranch, getLibrary } from '~/libraries'
-import { loadDocs } from '~/utils/docs'
 import { seo } from '~/utils/seo'
+import { Doc } from '~/components/Doc'
+import { loadDocs } from '~/utils/docs'
+import { getBranch, getLibrary } from '~/libraries'
 import { capitalize } from '~/utils/utils'
+import { DocContainer } from '~/components/DocContainer'
 
 export const Route = createFileRoute({
   staleTime: 1000 * 60 * 5,

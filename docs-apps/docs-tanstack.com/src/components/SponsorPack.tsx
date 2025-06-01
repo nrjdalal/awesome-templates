@@ -1,6 +1,6 @@
-import { hierarchy, Pack } from '@visx/hierarchy'
-import { ParentSize } from '@visx/responsive'
 import React from 'react'
+import { Pack, hierarchy } from '@visx/hierarchy'
+import { ParentSize } from '@visx/responsive'
 import { twMerge } from 'tailwind-merge'
 
 export default function SponsorPack({ sponsors }: { sponsors: any }) {
@@ -11,7 +11,7 @@ export default function SponsorPack({ sponsors }: { sponsors: any }) {
       radius: 0,
       distance: 0,
     }),
-    [sponsors],
+    [sponsors]
   )
 
   const root = React.useMemo(
@@ -21,9 +21,9 @@ export default function SponsorPack({ sponsors }: { sponsors: any }) {
         .sort(
           (a, b) =>
             (b.data.tier?.monthlyPriceInDollars ?? 0) -
-            (a.data.tier?.monthlyPriceInDollars ?? 0),
+            (a.data.tier?.monthlyPriceInDollars ?? 0)
         ),
-    [pack],
+    [pack]
   )
 
   // const [show, setShow] = React.useState(false)
@@ -82,7 +82,7 @@ export default function SponsorPack({ sponsors }: { sponsors: any }) {
                           }
                           className={
                             `spon-link ` +
-                            `absolute z-0 rounded-full bg-white shadow-lg`
+                            `absolute shadow-lg bg-white rounded-full z-0`
                           }
                           style={{
                             left: circle.x,
@@ -93,7 +93,10 @@ export default function SponsorPack({ sponsors }: { sponsors: any }) {
                         >
                           <div
                             key={`circle-${i}`}
-                            className={`absolute top-1/2 left-1/2 h-[95%] w-[95%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-contain bg-center bg-no-repeat dark:h-[100.5%] dark:w-[100.5%]`}
+                            className={`absolute bg-no-repeat bg-center bg-contain rounded-full
+                                    w-[95%] h-[95%] dark:w-[100.5%] dark:h-[100.5%]
+                                    left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2
+                                    `}
                             style={{
                               backgroundImage: `url(${
                                 circle.data.imageUrl ||
@@ -105,17 +108,22 @@ export default function SponsorPack({ sponsors }: { sponsors: any }) {
                           />
                           <div
                             className={twMerge(
-                              `spon-tooltip pointer-events-none absolute flex transform flex-col items-center rounded-lg bg-gray-800 p-2 text-sm text-white opacity-0 shadow-xl`,
+                              `spon-tooltip absolute text-sm
+                              bg-gray-800 text-white p-2 pointer-events-none
+                              transform opacity-0
+                              shadow-xl rounded-lg
+                              flex flex-col items-center
+                            `,
 
                               tooltipX == 'left'
                                 ? `left-1/4 -translate-x-full`
                                 : `right-1/4 translate-x-full`,
                               tooltipY == 'top'
                                 ? `top-1/4 -translate-y-full`
-                                : `bottom-1/4 translate-y-full`,
+                                : `bottom-1/4 translate-y-full`
                             )}
                           >
-                            <p className={`font-bold whitespace-nowrap`}>
+                            <p className={`whitespace-nowrap font-bold`}>
                               {circle.data.name || circle.data.login}
                             </p>
                           </div>
