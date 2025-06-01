@@ -42,7 +42,7 @@ awk '
   }
 ' src/app/globals.css >_ && mv _ src/app/globals.css
 bun add -D @commitlint/cli @commitlint/config-conventional @fontsource-variable/dm-sans @fontsource-variable/jetbrains-mono @ianvs/prettier-plugin-sort-imports lint-staged prettier prettier-plugin-tailwindcss simple-git-hooks sort-package-json
-echo "$(bunx fx package.json '{
+bunx fx package.json '{
   ...x,
   "scripts": {
     ...x.scripts,
@@ -92,7 +92,7 @@ echo "$(bunx fx package.json '{
     "printWidth": 100,
     "semi": false
   },
-}')" >package.json
+}' save
 bunx sort-package-json@latest
 bunx prettier@latest --write --ignore-unknown *
 
