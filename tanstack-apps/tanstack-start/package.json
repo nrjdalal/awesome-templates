@@ -1,18 +1,72 @@
 {
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite dev",
+    "drizzle": "bun --env-file=.env.development drizzle-kit push",
+    "drizzle:prod": "bun --env-file=.env.production drizzle-kit push",
+    "prepare": "npx simple-git-hooks",
+    "start": "node .output/server/index.mjs",
+    "studio": "bun --env-file=.env.development drizzle-kit studio",
+    "studio:prod": "bun --env-file=.env.production drizzle-kit studio"
+  },
+  "simple-git-hooks": {
+    "pre-commit": "npx lint-staged --verbose",
+    "commit-msg": "npx commitlint --edit $1"
+  },
+  "commitlint": {
+    "extends": [
+      "@commitlint/config-conventional"
+    ]
+  },
+  "lint-staged": {
+    "*": "prettier --write --ignore-unknown",
+    "package.json": "sort-package-json"
+  },
+  "prettier": {
+    "importOrder": [
+      "<BUILTIN_MODULES>",
+      "",
+      "^react/(.*)$|^react$",
+      "^@tanstack/(.*)$|^@tanstack$",
+      "",
+      "<THIRD_PARTY_MODULES>",
+      "",
+      "^@/types/(.*)$",
+      "^@/config/(.*)$",
+      "^@/lib/(.*)$",
+      "^@/hooks/(.*)$",
+      "^@/db/(.*)$",
+      "^@/components/ui/(.*)$",
+      "^@/components/(.*)$",
+      "^@/app/(.*)$",
+      "^@/routes/(.*)$",
+      "",
+      "^[./]"
+    ],
+    "plugins": [
+      "@ianvs/prettier-plugin-sort-imports",
+      "prettier-plugin-tailwindcss"
+    ],
+    "printWidth": 100,
+    "semi": false
+  },
   "dependencies": {
     "@tanstack/react-router": "^1.121.0-alpha.14",
     "@tanstack/react-start": "^1.121.0-alpha.21",
     "vite": "^6.3.5"
   },
   "devDependencies": {
+    "@commitlint/cli": "^19.8.1",
+    "@commitlint/config-conventional": "^19.8.1",
+    "@ianvs/prettier-plugin-sort-imports": "^4.4.2",
     "@tailwindcss/vite": "^4.1.8",
+    "lint-staged": "^16.1.0",
+    "prettier": "^3.5.3",
+    "prettier-plugin-tailwindcss": "^0.6.12",
+    "simple-git-hooks": "^2.13.0",
+    "sort-package-json": "^3.2.1",
     "tailwindcss": "^4.1.8",
     "vite-tsconfig-paths": "^5.1.4"
-  },
-  "type": "module",
-  "scripts": {
-    "dev": "vite dev",
-    "build": "vite build",
-    "start": "node .output/server/index.mjs"
   }
 }
