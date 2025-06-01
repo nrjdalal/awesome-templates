@@ -1,8 +1,116 @@
 mkdir awesomedir && cd awesomedir
 bunx gitpick nrjdalal/next-to-start/blob/main/.gitignore
+bun add react react-dom && bun add -D @types/node @types/react @types/react-dom
 bun add @tanstack/react-router@alpha @tanstack/react-start@alpha vite
 bun add -D @tailwindcss/vite tailwindcss vite-tsconfig-paths
 bun add -D @commitlint/cli @commitlint/config-conventional @ianvs/prettier-plugin-sort-imports lint-staged prettier prettier-plugin-tailwindcss simple-git-hooks sort-package-json
+cat <<EOF >vite.config.ts
+import tailwindcss from "@tailwindcss/vite"
+import { tanstackStart } from "@tanstack/react-start/plugin/vite"
+import { defineConfig } from "vite"
+import tsConfigPaths from "vite-tsconfig-paths"
+export default defineConfig({
+  server: {
+    port: 3000,
+  },
+  plugins: [
+    tailwindcss(),
+    tsConfigPaths(),
+    tanstackStart(),
+  ],
+})
+EOF
+cat <<EOF >src/routes/globals.css
+@import "tailwindcss";
+EOF
+cat <<EOF >src/routes/__root.tsx
+import globalsCss from "./globals.css?url"
+import {
+  createRootRoute,
+  HeadContent,
+  Outlet,
+  Scripts,
+} from "@tanstack/react-router"
+export const Route = createRootRoute({
+  head: () => ({
+    meta: [
+      {
+        charSet: "utf-8",
+      },
+      {
+        name: "viewport",
+        content: "width=device-width, initial-scale=1",
+      },
+      {
+        title: "TanStack Start Starter",
+      },
+    ],
+    links: [
+      {
+        rel: "stylesheet",
+        href: globalsCss,
+      },
+    ],
+  }),
+  component: RootLayout,
+})
+function RootLayout() {
+  return (
+    <html>
+      <head>
+        <HeadContent />
+      </head>
+      <body>
+        <Outlet />
+        <Scripts />
+      </body>
+    </html>
+  )
+}
+EOF
+cat <<EOF >src/routes/index.tsx
+export const Route = createFileRoute({
+  component: Home,
+})
+function Home() {
+  return (
+    <main className="flex min-h-dvh w-screen flex-col items-center justify-center gap-y-4 p-4">
+      <img
+        className="w-full max-w-sm"
+        src="https://tanstack.com/assets/splash-dark-8nwlc0Nt.png"
+        alt="TanStack Logo"
+      />
+      <h1>
+        <span className="line-through">Next.js</span> TanStack Start
+      </h1>
+      <a
+        className="bg-foreground text-background rounded-full px-4 py-1 hover:opacity-90"
+        href="https://tanstack.com/start/latest"
+        target="_blank"
+      >
+        Docs
+      </a>
+    </main>
+  )
+}
+EOF
+cat <<EOF >src/router.tsx
+import { createRouter as createTanStackRouter } from "@tanstack/react-router"
+import { routeTree } from "./routeTree.gen"
+export function createRouter() {
+  const router = createTanStackRouter({
+    routeTree,
+    scrollRestoration: true,
+  })
+  return router
+}
+declare module "@tanstack/react-router" {
+  interface Register {
+    router: ReturnType<typeof createRouter>
+  }
+}
+EOF
+# do this stuff last
 bunx fx package.json '{
   ...x,
   "type": "module",
