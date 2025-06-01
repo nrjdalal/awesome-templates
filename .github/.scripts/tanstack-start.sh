@@ -1,6 +1,6 @@
 mkdir -p awesomedir/src/routes && cd awesomedir
 bunx gitpick nrjdalal/next-to-start/blob/main/.gitignore
-bun add react react-dom && bun add -D @types/node @types/react @types/react-dom
+bun add react react-dom && bun add -D @types/node @types/react @types/react-dom typescript
 bun add @tanstack/react-router@alpha @tanstack/react-start@alpha vite
 bun add -D @tailwindcss/vite tailwindcss vite-tsconfig-paths
 bun add -D @commitlint/cli @commitlint/config-conventional @ianvs/prettier-plugin-sort-imports lint-staged prettier prettier-plugin-tailwindcss simple-git-hooks sort-package-json
