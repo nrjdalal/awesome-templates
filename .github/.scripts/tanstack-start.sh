@@ -9,6 +9,7 @@ import tailwindcss from "@tailwindcss/vite"
 import { tanstackStart } from "@tanstack/react-start/plugin/vite"
 import { defineConfig } from "vite"
 import tsConfigPaths from "vite-tsconfig-paths"
+
 export default defineConfig({
   server: {
     port: 3000,
@@ -31,6 +32,7 @@ import {
   Outlet,
   Scripts,
 } from "@tanstack/react-router"
+
 export const Route = createRootRoute({
   head: () => ({
     meta: [
@@ -54,6 +56,7 @@ export const Route = createRootRoute({
   }),
   component: RootLayout,
 })
+
 function RootLayout() {
   return (
     <html>
@@ -72,6 +75,7 @@ cat <<EOF >src/routes/index.tsx
 export const Route = createFileRoute({
   component: Home,
 })
+
 function Home() {
   return (
     <main className="flex min-h-dvh w-screen flex-col items-center justify-center gap-y-4 p-4">
@@ -97,6 +101,7 @@ EOF
 cat <<EOF >src/router.tsx
 import { createRouter as createTanStackRouter } from "@tanstack/react-router"
 import { routeTree } from "./routeTree.gen"
+
 export function createRouter() {
   const router = createTanStackRouter({
     routeTree,
@@ -104,6 +109,7 @@ export function createRouter() {
   })
   return router
 }
+
 declare module "@tanstack/react-router" {
   interface Register {
     router: ReturnType<typeof createRouter>
