@@ -1,6 +1,7 @@
 export const Route = createFileRoute({
   component: Home,
 })
+
 function Home() {
   return (
     <main className="flex min-h-dvh w-screen flex-col items-center justify-center gap-y-4 p-4">
