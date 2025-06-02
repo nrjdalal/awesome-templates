@@ -5,3 +5,4 @@ bun i && bunx @better-auth/cli generate --config src/lib/auth/index.ts -y
 bunx prettier --write auth-schema.ts
 cd ..
 mv next.js-pro/auth-schema.ts awesomedir/drizzle-better-auth.ts
+rm -rf next.js-pro
