@@ -554,7 +554,7 @@ export function DocsLayout({
         <div
           className={twMerge(
             `flex min-h-[88dvh] w-full max-w-full min-w-0 justify-center lg:min-h-0`,
-            !isExample && 'mx-auto w-[1208px]',
+            !isExample && 'mx-auto',
           )}
         >
           {children}
