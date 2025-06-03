@@ -62,6 +62,8 @@ GITHUB_CLIENT_ID=
 GITHUB_CLIENT_SECRET=
 ```
 
+<!-- CAN CALLOUT TO SPONSER LIKE NEON FOR POSTGRES IN PRODUCTION -->
+
 Updated project structure:
 
 ```txt
@@ -198,7 +200,7 @@ Updated project structure:
 
 ```txt
 .
-├── .env // [!code ++]
+├── .env
 ├── drizzle.config.ts // [!code ++]
 ├── package.json
 ├── README.md
