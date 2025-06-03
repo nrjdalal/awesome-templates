@@ -6,7 +6,7 @@ import { VscPreview } from 'react-icons/vsc'
 import { twMerge } from 'tailwind-merge'
 import { Library } from '.'
 
-const repo = 'tanstack/router'
+const repo = 'nrjdalal/awesome-templates'
 
 const textStyles = 'text-cyan-600 dark:text-cyan-500'
 
@@ -21,10 +21,10 @@ export const startProject = {
   textStyle: 'text-cyan-500',
   badge: 'beta',
   repo,
-  latestBranch: 'alpha',
+  latestBranch: 'main',
   latestVersion: 'v0',
   availableVersions: ['v0'],
-  docsRoot: 'docs/start',
+  docsRoot: 'docs-apps/docs-tanstack.com/router-docs/start',
   colorFrom: 'from-teal-500',
   colorTo: 'to-cyan-500',
   textColor: 'text-cyan-600',

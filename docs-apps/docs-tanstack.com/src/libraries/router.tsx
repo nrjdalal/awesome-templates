@@ -8,7 +8,7 @@ import { VscPreview } from 'react-icons/vsc'
 import { twMerge } from 'tailwind-merge'
 import { Library } from '.'
 
-const repo = 'tanstack/router'
+const repo = 'nrjdalal/awesome-templates'
 
 const textStyles = 'text-emerald-500 dark:text-emerald-400'
 
@@ -26,10 +26,10 @@ export const routerProject = {
   textStyle: textStyles,
   badge: undefined,
   repo,
-  latestBranch: 'alpha',
+  latestBranch: 'main',
   latestVersion: 'v1',
   availableVersions: ['v1'],
-  docsRoot: 'docs/router',
+  docsRoot: 'docs-apps/docs-tanstack.com/router-docs/router',
   colorFrom: 'from-emerald-500',
   colorTo: 'to-lime-600',
   textColor: textStyles,
