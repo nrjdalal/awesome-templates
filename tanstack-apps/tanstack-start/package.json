@@ -14,14 +14,14 @@
   },
   "dependencies": {
     "@tanstack/react-router": "^1.121.0-alpha.22",
-    "@tanstack/react-start": "^1.121.0-alpha.24",
+    "@tanstack/react-start": "^1.121.0-alpha.25",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "vite": "^6.3.5"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.1.8",
-    "@types/node": "^22.15.29",
+    "@types/node": "^22.15.30",
     "@types/react": "^19.1.6",
     "@types/react-dom": "^19.1.6",
     "prettier": "^3.5.3",
