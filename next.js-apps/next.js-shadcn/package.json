@@ -69,13 +69,13 @@
     "react": "^19.0.0",
     "react-day-picker": "^9.7.0",
     "react-dom": "^19.0.0",
-    "react-hook-form": "^7.59.0",
+    "react-hook-form": "^7.60.0",
     "react-resizable-panels": "^3.0.3",
     "recharts": "^3.0.2",
     "sonner": "^2.0.6",
     "tailwind-merge": "^3.3.1",
     "vaul": "^1.1.2",
-    "zod": "^3.25.73"
+    "zod": "^3.25.74"
   },
   "devDependencies": {
     "@commitlint/cli": "^19.8.1",
