@@ -1,16 +1,14 @@
-"use client"
-
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 
 import { Loader2 } from "lucide-react"
 
-import { useSession } from "@/lib/auth/client"
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
-import Access from "@/components/access"
-import ModeToggle from "@/components/mode-toggle"
+import Access from "/components/access"
+import ModeToggle from "/components/mode-toggle"
+import { Button } from "/components/ui/button"
+import { useSession } from "/lib/auth/client"
+import { cn } from "/lib/utils"
 
 export default function Component() {
   const pathname = usePathname()
