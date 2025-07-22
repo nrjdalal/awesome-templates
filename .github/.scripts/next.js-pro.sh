@@ -95,6 +95,7 @@ bunx fx package.json '{
 }' save
 bunx sort-package-json@latest
 bunx prettier@latest --write --ignore-unknown *
+find . -type f \( -name '*.js' -o -name '*.ts' -o -name '*.tsx' -o -name '*.jsx' \) -exec sed -i 's|from "/|from "@/|g' {} +
 
 # custom updates to the README.md
 PREPEND="## Update the UI components
@@ -102,8 +103,6 @@ PREPEND="## Update the UI components
 \`\`\`sh
 npx shadcn@latest add -o https://dub.sh/ui.json
 \`\`\`
-
-find . -type f \( -name '*.js' -o -name '*.ts' -o -name '*.tsx' -o -name '*.jsx' \) -exec sed -i 's|from "/|from "@/|g' {} +
 
 ---
 "
