@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { ThemeProvider as NextThemesProvider } from "next-themes"
 import { Toaster } from "sonner"
 
-import DevTools from "/components/devtools"
+import DevTools from "@/components/devtools"
 
 export function OuterProvider({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => new QueryClient())

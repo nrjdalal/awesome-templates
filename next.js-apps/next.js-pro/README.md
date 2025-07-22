@@ -14,6 +14,13 @@ If you wish to make changes to this template or add your own, please refer to th
 
 ---
 
+## Update the UI components
+
+```sh
+npx shadcn@latest add -o https://dub.sh/ui.json
+```
+
+---
 
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 

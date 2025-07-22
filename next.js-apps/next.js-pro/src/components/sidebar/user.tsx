@@ -5,7 +5,7 @@ import { redirect } from "next/navigation"
 import { type User } from "better-auth/types"
 import { ChevronsUpDown, LogOut } from "lucide-react"
 
-import { Avatar, AvatarFallback, AvatarImage } from "/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,10 +13,10 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "/components/ui/dropdown-menu"
-import { SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from "/components/ui/sidebar"
-import { signOut } from "/lib/auth/client"
-import { cn } from "/lib/utils"
+} from "@/components/ui/dropdown-menu"
+import { SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from "@/components/ui/sidebar"
+import { signOut } from "@/lib/auth/client"
+import { cn } from "@/lib/utils"
 
 export default function Component({ user }: { user: User }) {
   const { isMobile } = useSidebar()
