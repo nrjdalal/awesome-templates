@@ -1,7 +1,7 @@
 import { headers } from "next/headers"
 import { redirect } from "next/navigation"
 
-import SidebarUser from "@/components/sidebar/user"
+import { auth } from "@/lib/auth"
 import {
   Sidebar,
   SidebarContent,
@@ -10,7 +10,7 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
-import { auth } from "@/lib/auth"
+import SidebarUser from "@/components/sidebar/user"
 
 export default async function Layout({ children }: { children: React.ReactNode }) {
   const session = await auth.api.getSession({
