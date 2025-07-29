@@ -30,7 +30,7 @@
     "semi": false
   },
   "dependencies": {
-    "@hookform/resolvers": "^5.2.0",
+    "@hookform/resolvers": "^5.2.1",
     "@radix-ui/react-accordion": "^1.2.11",
     "@radix-ui/react-alert-dialog": "^1.1.14",
     "@radix-ui/react-aspect-ratio": "^1.1.7",
@@ -75,7 +75,7 @@
     "sonner": "^2.0.6",
     "tailwind-merge": "^3.3.1",
     "vaul": "^1.1.2",
-    "zod": "^4.0.11"
+    "zod": "^4.0.13"
   },
   "devDependencies": {
     "@commitlint/cli": "^19.8.1",
