@@ -96,7 +96,7 @@ bunx fx package.json '{
 bunx sort-package-json@latest
 bunx prettier@latest --write --ignore-unknown *
 # shadcn@latest stopped updating the import paths in the code, hacking it for now
-find . -type f \( -name '*.ts' -o -name '*.tsx' \) -exec sed -i 's|from "/|from "@/|g' {} +
+# find . -type f \( -name '*.ts' -o -name '*.tsx' \) -exec sed -i 's|from "/|from "@/|g' {} +
 
 # custom updates to the README.md
 PREPEND="## Update the UI components
