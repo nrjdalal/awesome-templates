@@ -53,7 +53,7 @@
     "lint-staged": "^16.1.2",
     "prettier": "^3.6.2",
     "prettier-plugin-tailwindcss": "^0.6.14",
-    "simple-git-hooks": "^2.13.0",
+    "simple-git-hooks": "^2.13.1",
     "sort-package-json": "^3.4.0",
     "tailwindcss": "^4",
     "typescript": "^5"
