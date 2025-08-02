@@ -14,7 +14,31 @@ If you wish to make changes to this template or add your own, please refer to th
 
 ---
 
+Prerequisites:
+
+- [Vercel CLI](https://vercel.com/docs/cli) installed globally
+
+To develop locally:
+
 ```
 npm install
-npm run start
+vc dev
+```
+
+```
+open http://localhost:3000
+```
+
+To build locally:
+
+```
+npm install
+vc build
+```
+
+To deploy:
+
+```
+npm install
+vc deploy
 ```
