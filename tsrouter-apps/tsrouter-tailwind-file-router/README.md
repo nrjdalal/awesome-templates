@@ -22,7 +22,7 @@ To run this application:
 
 ```bash
 bun install
-bunx --bun run start  
+bunx --bun run start
 ```
 
 # Building For Production
