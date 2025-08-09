@@ -58,8 +58,10 @@ npm i @tanstack/react-start @tanstack/react-router vite
 You'll also need React:
 
 ```shell
-npm i react react-dom
+npm i react react-dom @vitejs/plugin-react
 ```
+
+Alternatively, you can also use `@vitejs/plugin-react-oxc` or `@vitejs/plugin-react-swc`.
 
 and some TypeScript:
 
@@ -89,12 +91,18 @@ Then configure TanStack Start's Vite plugin in `vite.config.ts`:
 import { defineConfig } from 'vite'
 import tsConfigPaths from 'vite-tsconfig-paths'
 import { tanstackStart } from '@tanstack/react-start/plugin/vite'
+import viteReact from '@vitejs/plugin-react'
 
 export default defineConfig({
   server: {
     port: 3000,
   },
-  plugins: [tsConfigPaths(), tanstackStart()],
+  plugins: [
+    tsConfigPaths(),
+    tanstackStart(),
+    // react's vite plugin must come after start's vite plugin
+    viteReact(),
+  ],
 })
 ```
 
@@ -155,6 +163,7 @@ Finally, we need to create the root of our application. This is the entry point 
 
 ```tsx
 // src/routes/__root.tsx
+/// <reference types="vite/client" />
 import type { ReactNode } from 'react'
 import {
   Outlet,
@@ -211,7 +220,7 @@ Now that we have the basic templating setup, we can write our first route. This 
 ```tsx
 // src/routes/index.tsx
 import * as fs from 'node:fs'
-import { useRouter } from '@tanstack/react-router'
+import { createFileRoute, useRouter } from '@tanstack/react-router'
 import { createServerFn } from '@tanstack/react-start'
 
 const filePath = 'count.txt'
@@ -235,7 +244,7 @@ const updateCount = createServerFn({ method: 'POST' })
     await fs.promises.writeFile(filePath, `${count + data}`)
   })
 
-export const Route = createFileRoute({
+export const Route = createFileRoute('/')({
   component: Home,
   loader: async () => await getCount(),
 })

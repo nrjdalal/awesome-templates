@@ -59,7 +59,7 @@ npm i @tanstack/solid-start @tanstack/solid-router vite
 You'll also need Solid:
 
 ```shell
-npm i solid-js
+npm i solid-js vite-plugin-solid
 ```
 
 and some TypeScript:
@@ -90,12 +90,18 @@ Then configure TanStack Start's Vite plugin in `vite.config.ts`:
 import { defineConfig } from 'vite'
 import tsConfigPaths from 'vite-tsconfig-paths'
 import { tanstackStart } from '@tanstack/solid-start/plugin/vite'
+import viteSolid from 'vite-plugin-solid'
 
 export default defineConfig({
   server: {
     port: 3000,
   },
-  plugins: [tsConfigPaths(), tanstackStart()],
+  plugins: [
+    tsConfigPaths(),
+    tanstackStart(),
+    // solid's vite plugin must come after start's vite plugin
+    viteSolid({ ssr: true }),
+  ],
 })
 ```
 
@@ -196,7 +202,7 @@ Now that we have the basic templating setup, we can write our first route. This 
 ```tsx
 // src/routes/index.tsx
 import * as fs from 'node:fs'
-import { useRouter } from '@tanstack/solid-router'
+import { createFileRoute, useRouter } from '@tanstack/solid-router'
 import { createServerFn } from '@tanstack/solid-start'
 
 const filePath = 'count.txt'
@@ -220,7 +226,7 @@ const updateCount = createServerFn({ method: 'POST' })
     await fs.promises.writeFile(filePath, `${count + data}`)
   })
 
-export const Route = createFileRoute({
+export const Route = createFileRoute('/')({
   component: Home,
   loader: async () => await getCount(),
 })
