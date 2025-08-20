@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "build": "next build",
+    "build": "next build --turbopack",
     "dev": "next dev --turbopack",
-    "lint": "next lint",
+    "lint": "eslint",
     "prepare": "npx simple-git-hooks",
     "start": "next start"
   },
@@ -30,7 +30,7 @@
     "semi": false
   },
   "dependencies": {
-    "next": "15.4.7",
+    "next": "15.5.0",
     "react": "19.1.0",
     "react-dom": "19.1.0"
   },
@@ -44,7 +44,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "15.4.7",
+    "eslint-config-next": "15.5.0",
     "lint-staged": "^16.1.5",
     "prettier": "^3.6.2",
     "prettier-plugin-tailwindcss": "^0.6.14",
