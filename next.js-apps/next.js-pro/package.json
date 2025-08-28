@@ -88,7 +88,7 @@
     "@eslint/eslintrc": "^3",
     "@fontsource-variable/dm-sans": "^5.2.6",
     "@fontsource-variable/jetbrains-mono": "^5.2.6",
-    "@ianvs/prettier-plugin-sort-imports": "^4.6.3",
+    "@ianvs/prettier-plugin-sort-imports": "^4.7.0",
     "@tailwindcss/postcss": "^4",
     "@tanstack/react-query-devtools": "^5.85.5",
     "@types/node": "^20",
