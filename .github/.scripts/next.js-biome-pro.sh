@@ -4,7 +4,6 @@ bunx shadcn@latest init --base-color neutral -d
 bunx shadcn@latest add https://raw.githubusercontent.com/nrjdalal/the-next-starter/refs/heads/main/public/r/better-auth.json
 bunx shadcn@latest add https://raw.githubusercontent.com/nrjdalal/the-next-starter/refs/heads/main/public/r/providers.json
 bunx shadcn@latest add -a -o
-bunx smart-registry@latest --codemod-radix
 bunx smart-registry@latest
 find public/r -type f ! -name 'ui.json' -delete
 bunx colorwindcss@latest
@@ -41,7 +40,7 @@ awk '
     }
   }
 ' src/app/globals.css >_ && mv _ src/app/globals.css
-bun add -D @commitlint/cli @commitlint/config-conventional @fontsource-variable/dm-sans @fontsource-variable/jetbrains-mono lint-staged prettier prettier-plugin-tailwindcss simple-git-hooks sort-package-json
+bun add -D @commitlint/cli @commitlint/config-conventional @fontsource-variable/dm-sans @fontsource-variable/jetbrains-mono lint-staged simple-git-hooks sort-package-json
 bunx fx biome.json '{
   ...x,
   "formatter": {
@@ -75,14 +74,12 @@ bunx fx package.json '{
   },
   "lint-staged": {
     "*": [
-      "prettier --write --ignore-unknown",
       "biome format --write"
     ],
     "package.json": "sort-package-json"
   },
 }' save
 bunx sort-package-json@latest
-bunx prettier@latest --write --ignore-unknown *
 bunx biome format --write
 # shadcn@latest stopped updating the import paths in the code, hacking it for now
 # find . -type f \( -name '*.ts' -o -name '*.tsx' \) -exec sed -i 's|from "/|from "@/|g' {} +
