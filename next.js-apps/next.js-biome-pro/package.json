@@ -1,0 +1,78 @@
+{
+  "name": "awesometemplate",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "next build --turbopack",
+    "dev": "next dev --turbopack",
+    "drizzle": "bun --env-file=.env.development drizzle-kit push",
+    "drizzle:prod": "bun --env-file=.env.production drizzle-kit push",
+    "format": "biome format --write",
+    "lint": "biome check",
+    "prepare": "npx simple-git-hooks",
+    "start": "next start",
+    "studio": "bun --env-file=.env.development drizzle-kit studio",
+    "studio:prod": "bun --env-file=.env.production drizzle-kit studio"
+  },
+  "simple-git-hooks": {
+    "pre-commit": "npx lint-staged --verbose",
+    "commit-msg": "npx commitlint --edit $1"
+  },
+  "commitlint": {
+    "extends": [
+      "@commitlint/config-conventional"
+    ]
+  },
+  "lint-staged": {
+    "*": "biome check --write --unsafe",
+    "package.json": "sort-package-json"
+  },
+  "dependencies": {
+    "@hookform/resolvers": "^5.2.1",
+    "@remixicon/react": "^4.6.0",
+    "@tanstack/react-query": "^5.87.1",
+    "better-auth": "^1.3.9",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "cmdk": "^1.1.1",
+    "date-fns": "^4.1.0",
+    "drizzle-orm": "^0.44.5",
+    "embla-carousel-react": "^8.6.0",
+    "input-otp": "^1.4.2",
+    "lucide-react": "^0.543.0",
+    "next": "^15.5.2",
+    "next-themes": "^0.4.6",
+    "postgres": "^3.4.7",
+    "radix-ui": "^1.4.3",
+    "react": "19.1.0",
+    "react-day-picker": "^9.9.0",
+    "react-dom": "19.1.0",
+    "react-hook-form": "^7.62.0",
+    "react-resizable-panels": "^3.0.5",
+    "recharts": "2.15.4",
+    "resend": "^6.0.3",
+    "sonner": "^2.0.7",
+    "tailwind-merge": "^3.3.1",
+    "vaul": "^1.1.2",
+    "zod": "^4.1.5"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.2.0",
+    "@commitlint/cli": "^19.8.1",
+    "@commitlint/config-conventional": "^19.8.1",
+    "@fontsource-variable/dm-sans": "^5.2.6",
+    "@fontsource-variable/jetbrains-mono": "^5.2.6",
+    "@tailwindcss/postcss": "^4",
+    "@tanstack/react-query-devtools": "^5.87.3",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "drizzle-kit": "^0.31.4",
+    "lint-staged": "^16.1.6",
+    "simple-git-hooks": "^2.13.1",
+    "sort-package-json": "^3.4.0",
+    "tailwindcss": "^4",
+    "tw-animate-css": "^1.3.8",
+    "typescript": "^5"
+  }
+}
