@@ -42,6 +42,18 @@ awk '
   }
 ' src/app/globals.css >_ && mv _ src/app/globals.css
 bun add -D @commitlint/cli @commitlint/config-conventional @fontsource-variable/dm-sans @fontsource-variable/jetbrains-mono lint-staged simple-git-hooks sort-package-json
+bunx fx biome.json '{
+  ...x,
+  "formatter": {
+    ...x.formatter,
+    "lineWidth": 100
+  },
+  "javascript": {
+    "formatter": {
+      "semicolons": "asNeeded"
+    }
+  },
+}' save
 bunx fx package.json '{
   ...x,
   "scripts": {
@@ -67,6 +79,7 @@ bunx fx package.json '{
   },
 }' save
 bunx sort-package-json@latest
+bunx biome format --write
 # shadcn@latest stopped updating the import paths in the code, hacking it for now
 # find . -type f \( -name '*.ts' -o -name '*.tsx' \) -exec sed -i 's|from "/|from "@/|g' {} +
 
