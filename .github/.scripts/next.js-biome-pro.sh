@@ -41,7 +41,7 @@ awk '
     }
   }
 ' src/app/globals.css >_ && mv _ src/app/globals.css
-bun add -D @commitlint/cli @commitlint/config-conventional @fontsource-variable/dm-sans @fontsource-variable/jetbrains-mono lint-staged simple-git-hooks sort-package-json
+bun add -D @commitlint/cli @commitlint/config-conventional @fontsource-variable/dm-sans @fontsource-variable/jetbrains-mono lint-staged prettier prettier-plugin-tailwindcss simple-git-hooks sort-package-json
 bunx fx biome.json '{
   ...x,
   "formatter": {
@@ -74,11 +74,15 @@ bunx fx package.json '{
     ]
   },
   "lint-staged": {
-    "*": "biome check --write --unsafe",
+    "*": [
+      "prettier --write --ignore-unknown",
+      "biome format --write"
+    ],
     "package.json": "sort-package-json"
   },
 }' save
 bunx sort-package-json@latest
+bunx prettier@latest --write --ignore-unknown *
 bunx biome format --write
 # shadcn@latest stopped updating the import paths in the code, hacking it for now
 # find . -type f \( -name '*.ts' -o -name '*.tsx' \) -exec sed -i 's|from "/|from "@/|g' {} +
