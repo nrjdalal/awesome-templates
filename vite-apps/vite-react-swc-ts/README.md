@@ -28,7 +28,7 @@ Currently, two official plugins are available:
 If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
 
 ```js
-export default tseslint.config([
+export default defineConfig([
   globalIgnores(['dist']),
   {
     files: ['**/*.{ts,tsx}'],
@@ -36,11 +36,11 @@ export default tseslint.config([
       // Other configs...
 
       // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
+      tseslint.configs.recommendedTypeChecked,
       // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
+      tseslint.configs.strictTypeChecked,
       // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
+      tseslint.configs.stylisticTypeChecked,
 
       // Other configs...
     ],
@@ -62,7 +62,7 @@ You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-re
 import reactX from 'eslint-plugin-react-x'
 import reactDom from 'eslint-plugin-react-dom'
 
-export default tseslint.config([
+export default defineConfig([
   globalIgnores(['dist']),
   {
     files: ['**/*.{ts,tsx}'],
