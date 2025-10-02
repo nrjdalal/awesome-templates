@@ -10,9 +10,9 @@ import {
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
 
 import './styles.css'
-import reportWebVitals from './reportWebVitals.ts'
+import reportWebVitals from './reportWebVitals.js'
 
-import App from './App.tsx'
+import App from './App.jsx'
 
 const rootRoute = createRootRoute({
   component: () => (
@@ -39,12 +39,6 @@ const router = createRouter({
   defaultStructuralSharing: true,
   defaultPreloadStaleTime: 0,
 })
-
-declare module '@tanstack/react-router' {
-  interface Register {
-    router: typeof router
-  }
-}
 
 const rootElement = document.getElementById('app')
 if (rootElement && !rootElement.innerHTML) {
