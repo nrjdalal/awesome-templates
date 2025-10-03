@@ -3,10 +3,11 @@ import viteReact from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
 import { resolve } from 'node:path'
+import { nitroV2Plugin } from '@tanstack/nitro-v2-vite-plugin'
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [viteReact(), tailwindcss()],
+  plugins: [nitroV2Plugin(), viteReact(), tailwindcss()],
   test: {
     globals: true,
     environment: 'jsdom',

@@ -7,5 +7,7 @@
   "git": false,
   "version": 1,
   "framework": "react-cra",
-  "chosenAddOns": []
+  "chosenAddOns": [
+    "nitro"
+  ]
 }
