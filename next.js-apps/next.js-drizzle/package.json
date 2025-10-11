@@ -50,7 +50,7 @@
     "drizzle-kit": "^0.31.5",
     "eslint": "^9",
     "eslint-config-next": "15.5.4",
-    "lint-staged": "^16.2.3",
+    "lint-staged": "^16.2.4",
     "prettier": "^3.6.2",
     "prettier-plugin-tailwindcss": "^0.6.14",
     "simple-git-hooks": "^2.13.1",
