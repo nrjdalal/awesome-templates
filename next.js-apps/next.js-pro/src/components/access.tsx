@@ -2,10 +2,9 @@
 
 import { useState } from "react"
 
-import { zodResolver } from "@hookform/resolvers/zod"
 import { RiGithubFill, RiGoogleFill } from "@remixicon/react"
+import { useForm } from "@tanstack/react-form"
 import { GalleryVerticalEnd, Loader2 } from "lucide-react"
-import { useForm } from "react-hook-form"
 import { toast } from "sonner"
 import * as z from "zod"
 
@@ -18,47 +17,41 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form"
+import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 
 const formSchema = z.object({
-  email: z.string().min(2, {
-    message: "Please enter a valid email address!",
-  }),
+  email: z.email({ message: "Please enter a valid email address." }),
 })
 
 export default function Component() {
   const [loader, setLoader] = useState<"email" | "github" | "google" | null>(null)
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+  const form = useForm({
     defaultValues: {
       email: "",
     },
+    validators: {
+      onSubmit: formSchema,
+      onChange: formSchema,
+      onBlur: formSchema,
+    },
+    onSubmit: async ({ value }) => {
+      setLoader("email")
+      const res = await signIn.magicLink({
+        email: value.email,
+        callbackURL: "/x",
+      })
+      if (res.error) {
+        toast.error(res.error.message)
+        setLoader(null)
+      } else {
+        toast.success("Check your email for the magic link!")
+        setLoader(null)
+      }
+      form.reset()
+    },
   })
-
-  const onSubmit = async (data: z.infer<typeof formSchema>) => {
-    setLoader("email")
-    const res = await signIn.magicLink({
-      email: data.email,
-      callbackURL: "/x",
-    })
-    if (res.error) {
-      toast.error(res.error.message)
-      setLoader(null)
-    } else {
-      toast.success("Check your email for the magic link!")
-      setLoader(null)
-    }
-    form.reset()
-  }
 
   return (
     <Dialog>
@@ -87,38 +80,50 @@ export default function Component() {
             </div>
             <h1 className="text-xl font-semibold">Welcome to ACME Inc.</h1>
           </div>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4">
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem className="flex flex-col items-center gap-y-3">
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
+          <form
+            id="email"
+            className="space-y-4"
+            onSubmit={(e) => {
+              e.preventDefault()
+              form.handleSubmit()
+            }}
+          >
+            <FieldGroup>
+              <form.Field name="email">
+                {(field) => {
+                  const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
+                  return (
+                    <Field data-invalid={isInvalid}>
+                      <FieldLabel htmlFor={field.name}>Email</FieldLabel>
                       <Input
+                        id={field.name}
                         type="email"
-                        className="text-center focus:placeholder:opacity-0"
+                        name={field.name}
+                        className="focus:placeholder:opacity-0"
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        aria-invalid={isInvalid}
                         placeholder="admin@nrjdalal.com"
-                        {...field}
                         disabled={loader === "email"}
                       />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <Button
-                type="submit"
-                variant="secondary"
-                className="w-full cursor-pointer"
-                disabled={loader === "email"}
-              >
-                {loader === "email" ? <Loader2 className="size-5 animate-spin" /> : null}
-                Sign in/up
-              </Button>
-            </form>
-          </Form>
+                      {isInvalid && <FieldError errors={[field.state.meta.errors[0]]} />}
+                    </Field>
+                  )
+                }}
+              </form.Field>
+            </FieldGroup>
+            <Button
+              form="email"
+              type="submit"
+              variant="secondary"
+              className="w-full cursor-pointer"
+              disabled={loader === "email"}
+            >
+              {loader === "email" ? <Loader2 className="size-5 animate-spin" /> : null}
+              Sign in/up
+            </Button>
+          </form>
           <div className="after:border-border relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t">
             <span className="bg-background text-muted-foreground relative z-10 px-2 text-xs">
               OR
