@@ -107,7 +107,7 @@ export default function Component() {
                         placeholder="admin@nrjdalal.com"
                         disabled={loader === "email"}
                       />
-                      {isInvalid && <FieldError errors={[field.state.meta.errors[0]]} />}
+                      {isInvalid && <FieldError errors={field.state.meta.errors} />}
                     </Field>
                   )
                 }}
