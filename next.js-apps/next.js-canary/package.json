@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "build": "next build --turbopack",
-    "dev": "next dev --turbopack",
+    "build": "next build",
+    "dev": "next dev",
     "lint": "eslint",
     "prepare": "npx simple-git-hooks",
     "start": "next start"
@@ -30,7 +30,7 @@
     "semi": false
   },
   "dependencies": {
-    "next": "16.0.0-canary.16",
+    "next": "16.0.0-canary.18",
     "react": "19.2.0",
     "react-dom": "19.2.0"
   },
@@ -43,7 +43,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "16.0.0-canary.16",
+    "eslint-config-next": "16.0.0-canary.18",
     "lint-staged": "^16.2.5",
     "prettier": "^3.6.2",
     "prettier-plugin-tailwindcss": "^0.7.1",
