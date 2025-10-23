@@ -33,7 +33,7 @@ export default function Component({ user }: { user: User }) {
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"
-              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground border"
+              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground cursor-pointer border"
             >
               <Avatar className="size-8 rounded-md">
                 <AvatarImage src={user.image ?? ""} alt={user.name} />
