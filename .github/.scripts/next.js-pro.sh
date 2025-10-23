@@ -9,9 +9,6 @@ bunx smart-registry@latest
 find public/r -type f ! -name 'ui.json' -delete
 bunx colorwindcss@latest
 awk 'NR == 1 { print; print "import Navbar from \"@/components/navbar/home\"\nimport { InnerProvider, OuterProvider } from \"@/app/providers\"" } NR > 1' src/app/layout.tsx >_ && mv _ src/app/layout.tsx
-# sed -i \
-#   -e 's/font-\[family-name:[^]]*\] *//g' \
-#   src/app/page.tsx
 sed -i \
   -e '/import { Geist, Geist_Mono }.*/d' \
   -e '/const geistSans = Geist({/,/})/d' \
