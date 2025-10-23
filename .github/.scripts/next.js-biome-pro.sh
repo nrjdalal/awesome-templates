@@ -79,6 +79,7 @@ bunx fx package.json '{
 }' save
 bunx sort-package-json@latest
 bunx biome format --write
+
 # custom updates to the README.md
 PREPEND="## Update the UI components
 
