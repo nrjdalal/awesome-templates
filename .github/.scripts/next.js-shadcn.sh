@@ -1,4 +1,4 @@
-bunx create-next-app@latest --ts --eslint --tailwind --src-dir --app --turbopack --import-alias "@/*" awesomedir
+bunx create-next-app@latest --ts --tailwind --react-compiler --eslint --app --src-dir --turbopack --import-alias "@/*" awesomedir
 cd awesomedir
 bunx shadcn@latest init --base-color neutral -d
 bunx shadcn@latest add -a
