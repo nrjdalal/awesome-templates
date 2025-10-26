@@ -1,14 +1,12 @@
 {
   "projectName": "awesometemplate",
   "mode": "code-router",
-  "typescript": true,
+  "typescript": false,
   "tailwind": true,
   "packageManager": "bun",
   "git": false,
   "addOnOptions": {},
   "version": 1,
   "framework": "react-cra",
-  "chosenAddOns": [
-    "nitro"
-  ]
+  "chosenAddOns": []
 }
