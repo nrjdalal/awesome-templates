@@ -31,7 +31,7 @@ export default function Component() {
   return (
     <div
       className={cn(
-        "fixed top-0 left-1/2 w-full -translate-x-1/2",
+        "fixed top-0 left-1/2 z-50 w-full -translate-x-1/2",
         !scrolled ? "px-5 pt-5" : "bg-sidebar border-b pt-0",
       )}
     >
