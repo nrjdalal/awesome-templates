@@ -31,7 +31,7 @@ export default async function Layout({ children }: { children: React.ReactNode }
         </SidebarFooter>
       </Sidebar>
       <main>
-        <SidebarTrigger className="bg-sidebar m-2 cursor-pointer border" />
+        <SidebarTrigger className="bg-sidebar absolute m-2 cursor-pointer border" />
         {children}
       </main>
     </SidebarProvider>
