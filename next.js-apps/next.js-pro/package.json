@@ -56,7 +56,7 @@
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
     "@remixicon/react": "^4.7.0",
-    "@tanstack/react-form": "^1.25.0",
+    "@tanstack/react-form": "^1.26.0",
     "@tanstack/react-query": "^5.90.10",
     "better-auth": "^1.4.1",
     "class-variance-authority": "^0.7.1",
