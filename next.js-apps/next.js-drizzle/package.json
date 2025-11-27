@@ -33,7 +33,7 @@
   },
   "dependencies": {
     "drizzle-orm": "^0.44.7",
-    "next": "16.0.4",
+    "next": "16.0.5",
     "postgres": "^3.4.7",
     "react": "19.2.0",
     "react-dom": "19.2.0"
@@ -49,12 +49,12 @@
     "babel-plugin-react-compiler": "1.0.0",
     "drizzle-kit": "^0.31.7",
     "eslint": "^9",
-    "eslint-config-next": "16.0.4",
+    "eslint-config-next": "16.0.5",
     "lint-staged": "^16.2.7",
     "prettier": "^3.6.2",
     "prettier-plugin-tailwindcss": "^0.7.1",
     "simple-git-hooks": "^2.13.1",
-    "sort-package-json": "^3.4.0",
+    "sort-package-json": "^3.5.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   }
