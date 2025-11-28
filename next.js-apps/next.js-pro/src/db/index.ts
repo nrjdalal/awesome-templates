@@ -2,6 +2,7 @@ import { drizzle, type PostgresJsDatabase } from "drizzle-orm/postgres-js"
 import postgres from "postgres"
 
 declare global {
+  // eslint-disable-next-line
   var db: PostgresJsDatabase
 }
 
