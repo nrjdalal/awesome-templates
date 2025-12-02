@@ -56,7 +56,7 @@
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
     "@remixicon/react": "^4.7.0",
-    "@tanstack/react-form": "^1.26.0",
+    "@tanstack/react-form": "^1.27.0",
     "@tanstack/react-query": "^5.90.11",
     "better-auth": "^1.4.4",
     "class-variance-authority": "^0.7.1",
@@ -100,7 +100,7 @@
     "eslint-config-next": "16.0.6",
     "lint-staged": "^16.2.7",
     "prettier": "^3.7.3",
-    "prettier-plugin-tailwindcss": "^0.7.1",
+    "prettier-plugin-tailwindcss": "^0.7.2",
     "simple-git-hooks": "^2.13.1",
     "sort-package-json": "^3.5.0",
     "tailwindcss": "^4",
