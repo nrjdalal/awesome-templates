@@ -1,8 +1,8 @@
 "use client"
 
 import * as React from "react"
-import type * as LabelPrimitive from "@radix-ui/react-label"
-import { Slot as SlotPrimitive } from "radix-ui"
+import { type Label as LabelPrimitive, Slot as SlotPrimitive } from "radix-ui"
+
 import {
   Controller,
   FormProvider,
