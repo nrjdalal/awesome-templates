@@ -4,7 +4,7 @@ bunx shadcn@latest init --base-color neutral -d
 bunx shadcn@latest add https://raw.githubusercontent.com/nrjdalal/the-next-starter/refs/heads/main/public/r/better-auth.json
 bunx shadcn@latest add https://raw.githubusercontent.com/nrjdalal/the-next-starter/refs/heads/main/public/r/providers.json
 bunx shadcn@latest add -a -o
-bunx smart-registry@latest --codemod-radix
+bunx shadcn@latest migrate radix -y
 bunx smart-registry@latest
 find public/r -type f ! -name 'ui.json' -delete
 bunx colorwindcss@latest
@@ -56,10 +56,14 @@ bunx fx package.json '{
   "scripts": {
     ...x.scripts,
     "prepare": "npx simple-git-hooks",
-    "drizzle": "bun --env-file=.env.development drizzle-kit push",
-    "drizzle:prod": "bun --env-file=.env.production drizzle-kit push",
-    "studio": "bun --env-file=.env.development drizzle-kit studio",
-    "studio:prod": "bun --env-file=.env.production drizzle-kit studio",
+    "db:push": "bun --env-file=.env.development drizzle-kit push",
+    "db:push:prod": "bun --env-file=.env.production drizzle-kit push",
+    "db:pull": "bun --env-file=.env.development drizzle-kit pull",
+    "db:pull:prod": "bun --env-file=.env.production drizzle-kit pull",
+    "db:studio": "bun --env-file=.env.development drizzle-kit studio",
+    "db:studio:prod": "bun --env-file=.env.production drizzle-kit studio",
+    "db:migrate": "bun --env-file=.env.development drizzle-kit migrate",
+    "db:migrate:prod": "bun --env-file=.env.production drizzle-kit migrate",
   },
   "simple-git-hooks": {
     "pre-commit": "npx lint-staged --verbose",
