@@ -4,7 +4,7 @@ bunx shadcn@latest init --base-color neutral -d
 bunx shadcn@latest add https://raw.githubusercontent.com/nrjdalal/the-next-starter/refs/heads/main/public/r/better-auth.json
 bunx shadcn@latest add https://raw.githubusercontent.com/nrjdalal/the-next-starter/refs/heads/main/public/r/providers.json
 bunx shadcn@latest add -a -o
-bunx shadcn@latest migrate radix
+bunx shadcn@latest migrate radix -y
 bunx smart-registry@latest
 find public/r -type f ! -name 'ui.json' -delete
 bunx colorwindcss@latest
