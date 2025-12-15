@@ -2,8 +2,7 @@
 
 import * as React from "react"
 
-import type * as LabelPrimitive from "@radix-ui/react-label"
-import { Slot as SlotPrimitive } from "radix-ui"
+import { Slot as SlotPrimitive, type Label as LabelPrimitive } from "radix-ui"
 import {
   Controller,
   FormProvider,
