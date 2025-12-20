@@ -9,7 +9,7 @@
     "deploy": "run-s build zip update publish"
   },
   "devDependencies": {
-    "esbuild": "^0.21.4",
+    "esbuild": "^0.27.0",
     "npm-run-all2": "^6.2.0"
   },
   "dependencies": {
