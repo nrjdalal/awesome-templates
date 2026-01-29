@@ -22,7 +22,7 @@ To run this application:
 
 ```bash
 bun install
-bun --bun run start
+bun --bun run dev
 ```
 
 # Building For Production
@@ -49,43 +49,13 @@ This project uses [Tailwind CSS](https://tailwindcss.com/) for styling.
 
 
 ## Routing
-This project uses [TanStack Router](https://tanstack.com/router). The initial setup is a code based router. Which means that the routes are defined in code (in the `./src/main.jsx` file). If you like you can also use a file based routing setup by following the [File Based Routing](https://tanstack.com/router/latest/docs/framework/react/guide/file-based-routing) guide.
+This project uses [TanStack Router](https://tanstack.com/router). The initial setup is a file based router. Which means that the routes are managed as files in `src/routes`.
 
 ### Adding A Route
 
-To add a new route to your application just add another `createRoute` call to the `./src/main.jsx` file. The example below adds a new `/about`route to the root route.
+To add a new route to your application just add another a new file in the `./src/routes` directory.
 
-```tsx
-const aboutRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/about",
-  component: () => <h1>About</h1>,
-});
-```
-
-You will also need to add the route to the `routeTree` in the `./src/main.jsx` file.
-
-```tsx
-const routeTree = rootRoute.addChildren([indexRoute, aboutRoute]);
-```
-
-With this set up you should be able to navigate to `/about` and see the about page.
-
-Of course you don't need to implement the About page in the `main.jsx` file. You can create that component in another file and import it into the `main.jsx` file, then use it in the `component` property of the `createRoute` call, like so:
-
-```tsx
-import About from "./components/About.jsx";
-
-const aboutRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/about",
-  component: About,
-});
-```
-
-That is how we have the `App` component set up with the home page.
-
-For more information on the options you have when you are creating code based routes check out the [Code Based Routing](https://tanstack.com/router/latest/docs/framework/react/guide/code-based-routing) documentation.
+TanStack will automatically generate the content of the route file for you.
 
 Now that you have two routes you can use a `Link` component to navigate between them.
 
@@ -109,28 +79,17 @@ More information on the `Link` component can be found in the [Link documentation
 
 ### Using A Layout
 
+In the File Based Routing setup the layout is located in `src/routes/__root.tsx`. Anything you add to the root route will appear in all the routes. The route content will appear in the JSX where you use the `<Outlet />` component.
 
-Layouts can be used to wrap the contents of the routes in menus, headers, footers, etc.
-
-There is already a layout in the `src/main.jsx` file:
-
-```tsx
-const rootRoute = createRootRoute({
-  component: () => (
-    <>
-      <Outlet />
-      <TanStackRouterDevtools />
-    </>
-  ),
-});
-```
-
-You can use the React component specified in the `component` property of the `rootRoute` to wrap the contents of the routes. The `<Outlet />` component is used to render the current route within the body of the layout. For example you could add a header to the layout like so:
+Here is an example layout that includes a header:
 
 ```tsx
+import { Outlet, createRootRoute } from '@tanstack/react-router'
+import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
+
 import { Link } from "@tanstack/react-router";
 
-const rootRoute = createRootRoute({
+export const Route = createRootRoute({
   component: () => (
     <>
       <header>
@@ -143,155 +102,13 @@ const rootRoute = createRootRoute({
       <TanStackRouterDevtools />
     </>
   ),
-});
+})
 ```
 
 The `<TanStackRouterDevtools />` component is not required so you can remove it if you don't want it in your layout.
 
 More information on layouts can be found in the [Layouts documentation](https://tanstack.com/router/latest/docs/framework/react/guide/routing-concepts#layouts).
 
-
-### Migrating To File Base Routing
-
-First you need to add the Vite plugin for Tanstack Router:
-
-```bash
-bun install @tanstack/router-plugin -D
-```
-
-From there you need to update your `vite.config.js` file to use the plugin:
-
-```ts
-import { defineConfig } from "vite";
-import viteReact from "@vitejs/plugin-react";
-import { TanStackRouterVite } from "@tanstack/router-plugin/vite";
-import tailwindcss from "@tailwindcss/vite";
-
-  
-// https://vitejs.dev/config/
-export default defineConfig({
-  plugins: [
-    TanStackRouterVite(),
-    viteReact(),
-    tailwindcss()
-  ],
-});
-```
-
-Now you'll need to rearrange your files a little bit. That starts with creating a `routes` directory in the `src` directory:
-
-```bash
-mkdir src/routes
-```
-
-Then you'll need to create a `src/routes/__root.jsx` file with the contents of the root route that was in `main.jsx`.
-
-```tsx
-import { Outlet, createRootRoute } from "@tanstack/react-router";
-import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
-
-export const Route = createRootRoute({
-  component: () => (
-    <>
-      <Outlet />
-      <TanStackRouterDevtools />
-    </>
-  ),
-});
-```
-
-Next up you'll need to move your home route code into `src/routes/index.jsx`
-
-```tsx
-import { createFileRoute } from "@tanstack/react-router";
-
-import logo from "../logo.svg";
-import "../App.css";
-
-export const Route = createFileRoute("/")({
-  component: App,
-});
-
-function App() {
-  return (
-    <div className="text-center">
-      <header className="min-h-screen flex flex-col items-center justify-center bg-[#282c34] text-white text-[calc(10px+2vmin)]">
-        <img
-          src={logo}
-          className="h-[40vmin] pointer-events-none animate-[spin_20s_linear_infinite]"
-          alt="logo"
-        />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="text-[#61dafb] hover:underline"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-        <a
-          className="text-[#61dafb] hover:underline"
-          href="https://tanstack.com"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn TanStack
-        </a>
-      </header>
-    </div>
-  );
-}
-```
-
-At this point you can delete `src/App.jsx`, you will no longer need it as the contents have moved into `src/routes/index.jsx`.
-
-The only additional code is the `createFileRoute` function that tells TanStack Router where to render the route. Helpfully the Vite plugin will keep the path argument that goes to `createFileRoute` automatically in sync with the file system.
-
-Finally the `src/main.jsx` file can be simplified down to this:
-
-```tsx
-import { StrictMode } from "react";
-import ReactDOM from "react-dom/client";
-import { RouterProvider, createRouter } from "@tanstack/react-router";
-
-// Import the generated route tree
-import { routeTree } from "./routeTree.gen";
-
-import "./styles.css";
-import reportWebVitals from "./reportWebVitals.js";
-
-// Create a new router instance
-const router = createRouter({
-  routeTree,
-  defaultPreload: "intent",
-  defaultPreloadStaleTime: 0,
-  scrollRestoration: true,
-  defaultStructuralSharing: true
-});
-
-// Render the app
-const rootElement = document.getElementById("app");
-if (!rootElement.innerHTML) {
-  const root = ReactDOM.createRoot(rootElement);
-  root.render(
-    <StrictMode>
-      <RouterProvider router={router} />
-    </StrictMode>
-  );
-}
-
-// If you want to start measuring performance in your app, pass a function
-// to log results (for example: reportWebVitals(console.log))
-// or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
-reportWebVitals();
-```
-
-Now you've got a file based routing setup in your project! Let's have some fun with it! Just create a file in `about.jsx` in `src/routes` and it if the application is running TanStack will automatically add contents to the file and you'll have the start of your `/about` route ready to go with no additional work. You can see why folks find File Based Routing so easy to use.
-
-You can find out everything you need to know on how to use file based routing in the [File Based Routing](https://tanstack.com/router/latest/docs/framework/react/guide/file-based-routing) documentation.
 
 ## Data Fetching
 
@@ -305,7 +122,11 @@ const peopleRoute = createRoute({
   path: "/people",
   loader: async () => {
     const response = await fetch("https://swapi.dev/api/people");
-    return response.json();
+    return response.json() as Promise<{
+      results: {
+        name: string;
+      }[];
+    }>;
   },
   component: () => {
     const data = peopleRoute.useLoaderData();
@@ -332,7 +153,7 @@ First add your dependencies:
 bun install @tanstack/react-query @tanstack/react-query-devtools
 ```
 
-Next we'll need to create a query client and provider. We recommend putting those in `main.jsx`.
+Next we'll need to create a query client and provider. We recommend putting those in `main.tsx`.
 
 ```tsx
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -383,7 +204,7 @@ function App() {
     queryFn: () =>
       fetch("https://swapi.dev/api/people")
         .then((res) => res.json())
-        .then((data) => data.results),
+        .then((data) => data.results as { name: string }[]),
     initialData: [],
   });
 
@@ -413,7 +234,7 @@ First you need to add TanStack Store as a dependency:
 bun install @tanstack/store
 ```
 
-Now let's create a simple counter in the `src/App.jsx` file as a demonstration.
+Now let's create a simple counter in the `src/App.tsx` file as a demonstration.
 
 ```tsx
 import { useStore } from "@tanstack/react-store";
