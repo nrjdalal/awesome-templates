@@ -12,7 +12,7 @@ rm -rf next.js-pro
 # 2. drizzle-better-auth-organization (organization without teams)
 bunx gitpick nrjdalal/awesome-templates/tree/main/next.js-apps/next.js-pro next.js-pro
 cd next.js-pro
-sed -i '' 's/import { magicLink } from "better-auth\/plugins"/import { magicLink, organization } from "better-auth\/plugins"/' src/lib/auth/index.ts
+sed -i 's/import { magicLink } from "better-auth\/plugins"/import { magicLink, organization } from "better-auth\/plugins"/' src/lib/auth/index.ts
 awk '
   { print }
   /magicLink\(\{/ { inMagicLink = 1 }
@@ -30,7 +30,7 @@ rm -rf next.js-pro
 # 3. drizzle-better-auth-team (organization with teams enabled)
 bunx gitpick nrjdalal/awesome-templates/tree/main/next.js-apps/next.js-pro next.js-pro
 cd next.js-pro
-sed -i '' 's/import { magicLink } from "better-auth\/plugins"/import { magicLink, organization } from "better-auth\/plugins"/' src/lib/auth/index.ts
+sed -i 's/import { magicLink } from "better-auth\/plugins"/import { magicLink, organization } from "better-auth\/plugins"/' src/lib/auth/index.ts
 awk '
   { print }
   /magicLink\(\{/ { inMagicLink = 1 }
@@ -46,4 +46,3 @@ bunx prettier --write auth-schema.ts
 cd ..
 mv next.js-pro/auth-schema.ts awesomedir/drizzle-better-auth-team.ts
 rm -rf next.js-pro
-
