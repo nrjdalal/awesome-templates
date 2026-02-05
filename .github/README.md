@@ -2,7 +2,7 @@
 
 [![Twitter](https://img.shields.io/twitter/follow/nrjdalal_dev?label=%40nrjdalal_dev)](https://twitter.com/nrjdalal_dev) [![Awesome](https://awesome.re/badge.svg)](https://github.com/nrjdalal/awesome-templates) [![GitHub](https://img.shields.io/github/stars/nrjdalal/awesome-templates?color=blue)](https://github.com/nrjdalal/awesome-templates)
 
-> 🟢 Last updated: Feb 04 16:21 UTC 26
+> 🔵 Last updated: Feb 05 00:34 UTC 26
 
 Explore a curated collection of up-to-date templates for various projects and frameworks, refreshed every 8 hours.
 
