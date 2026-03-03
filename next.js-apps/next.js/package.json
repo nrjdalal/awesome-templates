@@ -35,9 +35,9 @@
     "react-dom": "19.2.3"
   },
   "devDependencies": {
-    "@commitlint/cli": "^20.3.1",
-    "@commitlint/config-conventional": "^20.3.1",
-    "@ianvs/prettier-plugin-sort-imports": "^4.7.0",
+    "@commitlint/cli": "^20.4.2",
+    "@commitlint/config-conventional": "^20.4.2",
+    "@ianvs/prettier-plugin-sort-imports": "^4.7.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
@@ -45,7 +45,7 @@
     "babel-plugin-react-compiler": "1.0.0",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
-    "lint-staged": "^16.2.7",
+    "lint-staged": "^16.3.1",
     "prettier": "^3.8.1",
     "prettier-plugin-tailwindcss": "^0.7.2",
     "simple-git-hooks": "^2.13.1",
