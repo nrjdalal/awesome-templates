@@ -1,4 +1,4 @@
-bunx create-next-app@latest --ts --tailwind --src-dir --app --turbopack --import-alias "@/*" awesomedir
+bunx create-next-app@latest --ts --tailwind --src-dir --app --import-alias "@/*" awesomedir
 cd awesomedir
 cat <<EOF >src/app/page.tsx
 export default function Home() {
