@@ -125,24 +125,24 @@ jobs:
           EMOJI=${EMOJIS[$(date -u +"%w")]}
 
           g() {
-            diff_summary=$(git diff HEAD --shortstat "$1" | sed -E 's/ insertions?[^)]*\)/+/g; s/ deletions?[^)]*\)/-/g; s/ changed//g' | xargs | tr -d ',')
-            changed_files=$(git diff HEAD --name-only "$1")
+            diff_summary=$(git diff HEAD --shortstat -- "$1" | sed -E 's/ insertions?[^)]*\)/+/g; s/ deletions?[^)]*\)/-/g; s/ changed//g' | xargs | tr -d ',')
+            changed_files=$(git diff HEAD --name-only -- "$1")
             files_list=$(echo "$changed_files" | awk -F'/' '{print $NF}' | sort -u | tr '\n' ' ')
             commit_message="$EMOJI $diff_summary 📄 $files_list
-            
+
           $changed_files"
-            git commit -m "$commit_message" || true
+            git commit --no-verify -m "$commit_message" || true
           }
 
           FOLDERS=($(find . -maxdepth 1 -type d ! -name '.' ! -name '.git' ! -name '.github' -exec basename {} \;))
           for folder in "${FOLDERS[@]}"; do
-            git add "$folder"
+            git add -- "$folder"
             g "$folder"
           done
 
           sed -i "5s/.*/> $EMOJI Last updated: $DATE/" .github/README.md
           git add .github/README.md
-          git commit -m "$EMOJI $DATE" || true
+          git commit --no-verify -m "$EMOJI $DATE" || true
           git push
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
