@@ -1,6 +1,6 @@
 bunx create-next-app@latest --ts --tailwind --react-compiler --eslint --app --src-dir --import-alias "@/*" awesomedir
 cd awesomedir
-bunx shadcn@latest init --base-color neutral -d
+bunx shadcn@latest init -d
 bunx shadcn@latest add -a
 bunx colorwindcss@latest
 # custom best practices
