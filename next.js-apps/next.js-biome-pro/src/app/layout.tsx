@@ -15,8 +15,8 @@ export default function RootLayout({
 }>) {
   return (
     <OuterProvider>
-      <html lang="en" suppressHydrationWarning>
-        <body className="min-h-dvh antialiased">
+      <html lang="en" className={`h-full antialiased`}>
+        <body className="min-h-full flex flex-col">
           <InnerProvider>
             <Navbar />
             {children}
