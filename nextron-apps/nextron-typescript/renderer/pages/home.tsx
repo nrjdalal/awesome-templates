@@ -7,7 +7,7 @@ export default function HomePage() {
   const [message, setMessage] = React.useState('No message found')
 
   React.useEffect(() => {
-    window.ipc.on('message', (message: string) => {
+    window.ipc.on<string>('message', (message) => {
       setMessage(message)
     })
   }, [])
@@ -31,7 +31,7 @@ export default function HomePage() {
       <div>
         <button
           onClick={() => {
-            window.ipc.send('message', 'Hello')
+            window.ipc.send<string>('message', 'Hello')
           }}
         >
           Test IPC

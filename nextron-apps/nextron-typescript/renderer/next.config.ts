@@ -1,5 +1,6 @@
-/** @type {import('next').NextConfig} */
-module.exports = {
+import { NextConfig } from 'next'
+
+const config: NextConfig = {
   output: 'export',
   distDir: process.env.NODE_ENV === 'production' ? '../app' : '.next',
   trailingSlash: true,
@@ -7,3 +8,5 @@ module.exports = {
     unoptimized: true,
   },
 }
+
+export default config
