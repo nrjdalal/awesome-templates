@@ -9,8 +9,8 @@
     "web": "expo start --web"
   },
   "dependencies": {
-    "expo": "55.0.10-canary-20260328-2049187",
-    "expo-status-bar": "55.0.5-canary-20260328-2049187",
+    "expo": "55.0.10-canary-20260328-bdc6273",
+    "expo-status-bar": "55.0.5-canary-20260328-bdc6273",
     "react": "19.2.0",
     "react-native": "0.83.4"
   },
