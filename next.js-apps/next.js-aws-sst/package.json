@@ -33,7 +33,7 @@
     "next": "16.2.1",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "sst": "4.6.4"
+    "sst": "4.6.9"
   },
   "devDependencies": {
     "@commitlint/cli": "^20.5.0",
