@@ -38,7 +38,7 @@
     "@remixicon/react": "^4.9.0",
     "@tanstack/react-form": "^1.29.0",
     "@tanstack/react-query": "^5.99.0",
-    "better-auth": "^1.6.4",
+    "better-auth": "^1.6.5",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
