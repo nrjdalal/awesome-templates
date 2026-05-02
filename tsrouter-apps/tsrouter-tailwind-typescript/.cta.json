@@ -6,6 +6,7 @@
   "packageManager": "bun",
   "git": false,
   "install": true,
+  "intent": true,
   "addOnOptions": {},
   "includeExamples": false,
   "envVarValues": {},
