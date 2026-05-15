@@ -30,7 +30,7 @@
     "semi": false
   },
   "dependencies": {
-    "next": "16.3.0-canary.19",
+    "next": "16.3.0-canary.20",
     "react": "19.2.6",
     "react-dom": "19.2.6"
   },
@@ -43,7 +43,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "16.3.0-canary.19",
+    "eslint-config-next": "16.3.0-canary.20",
     "lint-staged": "^17.0.4",
     "prettier": "^3.8.3",
     "prettier-plugin-tailwindcss": "^0.8.0",
@@ -52,6 +52,7 @@
     "tailwindcss": "^4",
     "typescript": "^5"
   },
+  "packageManager": "bun@1.3.14",
   "ignoreScripts": [
     "sharp",
     "unrs-resolver"
