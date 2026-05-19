@@ -3,7 +3,7 @@ export default function Home() {
     <main className="min-h-dvh w-screen flex items-center justify-center flex-col gap-y-4 p-4">
       <img
         className="max-w-sm w-full"
-        src="https://tanstack.com/assets/splash-dark-8nwlc0Nt.png"
+        src="https://raw.githubusercontent.com/TanStack/tanstack.com/main/public/images/logos/splash-dark.png"
         alt="TanStack Logo"
       />
       <h1>
