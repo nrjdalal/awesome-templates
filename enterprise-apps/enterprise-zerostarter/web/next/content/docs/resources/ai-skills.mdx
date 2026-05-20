@@ -1,0 +1,189 @@
+---
+title: AI Skills
+description: Pre-defined skills for AI assistants and LLM agents to help with common tasks.
+---
+
+## Overview
+
+ZeroStarter includes a `.agents/skills` directory containing structured instructions for AI assistants and LLM agents. These skills help AI tools like Cursor, GitHub Copilot, and other AI coding assistants perform common tasks correctly and consistently.
+
+Skills are written in Markdown with frontmatter metadata, making them both human-readable and machine-parseable.
+
+## Available Skills
+
+### Git Commit
+
+**Location**: `.agents/skills/git/commit/SKILL.md`
+
+Creates atomic commits with conventional commit message format.
+
+**Triggers**: When user asks to "commit", "save changes", or "create a commit"
+
+**Workflow**:
+
+1. **Inspect Changes**: Review both staged and unstaged changes
+2. **Stage Changes**: Stage related changes together (one logical unit per commit)
+3. **Commit**: Create commit with conventional message format
+4. **Push (Optional)**: Only push if user explicitly requests it
+
+**Default Behavior**: The skill stages and commits changes but does **not** push automatically. This prevents accidental pushes to remote branches and gives users control over when changes are shared.
+
+**Push Confirmation**: To push after committing, the user must explicitly request it (e.g., "commit and push", "push the changes", or respond affirmatively when asked). If the user only asks to "commit" or "save changes", the skill stops after creating the commit.
+
+**Message Format**:
+
+```
+<type>(<scope>): <subject>
+
+<body>
+```
+
+| Element     | Description                                                               |
+| ----------- | ------------------------------------------------------------------------- |
+| **Type**    | `feat`, `fix`, `refactor`, `docs`, `chore`, `test`, `perf`, `style`, `ci` |
+| **Scope**   | Optional area in parentheses (package, component, feature name)           |
+| **Subject** | Imperative mood, lowercase, no period, ≤80 chars                          |
+| **Body**    | Optional; explain "why" not "what"; wrap at 80 chars                      |
+
+**Examples**:
+
+```
+feat(auth): add OAuth provider support
+fix(api): prevent duplicate webhook delivery
+refactor(web): extract auth middleware into separate module
+docs(readme): update installation steps
+chore(deps): bump dependencies to latest versions
+```
+
+### Turbo Build Graph
+
+**Location**: `.agents/skills/turbo/generate-build-graph/SKILL.md`
+
+Generates a styled SVG visualization of Turborepo task dependencies.
+
+**Triggers**: When user asks to "visualize dependencies", "generate build graph", or "update pipeline diagram"
+
+**Workflow**:
+
+1. **Generate Raw Graph**: `npx turbo run build --graph=graph.svg`
+2. **Clean Up Labels**: Remove prefixes and internal placeholders
+3. **Style for Dark Mode**: Apply transparent background and GitHub blue theme
+4. **Move to Public Assets**: Save to `web/next/public/graph-build.svg`
+
+**Output**: A dark-mode-friendly SVG that can be embedded in README:
+
+```markdown
+![Build Graph](/graph-build.svg)
+```
+
+## Skill Structure
+
+Each skill follows a standard structure:
+
+```
+.agents/skills/
+└── <category>/
+    └── <skill-name>/
+        └── SKILL.md
+```
+
+### SKILL.md Format
+
+````markdown
+---
+name: skill-name
+description: Brief description of what the skill does and when to use it.
+---
+
+# Skill Title
+
+Description of the skill.
+
+## Workflow
+
+### 1. First Step
+
+```bash
+command to run
+```
+````
+
+- Notes about this step
+- Important considerations
+
+### 2. Second Step
+
+...
+
+````
+
+## Creating Custom Skills
+
+To create a new skill:
+
+1. Create a directory: `.agents/skills/<category>/<skill-name>/`
+2. Add a `SKILL.md` file with:
+   - Frontmatter with `name` and `description`
+   - Clear workflow steps
+   - Code examples with commands
+   - Notes and edge cases
+
+**Example Custom Skill**:
+
+```markdown
+---
+name: db-migration
+description: Creates and runs database migrations. Use when user asks to update database schema.
+---
+
+# Database Migration
+
+Creates type-safe database migrations with Drizzle.
+
+## Workflow
+
+### 1. Create Migration
+
+```bash
+bun run db:generate
+````
+
+### 2. Review Migration
+
+Check the generated SQL in `packages/db/drizzle/`
+
+### 3. Apply Migration
+
+```bash
+bun run db:migrate
+```
+
+````
+
+## Integration with AI Tools
+
+### Cursor
+
+Skills in `.agents/skills/` are automatically available to Cursor's AI assistant when referenced in `AGENTS.md`:
+
+```markdown
+## Skills
+
+This project includes custom skills to assist with common tasks. Skills are located in `.agents/skills` and `.claude/skills`.
+````
+
+### GitHub Copilot
+
+Copilot can reference skills when you mention them in comments or prompts.
+
+### Custom AI Assistants
+
+The structured format makes skills easy to parse programmatically for custom AI integrations.
+
+## Best Practices
+
+- **Keep skills focused**: One task per skill
+- **Include examples**: Show expected inputs and outputs
+- **Document edge cases**: Handle errors and special situations
+- **Use standard commands**: Prefer project scripts over raw commands
+- **Version control**: Skills evolve with the project

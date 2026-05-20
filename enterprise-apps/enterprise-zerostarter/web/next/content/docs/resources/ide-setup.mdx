@@ -1,0 +1,42 @@
+---
+title: IDE Setup
+description: Recommended IDE configuration for ZeroStarter.
+---
+
+## Overview
+
+ZeroStarter includes VS Code configuration for a consistent development experience.
+
+## Visual Studio Code
+
+### Recommended Extensions
+
+Defined in `.vscode/extensions.json`:
+
+```json
+{
+  "recommendations": ["oxc.oxc-vscode"]
+}
+```
+
+The [Oxc extension](https://marketplace.visualstudio.com/items?itemName=oxc.oxc-vscode) provides fast linting (Oxlint) and formatting (Oxfmt).
+
+### Editor Settings
+
+Defined in `.vscode/settings.json`:
+
+```json
+{
+  "editor.defaultFormatter": "oxc.oxc-vscode",
+  "editor.formatOnSave": true
+}
+```
+
+## Cursor
+
+[Cursor](https://cursor.sh) uses the same VS Code configuration automatically.
+
+Additionally, ZeroStarter includes:
+
+- **AGENTS.md**: AI assistant instructions at repository root
+- **.agents/skills/**: Structured skills for AI-assisted tasks (see [AI Skills](/docs/resources/ai-skills))

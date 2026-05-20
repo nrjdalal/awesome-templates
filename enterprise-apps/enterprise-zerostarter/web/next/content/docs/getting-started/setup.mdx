@@ -1,0 +1,133 @@
+---
+title: Setup
+description: Step-by-step guide to install and set up ZeroStarter.
+---
+
+## Overview
+
+This guide will walk you through installing and setting up ZeroStarter on your local machine. You'll learn how to clone the repository, install dependencies, configure environment variables, set up the database, and configure authentication.
+
+## Getting Started
+
+### Prerequisites
+
+- [Bun](https://bun.sh) (v1.3.0 or later)
+
+### Setup
+
+1. Clone this template:
+
+   ```bash
+   bunx gitpick https://github.com/nrjdalal/zerostarter/tree/main
+   cd zerostarter
+   ```
+
+   > **Note**: The `main` branch is the latest stable release.
+
+2. Install dependencies:
+
+   ```bash
+   bun install
+   ```
+
+   > **Note**: If the installation fails, try using `bun install --ignore-scripts`
+
+3. Set up environment variables:
+
+   Copy the example file and fill in your values:
+
+   ```bash
+   cp .env.example .env
+   ```
+
+   The `.env` file contains the following variables:
+
+   ```
+   NODE_ENV=local
+
+   # -------------------- Server variables --------------------
+
+   HONO_APP_URL=http://localhost:4000
+   HONO_TRUSTED_ORIGINS=http://localhost:3000
+   HONO_RATE_LIMIT=60 # allow 60 req/min (default) and twice that for authenticated users
+   HONO_RATE_LIMIT_WINDOW_MS=60000 # 1 minute (default)
+
+   # Generate using `openssl rand -base64 32`
+   BETTER_AUTH_SECRET=
+
+   # Generate at `https://github.com/settings/developers`
+   GITHUB_CLIENT_ID=
+   GITHUB_CLIENT_SECRET=
+
+   # Generate at `https://console.cloud.google.com/apis/credentials`
+   GOOGLE_CLIENT_ID=
+   GOOGLE_CLIENT_SECRET=
+
+   # Generate using `bunx pglaunch -k`
+   POSTGRES_URL=
+
+   # -------------------- Client variables --------------------
+
+   NEXT_PUBLIC_APP_URL=http://localhost:3000
+   NEXT_PUBLIC_API_URL=http://localhost:4000
+
+   # Optional: PostHog Analytics (https://zerostarter.dev/docs/manage/analytics)
+   NEXT_PUBLIC_POSTHOG_HOST=https://eu.i.posthog.com
+   NEXT_PUBLIC_POSTHOG_KEY=
+
+   # Optional: User feedback (https://zerostarter.dev/docs/manage/feedback)
+   NEXT_PUBLIC_USERJOT_URL=
+   ```
+
+### Database Setup
+
+1. Ensure your PostgreSQL server is running.
+2. Run the generation:
+
+   ```bash
+   bun run db:generate
+   ```
+
+3. Run the migration:
+
+   ```bash
+   bun run db:migrate
+   ```
+
+### Authentication Setup
+
+ZeroStarter comes with some default authentication plugins using [Better Auth](https://better-auth.com), you can extend as needed.
+
+#### GitHub
+
+1. Create a GitHub OAuth App at [GitHub Developer Settings](https://github.com/settings/developers).
+2. Set the **Homepage URL** to `http://localhost:3000`.
+3. Set the **Authorization callback URL** to `http://localhost:4000/api/auth/callback/github`.
+4. Copy the **Client ID** and **Client Secret** into your `.env` file.
+
+#### Google
+
+1. Create a Google OAuth App in the [Google Cloud Console](https://console.cloud.google.com/apis/credentials).
+2. Configure the OAuth consent screen (External).
+3. Create an **OAuth Client ID** (Application type: Web).
+4. Set the **Authorized JavaScript origins** to `http://localhost:3000`.
+5. Set the **Authorized redirect URI** to `http://localhost:4000/api/auth/callback/google`.
+6. Copy the **Client ID** and **Client Secret** into your `.env` file.
+
+### Running the Application
+
+```bash
+bun dev
+```
+
+### Running the Application with Docker Compose
+
+```bash
+docker compose up
+```
+
+### Accessing the Application
+
+- Frontend: [http://localhost:3000](http://localhost:3000)
+- Backend: [http://localhost:4000](http://localhost:4000)
+- API Docs: [http://localhost:4000/api/docs](http://localhost:4000/api/docs)

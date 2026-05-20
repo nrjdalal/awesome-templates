@@ -1,0 +1,19 @@
+pre-commit:
+  piped: true
+  commands:
+    audit:
+      run: bun audit --audit-level high
+      use_stdin: true
+      only:
+        - ref: canary
+    lint-staged:
+      run: bunx lint-staged --verbose
+      stage_fixed: true
+    build:
+      run: bun run build
+      interactive: true
+
+commit-msg:
+  commands:
+    commitlint:
+      run: bunx commitlint --edit {1}

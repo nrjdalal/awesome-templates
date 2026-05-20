@@ -1,0 +1,184 @@
+---
+title: Type-Safe API Client
+description: Learn how to use the type-safe API client with Hono RPC.
+---
+
+## Overview
+
+ZeroStarter leverages Hono RPC to provide end-to-end type safety between the backend API and frontend client. This ensures that API calls are fully typed, catching errors at compile time and providing excellent developer experience with autocomplete and type checking.
+
+## How It Works
+
+This starter utilizes [Hono RPC](https://hono.dev/docs/guides/rpc) to provide end-to-end type safety between the backend and frontend.
+
+- **Backend**: Routes defined in `api/hono/src/routers` are exported as `AppType` at `api/hono/src/index.ts`.
+- **Frontend**: The client at `web/next/src/lib/api/client.ts` infers `AppType` request/response types using `hono/client`.
+
+## Usage Examples
+
+### Basic Request
+
+```ts
+import { apiClient } from "@/lib/api/client"
+
+// Fully typed request and response
+const res = await apiClient.health.$get()
+const { data } = await res.json()
+// data is typed as { message: string, environment: string, version: string }
+```
+
+### Authenticated Requests
+
+The API client is pre-configured with `credentials: "include"` for cookie-based authentication:
+
+```ts
+import { apiClient } from "@/lib/api/client"
+
+// Protected route - requires authentication
+const res = await apiClient.v1.session.$get()
+const { data } = await res.json()
+// data is typed as Session, or error contains { code: string, message: string }
+```
+
+### Session Data
+
+```ts
+import { apiClient } from "@/lib/api/client"
+
+// Get current session and user (via Better Auth)
+const res = await apiClient.auth["get-session"].$get()
+const data = await res.json()
+// data is typed as { session: Session, user: User } | null
+```
+
+## Backend Routes
+
+### Adding New Routes
+
+Define routes in `api/hono/src/routers/`:
+
+```ts
+// api/hono/src/routers/v1.ts
+import { Hono } from "hono"
+import { authMiddleware } from "@/middlewares"
+
+export const v1Router = new Hono()
+  .use("/*", authMiddleware)
+  .get("/session", (c) => {
+    const data = c.get("session")
+    return c.json({ data })
+  })
+  .post("/items", async (c) => {
+    const body = await c.req.json()
+    const data = { id: "123", ...body }
+    return c.json({ data })
+  })
+```
+
+### Request Validation
+
+Use `@hono/standard-validator` with Zod for type-safe request validation:
+
+```ts
+import { standardValidator } from "@hono/standard-validator"
+import { z } from "zod"
+
+const createItemSchema = z.object({
+  name: z.string().min(1),
+  description: z.string().optional(),
+})
+
+app.post("/items", standardValidator("json", createItemSchema), async (c) => {
+  const { name, description } = c.req.valid("json")
+  // name and description are fully typed
+  const data = { id: "123", name, description }
+  return c.json({ data })
+})
+```
+
+## Client Configuration
+
+The API client is configured in `web/next/src/lib/api/client.ts`:
+
+```ts
+import type { AppType } from "@api/hono"
+import { hc } from "hono/client"
+import { config } from "@/lib/config"
+
+type Client = ReturnType<typeof hc<AppType>>
+const hcWithType = (...args: Parameters<typeof hc>): Client => hc<AppType>(...args)
+
+const url = config.api.internalUrl ? config.api.internalUrl : config.api.url
+
+const honoClient = hcWithType(url, {
+  init: {
+    credentials: "include", // Include cookies for auth
+  },
+})
+
+export const apiClient = honoClient.api
+```
+
+## API Documentation
+
+ZeroStarter includes auto-generated API documentation powered by [Scalar](https://scalar.com) and OpenAPI.
+
+### Endpoints
+
+- **API Docs UI**: `/api/docs` - Interactive API documentation with Scalar
+- **OpenAPI Spec**: `/api/openapi.json` - Raw OpenAPI specification
+
+### Features
+
+The Scalar API documentation provides:
+
+- **Interactive Testing**: Try API endpoints directly from the browser
+- **Code Samples**: Auto-generated examples for multiple languages (defaults to `hono/client`)
+- **Request/Response Schemas**: Full type documentation from Zod validators
+- **Authentication**: Test authenticated endpoints with your session
+
+### Adding Route Documentation
+
+Use `describeRoute` from `hono-openapi` to add OpenAPI metadata to your routes:
+
+```ts
+import { describeRoute, resolver } from "hono-openapi"
+import { z } from "zod"
+
+app.get(
+  "/health",
+  describeRoute({
+    tags: ["System"],
+    summary: "Health Check",
+    responses: {
+      200: {
+        description: "OK",
+        content: {
+          "application/json": {
+            schema: resolver(
+              z.object({
+                data: z.object({
+                  message: z.string(),
+                  environment: z.string(),
+                }),
+              }),
+            ),
+          },
+        },
+      },
+    },
+  }),
+  (c) => {
+    const data = { message: "ok", environment: "production" }
+    return c.json({ data })
+  },
+)
+```
+
+## Benefits
+
+- **Compile-time Type Checking**: Catch API errors before runtime
+- **Autocomplete**: Full IntelliSense support for routes, params, and responses
+- **Refactoring Safety**: Rename routes or change types with confidence
+- **No Code Generation**: Types are inferred directly from your backend code
+- **Auto-Generated Docs**: OpenAPI documentation from your route definitions

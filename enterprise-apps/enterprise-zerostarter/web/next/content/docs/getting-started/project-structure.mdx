@@ -1,0 +1,99 @@
+---
+title: Project Structure
+description: Understand the monorepo structure and organization of ZeroStarter.
+---
+
+## Overview
+
+ZeroStarter uses a monorepo architecture to organize code into logical packages. This structure enables code sharing, type safety, and efficient development workflows.
+
+## Project Structure
+
+This project is a monorepo organized as follows:
+
+```
+.
+├── api/
+│   └── hono/            # Backend API server (Hono)
+├── web/
+│   └── next/            # Frontend application (Next.js)
+│       └── content/     # Documentation and blog content (MDX)
+└── packages/
+    ├── auth/            # Shared authentication logic (Better Auth)
+    ├── db/              # Database schema and Drizzle configuration
+    ├── env/             # Type-safe environment variables
+    └── tsconfig/        # Shared TypeScript configuration
+```
+
+## Directory Details
+
+### `api/hono/`
+
+The backend API server built with [Hono](https://hono.dev).
+
+- **`src/index.ts`**: Main application entry point, exports `AppType` for type-safe RPC
+- **`src/routers/`**: API route handlers
+  - `auth.ts`: Authentication routes (Better Auth handler)
+  - `v1.ts`: Protected API routes requiring authentication
+- **`src/middlewares/`**: Custom middlewares
+  - `auth.ts`: Authentication middleware for protected routes
+  - `rate-limiter.ts`: Rate limiting middleware
+
+### `web/next/`
+
+The frontend application built with [Next.js 16](https://nextjs.org).
+
+- **`src/app/`**: Next.js App Router pages and layouts
+  - `(content)/`: Documentation and blog pages
+  - `(protected)/`: Authenticated user pages (dashboard)
+  - `(llms.txt)/`: Auto-generated AI documentation endpoints
+- **`src/components/`**: React components
+  - `ui/`: Shadcn UI components
+  - `sidebar/`: Navigation sidebar components
+- **`src/lib/`**: Shared utilities
+  - `api/client.ts`: Type-safe API client using Hono RPC
+  - `auth/`: Authentication client and utilities
+  - `config.ts`: Application configuration
+- **`content/`**: MDX content
+  - `docs/`: Documentation pages
+  - `blog/`: Blog posts
+
+### `packages/auth/`
+
+Shared authentication logic using [Better Auth](https://better-auth.com).
+
+- **`src/index.ts`**: Auth configuration with database adapter and social providers
+- Supports GitHub and Google OAuth, magic links
+- Organization and teams plugin for multi-tenant support
+- Exports session types for type safety
+
+### `packages/db/`
+
+Database schema and configuration using [Drizzle ORM](https://orm.drizzle.team).
+
+- **`src/schema/`**: Database table definitions
+  - `auth.ts`: User, session, account, verification, organization, member, team, teamMember, and invitation tables
+- **`drizzle/`**: Generated migrations
+- **`drizzle.config.ts`**: Drizzle Kit configuration
+
+### `packages/env/`
+
+Type-safe environment variables using [@t3-oss/env-core](https://env.t3.gg).
+
+- **`src/api-hono.ts`**: API server environment variables
+- **`src/auth.ts`**: Authentication environment variables
+- **`src/db.ts`**: Database environment variables
+- **`src/web-next.ts`**: Frontend environment variables (client and server)
+
+### `packages/tsconfig/`
+
+Shared TypeScript configuration files for consistent settings across packages.
+
+## Key Files
+
+| File           | Purpose                                                        |
+| -------------- | -------------------------------------------------------------- |
+| `package.json` | Root package with workspace configuration and scripts          |
+| `turbo.json`   | Turborepo build configuration and global environment variables |
+| `lefthook.yml` | Git hooks configuration for linting and formatting             |
+| `.env`         | Environment variables (create from `.env.example`)             |

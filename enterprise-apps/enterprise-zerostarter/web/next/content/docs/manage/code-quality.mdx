@@ -1,0 +1,233 @@
+---
+title: Code Quality
+description: Git hooks, linting, formatting, and commit conventions.
+---
+
+## Overview
+
+ZeroStarter enforces code quality through automated tools that run on every commit. This ensures consistent code style, catches errors early, and maintains a clean commit history.
+
+## Tools
+
+| Tool                                                      | Purpose                           |
+| --------------------------------------------------------- | --------------------------------- |
+| [Lefthook](https://github.com/evilmartians/lefthook)      | Git hooks manager                 |
+| [lint-staged](https://github.com/lint-staged/lint-staged) | Run linters on staged files       |
+| [Oxlint](https://oxc.rs/docs/guide/usage/linter)          | Fast JavaScript/TypeScript linter |
+| [Oxfmt](https://oxc.rs/docs/guide/usage/formatter)        | Fast code formatter               |
+| [Commitlint](https://commitlint.js.org)                   | Commit message linter             |
+
+## Git Hooks
+
+Git hooks are configured in `lefthook.yml`:
+
+```yaml
+pre-commit:
+  piped: true
+  commands:
+    audit:
+      run: bun audit --audit-level high
+      use_stdin: true
+      only:
+        - ref: canary
+    lint-staged:
+      run: bunx lint-staged --verbose
+      stage_fixed: true
+    build:
+      run: bun run build
+      interactive: true
+
+commit-msg:
+  commands:
+    commitlint:
+      run: bunx commitlint --edit {1}
+```
+
+### Pre-commit Hook
+
+Runs before each commit in sequence (piped):
+
+1. **Audit**: Security audit on `canary` branch (checks for vulnerable dependencies)
+2. **lint-staged**: Format and lint only staged files
+3. **Build**: Verify the project builds successfully
+
+### Commit-msg Hook
+
+Validates commit messages follow conventional commit format.
+
+## Lint-Staged Configuration
+
+The `.lintstagedrc.json` defines what runs on staged files:
+
+```json
+{
+  "*": ["oxfmt --no-error-on-unmatched-pattern", "oxlint"],
+  "package.json": ["bun .github/scripts/deps-manager.ts"]
+}
+```
+
+- **All files**: Format with Oxfmt, then lint with Oxlint
+- **package.json**: Run dependency manager script (ensures consistent dependency versions)
+
+## Formatting with Oxfmt
+
+Oxfmt configuration in `.oxfmtrc.jsonc`:
+
+```jsonc
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "semi": false,
+  "experimentalSortImports": {},
+  "experimentalTailwindcss": {},
+  "ignorePatterns": ["**/*.lock", ".agents/**", ".claude/**"],
+}
+```
+
+| Setting                   | Value                                       | Description                                      |
+| ------------------------- | ------------------------------------------- | ------------------------------------------------ |
+| `semi`                    | `false`                                     | No semicolons (like Prettier with `semi: false`) |
+| `experimentalSortImports` | `{}`                                        | Auto-sort imports                                |
+| `experimentalTailwindcss` | `{}`                                        | Sort Tailwind CSS classes                        |
+| `ignorePatterns`          | `["**/*.lock", ".agents/**", ".claude/**"]` | Skip lock files and AI skill directories         |
+
+### Manual Formatting
+
+```bash
+# Format all files
+bun run format
+
+# Check formatting without changes
+bun run format:check
+```
+
+## Linting with Oxlint
+
+Oxlint runs automatically via lint-staged. For manual linting:
+
+```bash
+# Lint all files
+bun run lint
+```
+
+Oxlint is significantly faster than ESLint while catching common issues.
+
+## Commit Message Convention
+
+Commits must follow [Conventional Commits](https://www.conventionalcommits.org):
+
+```
+<type>(<scope>): <subject>
+
+<body>
+```
+
+### Types
+
+| Type       | Description                                             |
+| ---------- | ------------------------------------------------------- |
+| `feat`     | New feature                                             |
+| `fix`      | Bug fix                                                 |
+| `docs`     | Documentation only                                      |
+| `style`    | Code style (formatting, semicolons)                     |
+| `refactor` | Code change that neither fixes a bug nor adds a feature |
+| `perf`     | Performance improvement                                 |
+| `test`     | Adding or updating tests                                |
+| `chore`    | Maintenance (dependencies, build scripts)               |
+| `ci`       | CI/CD changes                                           |
+
+### Examples
+
+```bash
+feat(auth): add Google OAuth provider
+fix(api): handle null user in session middleware
+docs(readme): update installation instructions
+chore(deps): bump dependencies to latest versions
+refactor(web): extract form validation into hook
+```
+
+### Breaking Changes
+
+Append `!` after type for breaking changes:
+
+```bash
+feat!: remove deprecated API endpoints
+```
+
+## Running Checks Manually
+
+```bash
+# All checks (what CI runs)
+bun audit --audit-level high
+bun run lint
+bun run build
+bun run check-types
+
+# Format all files
+bun run format
+
+# Just type checking
+bun run check-types
+```
+
+## CI/CD Integration
+
+GitHub Actions runs these checks on every PR:
+
+```yaml
+# .github/workflows/auto-check-build.yml
+- name: Audit, Lint, and Build
+  run: |
+    bun audit --audit-level high
+    bun run lint
+    bun run build
+```
+
+## Skipping Hooks
+
+In rare cases, you can skip hooks:
+
+```bash
+# Skip all hooks (use sparingly!)
+git commit --no-verify -m "emergency fix"
+
+# Skip specific hook
+LEFTHOOK=0 git commit -m "message"
+```
+
+**Warning**: Only skip hooks for emergencies. CI will still catch issues.
+
+## Troubleshooting
+
+### Hooks Not Running
+
+```bash
+# Reinstall hooks
+bunx lefthook install
+```
+
+### Format Conflicts
+
+If formatting creates unexpected changes:
+
+```bash
+# Format entire codebase
+bun run format
+
+# Stage formatted files
+git add .
+```
+
+### Commitlint Failing
+
+Check your message follows the format:
+
+```bash
+# Good
+git commit -m "feat: add user profile page"
+
+# Bad (missing type)
+git commit -m "add user profile page"
+
+# Bad (wrong type)
+git commit -m "added: user profile page"
+```

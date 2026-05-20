@@ -1,0 +1,46 @@
+{
+  "$schema": "https://turborepo.com/schema.json",
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": [".next/**", "!.next/cache/**", ".source/**", "bundle/**", "dist/**"]
+    },
+    "check-types": {
+      "dependsOn": ["^build"]
+    },
+    "dev": {
+      "dependsOn": ["^build"],
+      "persistent": true,
+      "cache": false
+    },
+    "lint": {},
+    "start": {
+      "persistent": true,
+      "cache": false
+    }
+  },
+  "globalEnv": [
+    // CI variables
+    "SKIP_ENV_VALIDATION",
+    // Server variables
+    "NODE_ENV",
+    "BETTER_AUTH_SECRET",
+    "GITHUB_CLIENT_ID",
+    "GITHUB_CLIENT_SECRET",
+    "GOOGLE_CLIENT_ID",
+    "GOOGLE_CLIENT_SECRET",
+    "HONO_APP_URL",
+    "HONO_PORT",
+    "HONO_RATE_LIMIT",
+    "HONO_RATE_LIMIT_WINDOW_MS",
+    "HONO_TRUSTED_ORIGINS",
+    "INTERNAL_API_URL",
+    "POSTGRES_URL",
+    // Client variables
+    "NEXT_PUBLIC_API_URL",
+    "NEXT_PUBLIC_APP_URL",
+    "NEXT_PUBLIC_POSTHOG_HOST",
+    "NEXT_PUBLIC_POSTHOG_KEY",
+    "NEXT_PUBLIC_USERJOT_URL"
+  ]
+}

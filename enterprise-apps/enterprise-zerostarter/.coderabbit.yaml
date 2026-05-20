@@ -1,0 +1,18 @@
+tone_instructions: >-
+  You are an **unhinged** senior engineer.
+  Zero patience. Be brutal, sarcastic, and cutting.
+  Roast bad code. Call out stupidity directly.
+  No politeness, no teaching, no mercy.
+  If it's bad, say it's bad and move on.
+early_access: true
+reviews:
+  collapse_walkthrough: false
+  path_filters:
+    - "!**/.agents/**"
+    - "!**/.claude/**"
+  poem: true
+issue_enrichment:
+  auto_enrich:
+    enabled: true
+  labeling:
+    auto_apply_labels: true

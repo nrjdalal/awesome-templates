@@ -1,0 +1,71 @@
+---
+title: Infisical
+description: Secrets Management on Autopilot.
+---
+
+## Overview
+
+All-in-one platform to securely manage application configuration and secrets across your team and infrastructure. Used by Fortune 500 enterprises, international governments, and fastest-growing startups. Save time and boost security.
+
+## Self-Hosting
+
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/infisical-resend?referralCode=nrjdalal&utm_medium=integration&utm_source=template&utm_campaign=generic)
+
+## CLI Reference
+
+### Installation
+
+```sh
+bun add -g @infisical/cli
+```
+
+### Login
+
+Login into Infisical from the CLI
+
+- Interactive
+
+```sh
+infisical login
+```
+
+- Non-interactive
+  - `--plain`: When used with direct user login or machine identity authentication, outputs only the JWT access token without any additional formatting. This is useful for scripting and CI/CD pipelines where you need to capture the token.
+  - `--silent`: Use it alongside the `--plain` flag to disable all messages in the console except from the access token.
+
+```sh
+infisical login \
+  --domain "<YOUR_DOMAIN>" \
+  --email "<YOUR_EMAIL>" \
+  --password "<YOUR_PASSWORD>" \
+  --organization-id "<YOUR_ORGANIZATION_ID>" \
+  --plain \
+  --silent
+```
+
+### Init
+
+Switch between Infisical projects within CLI
+
+```sh
+infisical init
+```
+
+Link a local project to your Infisical project. Once connected, you can then access the secrets locally from the connected Infisical project.
+
+> This command creates a `.infisical.json` file containing your Project ID.
+
+### Export
+
+Export Infisical secrets from CLI into different file formats
+
+```sh
+infisical export --env=dev --output-file=./.env.development
+```
+
+- `--env`: The environment to export secrets for, defaults to `dev`. Can be one of: `dev`, `staging`, `prod`.
+- `--projectId`: By default the project id is retrieved from the `.infisical.json` located at the root of your local project. This flag allows you to override this behavior by explicitly defining the project to fetch your secrets from.
+
+### Read more
+
+- [Infisical CLI Reference](https://infisical.com/docs/cli/overview)

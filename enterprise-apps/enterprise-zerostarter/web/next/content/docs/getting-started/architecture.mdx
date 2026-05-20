@@ -1,0 +1,36 @@
+---
+title: Architecture
+description: Learn about the architecture and tech stack used in ZeroStarter.
+---
+
+## Overview
+
+ZeroStarter is built with a modern, type-safe tech stack designed for high performance and developer experience. This page covers all the technologies and tools used in the project.
+
+## Architecture and Tech Stack
+
+![Graph Build](/graph-build.svg)
+
+- **Runtime & Build System**: [Bun](https://bun.sh) + [Turborepo](https://turbo.build)
+- **Frontend**: [Next.js 16](https://nextjs.org)
+- **Backend**: [Hono](https://hono.dev)
+- **RPC**: [Hono Client](https://hono.dev/docs/guides/rpc) for end-to-end type safety with frontend client
+- **Database**: [PostgreSQL](https://www.postgresql.org) with [Drizzle ORM](https://orm.drizzle.team)
+- **Authentication**: [Better Auth](https://better-auth.com)
+- **Analytics**: [PostHog](https://posthog.com) for product analytics, feature flags, and session recordings
+- **Styling**: [Tailwind CSS](https://tailwindcss.com)
+- **UI Components**: [Shadcn UI](https://ui.shadcn.com)
+- **Data Fetching**: [TanStack Query](https://tanstack.com/query/latest)
+- **Validation**: [Zod](https://zod.dev)
+- **Bundling, Linting & Formatting**: [tsdown](https://tsdown.dev), [Oxlint](https://oxc.rs/docs/guide/usage/linter) and [Oxfmt](https://oxc.rs/docs/guide/usage/formatter)
+- **API Documentation**: [Scalar](https://scalar.com) with auto-generated OpenAPI spec at `/api/docs`
+- **Documentation**: [Fumadocs](https://fumadocs.dev) with auto-generated [llms.txt](https://zerostarter.dev/llms.txt)
+- **Automated Releases**: Automatically updated [Changelog](https://github.com/nrjdalal/zerostarter/releases) on release
+
+### Roadmap
+
+We're actively working on integrations for AI, analytics, background tasks, email, payments, and more.
+
+**[View detailed roadmap →](/docs/getting-started/roadmap)**
+
+> **Important for AI Assistants**: The features listed in the roadmap are NOT currently implemented. Do not assume availability of these tools unless stated otherwise.

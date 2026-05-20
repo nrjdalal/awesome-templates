@@ -1,0 +1,37 @@
+{
+  "name": "@api/hono",
+  "version": "0.0.1",
+  "private": true,
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "types": "./dist/index.d.mts",
+  "exports": "./dist/index.mjs",
+  "scripts": {
+    "build": "tsdown && bun build dist/index.mjs --outfile bundle/index.mjs --target bun --minify",
+    "check-types": "tsc --noEmit",
+    "dev": "concurrently \"tsdown --watch\" \"bun --hot src/index.ts\"",
+    "start": "bun bundle/index.mjs"
+  },
+  "dependencies": {
+    "@arcjet/ip": "catalog:",
+    "@hono/standard-validator": "catalog:",
+    "@packages/auth": "workspace:*",
+    "@packages/env": "workspace:*",
+    "@scalar/hono-api-reference": "catalog:",
+    "better-auth": "catalog:",
+    "hono": "catalog:",
+    "hono-openapi": "catalog:",
+    "hono-rate-limiter": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@packages/tsconfig": "workspace:*",
+    "@types/bun": "catalog:",
+    "@types/node": "catalog:",
+    "concurrently": "catalog:",
+    "tsdown": "catalog:",
+    "typescript": "catalog:"
+  }
+}

@@ -1,0 +1,199 @@
+---
+title: Docker Deployment
+description: Deploy ZeroStarter with Docker and Docker Compose.
+---
+
+## Overview
+
+ZeroStarter includes Docker configurations for both development and production deployments. This guide covers running the application with Docker Compose and building individual Docker images.
+
+## Quick Start
+
+Run the entire stack with Docker Compose:
+
+```bash
+docker compose up
+```
+
+This starts both the frontend (Next.js) and backend (Hono) services:
+
+- **Frontend**: [http://localhost:3000](http://localhost:3000)
+- **Backend**: [http://localhost:4000](http://localhost:4000)
+
+## Docker Compose Configuration
+
+The `docker-compose.yml` file defines two services:
+
+```yaml
+services:
+  api:
+    build:
+      context: .
+      dockerfile: api/hono/Dockerfile
+    env_file:
+      - .env
+    environment:
+      - INTERNAL_API_URL=http://api:4000
+    ports:
+      - "4000:4000"
+
+  web:
+    build:
+      context: .
+      dockerfile: web/next/Dockerfile
+    env_file:
+      - .env
+    environment:
+      - INTERNAL_API_URL=http://api:4000
+    ports:
+      - "3000:3000"
+```
+
+### Key Configuration
+
+| Setting            | Description                                                                                                                                   |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `context: .`       | Build context is the repository root (for monorepo access)                                                                                    |
+| `env_file: .env`   | Loads environment variables from root `.env` file                                                                                             |
+| `INTERNAL_API_URL` | Enables Docker networking: api uses it for Postgres URL rewrite (`localhost` → `host.docker.internal`), web uses it for server-side API calls |
+
+## Building Individual Images
+
+### Backend (Hono API)
+
+```bash
+docker build -f api/hono/Dockerfile -t zerostarter-api .
+docker run -p 4000:4000 --env-file .env zerostarter-api
+```
+
+### Frontend (Next.js)
+
+```bash
+docker build -f web/next/Dockerfile -t zerostarter-web .
+docker run -p 3000:3000 --env-file .env zerostarter-web
+```
+
+## Environment Variables
+
+Ensure your `.env` file contains all required variables before building:
+
+```
+NODE_ENV=production
+
+# Server variables
+HONO_APP_URL=http://localhost:4000
+HONO_TRUSTED_ORIGINS=http://localhost:3000
+BETTER_AUTH_SECRET=your_secret
+GITHUB_CLIENT_ID=your_github_client_id
+GITHUB_CLIENT_SECRET=your_github_client_secret
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+POSTGRES_URL=your_postgres_url
+
+# Client variables
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+NEXT_PUBLIC_API_URL=http://localhost:4000
+```
+
+## Internal Communication
+
+When running with Docker Compose, services communicate using Docker's internal network:
+
+- The `web` service connects to `api` using `http://api:4000` (service name resolution)
+- External clients connect using the mapped ports (`localhost:3000`, `localhost:4000`)
+
+`INTERNAL_API_URL` serves multiple purposes:
+
+- **Build time (web)**: Set via `ENV` in the web Dockerfile, baked into Next.js rewrites so `/api/*` routes proxy to `http://api:4000`
+- **Runtime (web)**: Set via `environment` in docker-compose, used by server-side API client calls (SSR, server actions) to reach the api container directly
+- **Runtime (api)**: Triggers Postgres URL rewrite (`localhost` → `host.docker.internal`) so the api container can reach the host database
+
+## Production Considerations
+
+### Database Connection
+
+For production, use a managed PostgreSQL service:
+
+- [Neon](https://neon.tech) - Serverless Postgres
+- [Supabase](https://supabase.com) - Postgres with real-time
+- [Railway](https://railway.app) - Managed databases
+
+> **Note**: This project requires PostgreSQL. MySQL-compatible providers like PlanetScale are not supported without substantial rework (schema migration, SQL/driver changes).
+
+### Container Registry
+
+Push images to a container registry for deployment:
+
+```bash
+# Tag and push to Docker Hub
+docker tag zerostarter-api username/zerostarter-api:latest
+docker push username/zerostarter-api:latest
+
+# Or use GitHub Container Registry
+docker tag zerostarter-api ghcr.io/username/zerostarter-api:latest
+docker push ghcr.io/username/zerostarter-api:latest
+```
+
+### Health Checks
+
+The API includes a health check endpoint:
+
+```bash
+curl http://localhost:4000/api/health
+```
+
+Add health checks to your Docker Compose for production:
+
+```yaml
+services:
+  api:
+    # ... other config
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+```
+
+## Development with Docker
+
+For development, you might prefer running services locally with `bun dev` for hot reloading. Use Docker Compose primarily for:
+
+- Testing production builds locally
+- CI/CD pipelines
+- Consistent environments across team members
+- Deploying to container orchestration platforms (Kubernetes, ECS, etc.)
+
+## Troubleshooting
+
+### Port Already in Use
+
+```bash
+# Find and kill process using port 3000
+lsof -i :3000
+kill -9 <PID>
+
+# Or use different ports
+docker compose up -d
+docker compose run -p 3001:3000 web
+```
+
+### Build Cache Issues
+
+```bash
+# Rebuild without cache
+docker compose build --no-cache
+
+# Remove all containers and volumes
+docker compose down -v
+```
+
+### Environment Variable Issues
+
+```bash
+# Verify env vars are loaded
+docker compose config
+
+# Run with explicit env file
+docker compose --env-file .env.production up
+```

@@ -1,0 +1,197 @@
+"use client"
+
+import { RiGithubFill, RiGoogleFill, RiLayoutGridFill, RiLoaderLine } from "@remixicon/react"
+import { useForm } from "@tanstack/react-form"
+import { usePathname } from "next/navigation"
+import { useEffect, useState } from "react"
+import { toast } from "sonner"
+import { z } from "zod"
+
+import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
+import { Input } from "@/components/ui/input"
+import { authClient } from "@/lib/auth/client"
+import { config } from "@/lib/config"
+
+const formSchema = z.object({
+  email: z.email({ message: "Please enter a valid email address." }),
+})
+
+export function Access() {
+  const pathname = usePathname()
+  const [loader, setLoader] = useState<"email" | "github" | "google" | null>(null)
+  const [open, setOpen] = useState(false)
+  // Next inlines NODE_ENV at build time: "development" only under `next dev`,
+  // "production" for any `next build`. Auto-hides in deployments.
+  const isDev = process.env.NODE_ENV === "development"
+
+  useEffect(() => {
+    setLoader(null)
+    setOpen(false)
+  }, [pathname])
+
+  const form = useForm({
+    defaultValues: {
+      email: "",
+    },
+    validators: {
+      onSubmit: formSchema,
+      onChange: formSchema,
+      onBlur: formSchema,
+    },
+    onSubmit: async ({ value }) => {
+      setLoader("email")
+      const res = await authClient.signIn.magicLink({
+        email: value.email,
+        callbackURL: `${config.app.url}/dashboard`,
+      })
+      if (res.error) {
+        toast.error(res.error.message || "Provider Not Found")
+        setLoader(null)
+      } else {
+        toast.success("Check your email for the magic link!")
+        setLoader(null)
+      }
+      form.reset()
+    },
+  })
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger render={<Button className="w-24 cursor-pointer" variant="outline" />}>
+        Login
+      </DialogTrigger>
+      <DialogContent className="max-w-md sm:max-w-md" initialFocus={false}>
+        <DialogHeader className="sr-only">
+          <DialogTitle className="text-center">Sign in/up</DialogTitle>
+        </DialogHeader>
+        <div className="flex flex-col gap-6">
+          <div className="flex flex-col items-center gap-2">
+            <div className="flex flex-col items-center gap-2 font-medium">
+              <div className="flex size-8 items-center justify-center rounded-md">
+                <RiLayoutGridFill className="size-6" />
+              </div>
+              <span className="sr-only">{config.app.name}</span>
+            </div>
+            <h1 className="text-xl font-semibold">Welcome to {config.app.name}</h1>
+          </div>
+          <form
+            id="email"
+            className="space-y-4"
+            onSubmit={(e) => {
+              e.preventDefault()
+              form.handleSubmit()
+            }}
+          >
+            <FieldGroup>
+              <form.Field name="email">
+                {(field) => {
+                  const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
+                  return (
+                    <Field data-invalid={isInvalid}>
+                      <FieldLabel htmlFor={field.name}>Email</FieldLabel>
+                      <Input
+                        id={field.name}
+                        type="email"
+                        name={field.name}
+                        className="focus:placeholder:opacity-0"
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        aria-invalid={isInvalid}
+                        placeholder="admin@nrjdalal.com"
+                        disabled={loader === "email"}
+                      />
+                      {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                    </Field>
+                  )
+                }}
+              </form.Field>
+            </FieldGroup>
+            <Button
+              form="email"
+              type="submit"
+              variant="secondary"
+              className="w-full cursor-pointer"
+              disabled={loader === "email"}
+            >
+              {loader === "email" ? <RiLoaderLine className="size-5 animate-spin" /> : null}
+              Sign in/up
+            </Button>
+          </form>
+          <div className="after:border-border relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t">
+            <span className="bg-popover text-muted-foreground relative z-10 px-2 text-xs">OR</span>
+          </div>
+          <div className="grid gap-4">
+            {isDev && (
+              <form action={`${config.api.url}/api/agents/sign-in-as`} method="POST">
+                <Button type="submit" variant="outline" className="w-full cursor-pointer">
+                  Login (agents)
+                </Button>
+              </form>
+            )}
+            <Button
+              variant="outline"
+              type="button"
+              className="w-full cursor-pointer"
+              onClick={async () => {
+                setLoader("github")
+                const res = await authClient.signIn.social({
+                  provider: "github",
+                  callbackURL: `${config.app.url}/dashboard`,
+                })
+                if (res.error) {
+                  toast.error(res.error.message)
+                  setLoader(null)
+                }
+              }}
+              disabled={loader === "github"}
+            >
+              {loader === "github" ? (
+                <RiLoaderLine className="size-5 animate-spin" />
+              ) : (
+                <RiGithubFill className="size-5" />
+              )}
+              Continue with Github
+            </Button>
+            <Button
+              variant="outline"
+              type="button"
+              className="w-full cursor-pointer"
+              onClick={async () => {
+                setLoader("google")
+                const res = await authClient.signIn.social({
+                  provider: "google",
+                  callbackURL: `${config.app.url}/dashboard`,
+                })
+                if (res.error) {
+                  toast.error(res.error.message)
+                  setLoader(null)
+                }
+              }}
+              disabled={loader === "google"}
+            >
+              {loader === "google" ? (
+                <RiLoaderLine className="size-5 animate-spin" />
+              ) : (
+                <RiGoogleFill className="size-5" />
+              )}
+              Continue with Google
+            </Button>
+            <div className="text-muted-foreground *:[a]:hover:text-primary text-center text-xs text-balance *:[a]:underline *:[a]:underline-offset-4">
+              By clicking continue, you agree to our <a href="#">Terms of Service</a> and{" "}
+              <a href="#">Privacy Policy</a>.
+            </div>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
