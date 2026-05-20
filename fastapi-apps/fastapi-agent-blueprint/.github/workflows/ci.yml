@@ -1,0 +1,138 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  branch-name:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate branch name
+        run: |
+          BRANCH="${{ github.head_ref }}"
+          PATTERN="^(feat|fix|refactor|docs|chore|test|i18n|ci|perf|style)/[a-z0-9]([a-z0-9._-]*[a-z0-9])?$"
+          if [[ ! "$BRANCH" =~ $PATTERN ]]; then
+            echo "::error::Branch name '$BRANCH' does not follow the required format: {type}/{description}"
+            echo "Valid types: feat, fix, refactor, docs, chore, test, i18n, ci, perf, style"
+            echo "Example: feat/add-user-auth, fix/null-pointer-in-service"
+            exit 1
+          fi
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: uv sync --group dev
+
+      - name: Ruff check
+        run: uv run ruff check src/
+
+      - name: Ruff format check
+        run: uv run ruff format --check src/
+
+  test:
+    runs-on: ubuntu-latest
+    services:
+      dynamodb-local:
+        image: amazon/dynamodb-local:latest
+        ports:
+          - 8000:8000
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: uv sync --group dev --extra admin --extra aws
+
+      - name: Run tests
+        env:
+          ENV: local
+          ADMIN_BOOTSTRAP_ENABLED: "false"
+          ADMIN_STORAGE_SECRET: ci-test-secret
+          DATABASE_ENGINE: postgresql
+          DATABASE_USER: postgres
+          DATABASE_PASSWORD: postgres
+          DATABASE_HOST: 127.0.0.1
+          DATABASE_PORT: "5432"
+          DATABASE_NAME: postgres
+          AWS_SQS_ACCESS_KEY: test
+          AWS_SQS_SECRET_KEY: test
+          AWS_SQS_URL: http://localhost:4566
+        run: uv run pytest tests/ -v --tb=short
+
+  # Minimal-install boot regression: confirm the app boots and serves /api/health
+  # with only core deps installed (no admin / aws / sqs / pydantic-ai extras).
+  # This is the acceptance guard for #101's "optional extra uninstall → still
+  # boots" promise, extended by #104 for the admin + aws extras.
+  minimal-install:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install core-only dependencies
+        run: uv sync --group dev
+
+      - name: Run no-extras boot regression tests
+        env:
+          ENV: quickstart
+          ADMIN_BOOTSTRAP_ENABLED: "false"
+          ADMIN_STORAGE_SECRET: ci-test-secret
+          DATABASE_ENGINE: sqlite
+          DATABASE_NAME: ":memory:"
+          DATABASE_USER: unused
+          DATABASE_PASSWORD: unused
+          DATABASE_HOST: unused
+          DATABASE_PORT: "0"
+          BROKER_TYPE: inmemory
+        run: uv run pytest tests/integration/_core/test_minimal_install.py -v --tb=short
+
+  architecture:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: uv sync --group dev
+
+      - name: Install pre-commit
+        run: uv run pre-commit install
+
+      - name: Run architecture checks
+        run: uv run pre-commit run --all-files

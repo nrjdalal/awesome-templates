@@ -1,0 +1,161 @@
+[project]
+name = "fastapi-agent-blueprint"
+version = "0.6.0"
+description = "FastAPI backend blueprint for AI agent apps: DDD domains, SQLAlchemy, Taskiq, RAG infra, and Claude/Codex collaboration harness"
+readme = "README.md"
+requires-python = ">=3.12.9"
+keywords = [
+    "fastapi",
+    "backend-blueprint",
+    "clean-architecture",
+    "domain-driven-design",
+    "dependency-injection",
+    "ai-agents",
+    "ai-assisted-development",
+    "coding-agents",
+    "llm",
+    "rag",
+    "backend-template",
+    "fastapi-template",
+    "sqlalchemy",
+    "alembic",
+    "pydantic",
+    "claude-code",
+    "codex-cli",
+    "taskiq",
+    "nicegui",
+    "pydantic-ai",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Application Frameworks",
+    "Topic :: Internet :: WWW/HTTP :: HTTP Servers",
+    "Framework :: FastAPI",
+    "Typing :: Typed",
+]
+dependencies = [
+    "aiohttp>=3.13.0",
+    "aiomysql>=0.2.0",
+    "alembic>=1.15.2",
+    "asgi-correlation-id>=4.3.0",
+    "asyncpg>=0.30.0",
+    "bcrypt>=4.3.0",
+    "dependency-injector>=4.46.0",
+    "email-validator>=2.0.0",
+    "fastapi>=0.115.12",
+    "greenlet>=3.2.0",
+    "gunicorn>=23.0.0",
+    "httpx>=0.28.1",
+    "psycopg[binary]>=3.2.12",
+    "pydantic-settings>=2.10.1",
+    "pymysql>=1.1.1",
+    "pyjwt>=2.10.0",
+    "python-dotenv>=1.1.0",
+    "sqlalchemy>=2.0.40",
+    "structlog>=25.0.0",
+    "taskiq[reload]>=0.12.1",
+    "semantic-text-splitter>=0.17.0",
+    "uvicorn>=0.34.1",
+]
+
+[project.optional-dependencies]
+admin = ["nicegui>=3.5.0"]
+aws = [
+    "aioboto3>=15.4.0",
+    "boto3>=1.39.12",
+    "types-aiobotocore-dynamodb>=2.25.0",
+    "types-aiobotocore-s3>=2.25.0",
+]
+sqs = ["taskiq-aws>=0.4.0"]
+rabbitmq = ["taskiq-aio-pika>=0.4.0"]
+openai = ["openai>=1.0.0", "tiktoken>=0.7.0"]
+pydantic-ai = ["pydantic-ai-slim>=1.39.0", "tiktoken>=0.7.0"]
+pydantic-ai-anthropic = ["pydantic-ai-slim[anthropic]>=1.39.0"]
+pydantic-ai-google = ["pydantic-ai-slim[google]>=1.39.0"]
+otel = [
+    "opentelemetry-api>=1.40.0",
+    "opentelemetry-sdk>=1.40.0",
+    "opentelemetry-exporter-otlp-proto-grpc>=1.40.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/Mr-DooSun/fastapi-agent-blueprint"
+Repository = "https://github.com/Mr-DooSun/fastapi-agent-blueprint"
+Issues = "https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues"
+Changelog = "https://github.com/Mr-DooSun/fastapi-agent-blueprint/blob/main/CHANGELOG.md"
+
+[dependency-groups]
+dev = [
+    "aiosqlite>=0.21.0",
+    "anyio[asyncio]>=4.0.0",
+    "locust>=2.37.11",
+    "pip-audit>=2.10.0",
+    "pre-commit>=4.2.0",
+    "pyright>=1.1.408",
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "pytest-cov>=5.0.0",
+    "ruff>=0.15.7",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"
+testpaths = ["tests"]
+pythonpath = [".agents/shared"]
+
+# === Ruff Configuration ===
+[tool.ruff]
+target-version = "py312"
+line-length = 88
+exclude = ["migrations"]
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "UP",   # pyupgrade
+    "I",    # isort
+    "B",    # flake8-bugbear
+    "C4",   # flake8-comprehensions
+    "SIM",  # flake8-simplify
+    "S",    # flake8-bandit
+]
+ignore = [
+    "F841",   # local variable assigned but never used
+    "E501",   # line too long (handled by formatter)
+    "E402",   # module level import not at top
+    "F401",   # unused import
+    "B008",   # function call in default argument
+    "B006",   # mutable default argument
+    "C901",   # too complex
+    "SIM102", # use single if instead of nested if
+    "SIM114", # combine if branches with same body
+    "SIM117", # multiple with statements
+    "SIM910", # use dict.get(key) instead of dict.get(key, None)
+    "B904",   # raise without from inside except
+    "UP046",  # non-PEP695 generic class
+    "S113",   # request without timeout (was bandit B113)
+    "S314",   # use of xml.etree.ElementTree (was bandit B314)
+    "S413",   # use of pycrypto (was bandit B413)
+    "S607",   # starting process with partial executable path
+]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 20
+
+[tool.ruff.lint.per-file-ignores]
+"**/routers/*.py" = ["B008"]
+"**/workflows/*.py" = ["B006"]
+"tests/**/*.py" = ["S"]
+"*_test.py" = ["S"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"

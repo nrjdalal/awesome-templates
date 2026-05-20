@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  server:
+    build:
+      context: .
+      dockerfile: _docker/docker.Dockerfile
+    container_name: server
+    image: server:v0.0.1
+    env_file: _env/prod.env
+    ports:
+      - "8000:8000"

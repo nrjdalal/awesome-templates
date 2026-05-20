@@ -1,0 +1,66 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh .agents/shared/harness-python.sh .codex/hooks/session-start.py",
+            "timeout": 30,
+            "statusMessage": "sharing Codex session guidance"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh .agents/shared/harness-python.sh .codex/hooks/user-prompt-submit.py",
+            "timeout": 30,
+            "statusMessage": "checking prompt safety"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "^Bash$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh .agents/shared/harness-python.sh .codex/hooks/pre-tool-security.py",
+            "timeout": 30,
+            "statusMessage": "checking shell command safety"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "^Bash$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh .agents/shared/harness-python.sh .codex/hooks/post-tool-format.py",
+            "timeout": 120,
+            "statusMessage": "formatting changed Python files"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh .agents/shared/harness-python.sh .codex/hooks/stop-sync-reminder.py",
+            "timeout": 30,
+            "statusMessage": "checking documentation drift"
+          }
+        ]
+      }
+    ]
+  }
+}

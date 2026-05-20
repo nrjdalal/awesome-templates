@@ -1,0 +1,14 @@
+sandbox_mode = "workspace-write"
+approval_policy = "on-request"
+web_search = "disabled"
+
+[features]
+codex_hooks = true
+
+[profiles.research]
+web_search = "live"
+
+[mcp_servers.context7]
+url = "https://mcp.context7.com/mcp"
+required = true
+env_http_headers = { Authorization = "CONTEXT7_API_KEY" }

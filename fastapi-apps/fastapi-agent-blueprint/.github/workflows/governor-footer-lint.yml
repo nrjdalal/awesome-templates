@@ -1,0 +1,80 @@
+name: Governor Footer Lint
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - edited
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  lint:
+    name: Validate ## Governor Footer block (ADR 047 D2)
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout PR head
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Fetch PR body and changed files
+        run: |
+          set -euo pipefail
+          gh pr view "${{ github.event.pull_request.number }}" \
+            --json body --jq '.body' > body.md
+          gh pr view "${{ github.event.pull_request.number }}" \
+            --json files --jq '.files[].path' > changed_files.txt
+          echo "::group::Body preview"
+          head -c 4000 body.md || true
+          echo
+          echo "::endgroup::"
+          echo "::group::Changed files"
+          cat changed_files.txt
+          echo "::endgroup::"
+
+      - name: Run Governor Footer checker
+        id: lint
+        run: |
+          set +e
+          python3 tools/check_governor_footer.py body.md \
+            --require-governor-footer \
+            --changed-files "@changed_files.txt" > lint_output.txt 2>&1
+          echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+          cat lint_output.txt
+          {
+            echo "## Governor Footer Lint"
+            echo
+            echo '```'
+            cat lint_output.txt
+            echo '```'
+          } > lint_comment.md
+
+      - name: Update sticky comment on failure
+        if: steps.lint.outputs.exit_code != '0'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: governor-footer-lint
+          path: lint_comment.md
+
+      - name: Clear sticky comment on pass
+        if: steps.lint.outputs.exit_code == '0'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: governor-footer-lint
+          delete: true
+
+      - name: Fail job if linter reported violations
+        if: steps.lint.outputs.exit_code != '0'
+        run: exit 1

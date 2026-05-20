@@ -1,0 +1,35 @@
+{
+    "files.watcherExclude": {
+        "**/.git/objects/**": true,
+        "**/.git/subtree-cache/**": true,
+        "**/.venv/**": true,
+        "**/__pycache__/**": true,
+        "**/.mypy_cache/**": true,
+        "**/.sisyphus/**": true,
+        "**/uv.lock": true,
+        "**/coverage.xml": true,
+        "**/htmlcov/**": true
+    },
+    "search.exclude": {
+        "**/.venv": true,
+        "**/__pycache__": true,
+        "**/.mypy_cache": true,
+        "**/.sisyphus": true,
+        "**/uv.lock": true,
+        "**/coverage.xml": true,
+        "**/htmlcov": true
+    },
+    "files.exclude": {
+        "**/.git": true,
+        "**/.DS_Store": true,
+        "**/__pycache__": true,
+        "**/.mypy_cache": true
+    },
+    "python.analysis.exclude": [
+        "**/.venv",
+        "**/__pycache__",
+        "**/.mypy_cache",
+        "**/.sisyphus",
+        "**/htmlcov"
+    ]
+}

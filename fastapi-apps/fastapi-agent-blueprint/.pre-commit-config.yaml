@@ -1,0 +1,134 @@
+# Execution order: auto-fix → check-only
+# Separated by stages: commit (auto-fix), manual (manual check)
+repos:
+  # ==================== STAGE: COMMIT (auto-run) ====================
+  # 1. Basic file validation and auto-fix
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: ^migrations/
+        types: [python]
+      - id: end-of-file-fixer
+        exclude: ^migrations/
+        types: [python]
+      - id: check-yaml
+        args: ["--unsafe"]  # allow custom YAML tags
+      - id: check-json
+      - id: check-toml
+      - id: check-added-large-files
+        args: ["--maxkb=1000"]
+      - id: check-merge-conflict
+      - id: debug-statements
+        exclude: ^migrations/
+      - id: mixed-line-ending
+        args: ["--fix=lf"]
+
+  # 2. Gitleaks: block credentials from reaching git at commit time
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks
+
+  # 3. Ruff: linting + formatting (integrates pyupgrade, autoflake, isort, Black, flake8, bandit)
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.7
+    hooks:
+      # Ruff linter (check + fix): replaces flake8, pyupgrade, autoflake, isort, bandit
+      - id: ruff-check
+        args: [--fix]
+        exclude: ^migrations/
+      # Ruff formatter: replaces Black
+      - id: ruff-format
+        exclude: ^migrations/
+
+  # ==================== STAGE: MANUAL (manual run) ====================
+  # Type checking: pre-commit run --hook-stage manual mypy
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.14.1
+    hooks:
+      - id: mypy
+        stages: [manual]
+        exclude: ^(migrations/|tests/|.*test\.py$|run_.*\.py$|force_.*\.py$)
+        args:
+          - --ignore-missing-imports
+          - --check-untyped-defs  # relaxed from disallow
+          - --warn-redundant-casts
+          - --no-implicit-optional
+        additional_dependencies:
+          - types-requests
+          - pydantic
+
+  # ==================== STAGE: COMMIT (architecture violation checks) ====================
+  - repo: local
+    hooks:
+      # Prohibit Domain layer from importing Infrastructure
+      - id: no-domain-infra-import
+        name: "Prohibit Domain → Infrastructure import"
+        language: pygrep
+        entry: "from src\\..*\\.infrastructure"
+        files: "src/.*/domain/.*\\.py$"
+
+      # Detect residual Entity pattern (ADR 004: unified to DTO)
+      - id: no-entity-pattern
+        name: "Entity pattern not allowed (unified to DTO)"
+        language: pygrep
+        entry: "\\.to_entity\\(|\\.from_entity\\(|from src\\._core\\.domain\\.entities"
+        files: "\\.py$"
+
+      # Tier 1 Language Policy (AGENTS.md § Language Policy):
+      # shared governance/harness/contributor-facing files must not contain
+      # Korean prose. Bilingual escape tokens and locale data files
+      # (LOCALE_DATA_FILES) are the two narrowly-scoped exceptions, both
+      # scoped per file in tools/check_language_policy.py.
+      #
+      # The `files:` regex must mirror TIER1_GLOBS in
+      # tools/check_language_policy.py. The drift test in
+      # tests/unit/agents_shared/test_language_policy.py asserts the two
+      # stay in sync via a shared anchor-path set.
+      - id: tier1-language-policy
+        name: "Tier 1 paths: no Korean prose (AGENTS.md § Language Policy)"
+        language: system
+        entry: python3 tools/check_language_policy.py
+        pass_filenames: true
+        files: '^(AGENTS\.md|CLAUDE\.md|CONTRIBUTING\.md|CODE_OF_CONDUCT\.md|SECURITY\.md|docs/ai/shared/.*\.md|docs/history/.*\.md|\.claude/rules/.*\.md|\.claude/hooks/.*|\.claude/skills/.*\.md|\.codex/rules/.*|\.codex/hooks/.*|\.agents/.*\.(py|md|sh)|\.github/pull_request_template\.md|\.github/workflows/.*\.ya?ml)$'
+
+      # State lifecycle health check (PR-A.3):
+      # FAIL-HARD on git-tracked state files (.claude/state/, .codex/state/).
+      # WARN-ONLY (exit 0) when stale marker count exceeds threshold.
+      # pass_filenames: false — checks fixed state dirs, not changed-file list.
+      - id: state-lifecycle-check
+        name: "State lifecycle: no tracked state files (warn on stale markers)"
+        language: system
+        entry: python3 tools/check_state_lifecycle.py
+        pass_filenames: false
+        always_run: true
+
+      # Hook execution surface guard:
+      # live agent hook wrappers must invoke the shared harness launcher instead
+      # of bare python3. Scope is limited to .codex/hooks.json commands and
+      # executable lines in .claude/hooks/*.sh.
+      - id: harness-hook-surface
+        name: "Harness hooks: no bare python3 execution"
+        language: system
+        entry: python3 tools/check_harness_hook_surface.py
+        pass_filenames: false
+        always_run: true
+
+      # Guard G closure enforcement (post-ADR 047):
+      # The canonical Guard G enforcement target moved from the per-PR
+      # governor-review-log/ archive to the PR-description Governor Footer
+      # block. The new linter (tools/check_governor_footer.py) runs in CI via
+      # .github/workflows/governor-footer-lint.yml, not pre-commit, because
+      # the PR description is not a working-tree file. The legacy
+      # governor-review-log-g-closure pre-commit hook + tools/check_g_closure.py
+      # were removed in PR #159.
+
+  # ==================== STAGE: COMMIT-MSG (commit message validation) ====================
+  # Conventional Commits: type: description OR type(scope): description
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v4.1.0
+    hooks:
+      - id: conventional-pre-commit
+        stages: [commit-msg]
+        args: [feat, fix, refactor, docs, chore, test, ci, perf, style, i18n]

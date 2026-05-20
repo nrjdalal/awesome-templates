@@ -1,0 +1,34 @@
+prefix_rule(
+    pattern = ["git", "reset", "--hard"],
+    decision = "forbidden",
+    justification = "This repository never allows hard resets during normal AI collaboration.",
+    match = ["git reset --hard"],
+)
+
+prefix_rule(
+    pattern = ["git", "checkout", "--"],
+    decision = "forbidden",
+    justification = "Discarding local file changes can erase user work.",
+    match = ["git checkout -- README.md"],
+)
+
+prefix_rule(
+    pattern = ["rm", "-rf"],
+    decision = "forbidden",
+    justification = "Recursive removal requires explicit human confirmation outside normal agent flow.",
+    match = ["rm -rf build"],
+)
+
+prefix_rule(
+    pattern = ["git", "push"],
+    decision = "prompt",
+    justification = "Pushing code should happen only after the applicable Default Coding Flow verification and self-review steps.",
+    match = ["git push origin main"],
+)
+
+prefix_rule(
+    pattern = ["uv", "run", "alembic", "downgrade"],
+    decision = "prompt",
+    justification = "Schema rollback changes persistent state and should be deliberate.",
+    match = ["uv run alembic downgrade -1"],
+)
