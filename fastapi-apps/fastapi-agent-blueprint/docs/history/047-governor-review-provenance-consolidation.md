@@ -219,7 +219,7 @@ The 44 historical IC tags from `docs/ai/shared/governor-review-log/pr-*.md` (as 
 | IC-155-1 | #155 | durable-domain | domain:auth (project-dna) | NiceGUI admin session storage may contain only `authenticated`, `user_id`, `username`, `role`. Never tokens. |
 | IC-155-2 | #155 | durable-domain | domain:auth (project-dna) | NiceGUI admin authorization is DB-role based. Non-admin and wrong-password both surface as "invalid credentials". |
 | IC-155-3 | #155 | durable-domain | domain:auth (project-dna) | `ADMIN_BOOTSTRAP_*` is seed-only; never a primary login authority. |
-| IC-155-4 | #155 | pr-scope | archive-only | "Minimal RBAC for this PR is limited to `user.role` admin authorization" — follow-up may extend. |
+| IC-155-4 | #155 (extended by #194) | durable-domain | domain:auth (project-dna) | "Minimal RBAC for this PR is limited to `user.role` admin authorization" — extended by #194 to mandatory `require_auth(page_key=...)` per-route gate + page-level `User.permissions` RBAC. Verified by AST test `test_route_coverage.py`. See project-dna.md §11. |
 | IC-156-1 | #156 (in flight) | durable-domain | domain:docs | Selector renderer is a single `_render_selector` helper; theme toggle / FOUC / aria belong to production surface. |
 | IC-156-2 | #156 (in flight) | durable-domain | domain:docs | `DOCS_CARDS` and `_handoff_cards()` carry an `icon` field with `.get("icon", "")` fallback. |
 | IC-156-3 | #156 (in flight) | durable-domain | domain:docs | `kind` discrimination (`primary` / `secondary`) is the canonical Recommended-vs-rest hierarchy carrier. |

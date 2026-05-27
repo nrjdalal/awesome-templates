@@ -17,17 +17,19 @@ page_configs: list[BaseAdminPage] = []
 
 @ui.page("/admin/docs")
 async def docs_list_page(page: int = 1, search: str = "") -> None:
-    if not await require_auth():
+    session = await require_auth(page_key="docs")
+    if session is None:
         return
-    admin_layout(page_configs, current_domain="docs")
+    admin_layout(page_configs, current_domain="docs", session=session)
     await docs_admin_page.render_list(page=page, search=search)
 
 
 @ui.page("/admin/docs/query")
 async def docs_query_page() -> None:
-    if not await require_auth():
+    session = await require_auth(page_key="docs")
+    if session is None:
         return
-    admin_layout(page_configs, current_domain="docs")
+    admin_layout(page_configs, current_domain="docs", session=session)
     ui.label("Docs Query Playground").classes("text-h5 q-mb-md")
 
     question_input = (
@@ -58,7 +60,7 @@ async def docs_query_page() -> None:
             )
         except Exception as exc:
             logger.exception("Docs admin query failed")
-            ui.notify(f"Query failed: {exc}", type="negative")
+            ui.notify("Query failed: " + str(exc), type="negative")
             return
 
         answer_card.clear()
@@ -67,7 +69,7 @@ async def docs_query_page() -> None:
             ui.label("Answer").classes("text-subtitle1 text-weight-bold")
             ui.label(answer.answer).style("white-space: pre-wrap")
             ui.separator().classes("q-my-md")
-            ui.label(f"Citations ({retrieved_count} retrieved)").classes(
+            ui.label("Citations (" + str(retrieved_count) + " retrieved)").classes(
                 "text-subtitle1 text-weight-bold"
             )
             if not answer.citations:
@@ -75,11 +77,15 @@ async def docs_query_page() -> None:
             for citation in answer.citations:
                 with ui.card().classes("q-mb-sm"):
                     ui.label(
-                        f"[{citation.source_title}] (source #{citation.source_id})"
+                        "["
+                        + citation.source_title
+                        + "] (source #"
+                        + str(citation.source_id)
+                        + ")"
                     ).classes("text-weight-bold")
                     ui.label(citation.excerpt).classes("text-caption")
                     if citation.distance is not None:
-                        ui.label(f"distance: {citation.distance:.4f}").classes(
+                        ui.label("distance: " + f"{citation.distance:.4f}").classes(
                             "text-caption"
                         )
 
@@ -88,7 +94,8 @@ async def docs_query_page() -> None:
 
 @ui.page("/admin/docs/{record_id}")
 async def docs_detail_page(record_id: int) -> None:
-    if not await require_auth():
+    session = await require_auth(page_key="docs")
+    if session is None:
         return
-    admin_layout(page_configs, current_domain="docs")
+    admin_layout(page_configs, current_domain="docs", session=session)
     await docs_admin_page.render_detail(record_id=record_id)

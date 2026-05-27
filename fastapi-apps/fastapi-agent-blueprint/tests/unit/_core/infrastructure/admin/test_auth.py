@@ -7,6 +7,8 @@ from src.auth.domain.dtos.auth_dto import AdminSessionDTO
 from src.auth.domain.exceptions.auth_exceptions import InvalidCredentialsException
 from src.user.domain.dtos.user_dto import USER_ROLE_ADMIN, USER_ROLE_USER
 
+_TEST_PAGE_KEY = "test_page"
+
 
 class FakeUseCase:
     def __init__(
@@ -19,6 +21,7 @@ class FakeUseCase:
             user_id=1,
             username="admin",
             role=USER_ROLE_ADMIN,
+            permissions=[_TEST_PAGE_KEY],
         )
         self.exc = exc
         self.login_requests = []
@@ -94,14 +97,18 @@ def test_login_and_logout_store_no_tokens(admin_storage):
 
     admin_auth.AdminAuthProvider.logout()
 
-    assert user_storage == {"authenticated": False}
+    # logout pops all IC-155-1 session keys
+    assert not any(
+        k in user_storage for k in ("authenticated", "user_id", "username", "role")
+    )
 
 
 @pytest.mark.asyncio
 async def test_require_auth_redirects_when_unauthenticated(admin_storage):
     _, fake_navigate = admin_storage
 
-    assert await admin_auth.require_auth() is False
+    result = await admin_auth.require_auth(page_key=_TEST_PAGE_KEY)
+    assert result is None
     assert fake_navigate.target == "/admin/login"
 
 
@@ -117,9 +124,12 @@ async def test_require_auth_redirects_for_non_admin_session(admin_storage):
         }
     )
 
-    assert await admin_auth.require_auth() is False
+    result = await admin_auth.require_auth(page_key=_TEST_PAGE_KEY)
+    assert result is None
     assert fake_navigate.target == "/admin/login"
-    assert user_storage == {"authenticated": False}
+    assert not any(
+        k in user_storage for k in ("authenticated", "user_id", "username", "role")
+    )
 
 
 @pytest.mark.asyncio
@@ -134,13 +144,20 @@ async def test_require_auth_refreshes_admin_session(admin_storage):
         }
     )
     use_case = FakeUseCase(
-        session=AdminSessionDTO(user_id=1, username="fresh", role=USER_ROLE_ADMIN)
+        session=AdminSessionDTO(
+            user_id=1,
+            username="fresh",
+            role=USER_ROLE_ADMIN,
+            permissions=[_TEST_PAGE_KEY],
+        )
     )
     admin_auth.configure_admin_auth_provider(
         admin_auth.AdminAuthProvider(lambda: use_case)
     )
 
-    assert await admin_auth.require_auth() is True
+    result = await admin_auth.require_auth(page_key=_TEST_PAGE_KEY)
+    assert result is not None
+    assert result.username == "fresh"
     assert fake_navigate.target is None
     assert user_storage["username"] == "fresh"
     assert use_case.session_user_ids == [1]
@@ -162,6 +179,103 @@ async def test_require_auth_redirects_when_session_refresh_is_denied(admin_stora
         admin_auth.AdminAuthProvider(lambda: use_case)
     )
 
-    assert await admin_auth.require_auth() is False
+    result = await admin_auth.require_auth(page_key=_TEST_PAGE_KEY)
+    assert result is None
     assert fake_navigate.target == "/admin/login"
-    assert user_storage == {"authenticated": False}
+    assert not any(
+        k in user_storage for k in ("authenticated", "user_id", "username", "role")
+    )
+
+
+@pytest.mark.asyncio
+async def test_require_auth_redirects_to_change_password_for_temp_password_session(
+    admin_storage,
+):
+    user_storage, fake_navigate = admin_storage
+    user_storage.update(
+        {
+            "authenticated": True,
+            "user_id": 1,
+            "username": "admin",
+            "role": USER_ROLE_ADMIN,
+        }
+    )
+    use_case = FakeUseCase(
+        session=AdminSessionDTO(
+            user_id=1,
+            username="admin",
+            role=USER_ROLE_ADMIN,
+            password_temporary=True,
+            permissions=[_TEST_PAGE_KEY],
+        )
+    )
+    admin_auth.configure_admin_auth_provider(
+        admin_auth.AdminAuthProvider(lambda: use_case)
+    )
+
+    result = await admin_auth.require_auth(page_key=_TEST_PAGE_KEY)
+    assert result is None
+    assert fake_navigate.target == "/admin/change-password"
+
+
+@pytest.mark.asyncio
+async def test_require_auth_redirects_to_dashboard_for_page_not_in_permissions(
+    admin_storage,
+):
+    user_storage, fake_navigate = admin_storage
+    user_storage.update(
+        {
+            "authenticated": True,
+            "user_id": 1,
+            "username": "admin",
+            "role": USER_ROLE_ADMIN,
+        }
+    )
+    use_case = FakeUseCase(
+        session=AdminSessionDTO(
+            user_id=1,
+            username="admin",
+            role=USER_ROLE_ADMIN,
+            permissions=["other_page"],  # _TEST_PAGE_KEY not included
+        )
+    )
+    admin_auth.configure_admin_auth_provider(
+        admin_auth.AdminAuthProvider(lambda: use_case)
+    )
+
+    result = await admin_auth.require_auth(page_key=_TEST_PAGE_KEY)
+    assert result is None
+    assert fake_navigate.target == "/admin/dashboard"
+
+
+@pytest.mark.asyncio
+async def test_require_auth_allowlisted_redirects_when_unauthenticated(admin_storage):
+    _, fake_navigate = admin_storage
+
+    result = await admin_auth.require_auth_allowlisted()
+    assert result is None
+    assert fake_navigate.target == "/admin/login"
+
+
+@pytest.mark.asyncio
+async def test_require_auth_allowlisted_returns_session_when_authenticated(
+    admin_storage,
+):
+    user_storage, fake_navigate = admin_storage
+    user_storage.update(
+        {
+            "authenticated": True,
+            "user_id": 1,
+            "username": "admin",
+            "role": USER_ROLE_ADMIN,
+        }
+    )
+    use_case = FakeUseCase()
+    admin_auth.configure_admin_auth_provider(
+        admin_auth.AdminAuthProvider(lambda: use_case)
+    )
+
+    result = await admin_auth.require_auth_allowlisted()
+    assert result is not None
+    assert result.username == "admin"
+    assert fake_navigate.target is None

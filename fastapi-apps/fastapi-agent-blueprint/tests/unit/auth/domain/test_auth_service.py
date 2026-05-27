@@ -3,6 +3,7 @@ from typing import Any
 
 import jwt
 import pytest
+from pydantic import BaseModel
 
 from src._core.common.security import hash_password
 from src.auth.domain.dtos.auth_dto import RefreshTokenCreateDTO, RefreshTokenDTO
@@ -31,13 +32,66 @@ class MockUserRepository:
     async def select_data_by_id(self, data_id: int) -> UserDTO:
         return self._users[data_id]
 
+    async def has_real_admin(self) -> bool:
+        return False
+
+    async def delete_data_by_username(self, username: str) -> bool:
+        return False
+
+    async def count_accounts_permission_holders(
+        self, exclude_user_id: int | None = None
+    ) -> int:
+        return 0
+
+    async def select_all_admins(self) -> list[UserDTO]:
+        return []
+
+    async def insert_data(self, entity) -> UserDTO:  # type: ignore[override]
+        raise NotImplementedError
+
+    async def insert_datas(self, entities) -> list[UserDTO]:
+        raise NotImplementedError
+
+    async def select_datas(self, page: int, page_size: int) -> list[UserDTO]:
+        return list(self._users.values())
+
+    async def select_datas_by_ids(self, data_ids: list[int]) -> list[UserDTO]:
+        return [self._users[i] for i in data_ids if i in self._users]
+
+    async def exists_by_id(self, data_id: int) -> bool:
+        return data_id in self._users
+
+    async def exists_by_fields(self, filters, *, exclude_id=None) -> bool:
+        return False
+
+    async def existing_values_by_field(
+        self, field: str, values: list, *, exclude_id=None
+    ) -> set:
+        return set()
+
+    async def select_datas_with_count(
+        self, page: int, page_size: int, query_filter=None
+    ) -> tuple[list[UserDTO], int]:
+        items = list(self._users.values())
+        return items, len(items)
+
+    async def update_data_by_data_id(self, data_id: int, entity) -> UserDTO:
+        raise NotImplementedError
+
+    async def delete_data_by_data_id(self, data_id: int) -> bool:
+        self._users.pop(data_id, None)
+        return True
+
+    async def count_datas(self) -> int:
+        return len(self._users)
+
 
 class MockRefreshTokenRepository:
     def __init__(self) -> None:
         self._store: dict[str, RefreshTokenDTO] = {}
         self._next_id = 1
 
-    async def insert_data(self, entity: RefreshTokenCreateDTO) -> RefreshTokenDTO:
+    async def insert_data(self, entity: BaseModel) -> RefreshTokenDTO:
         now = datetime.now(UTC)
         dto = RefreshTokenDTO(
             id=self._next_id,
@@ -48,6 +102,9 @@ class MockRefreshTokenRepository:
         self._store[dto.jti] = dto
         self._next_id += 1
         return dto
+
+    async def insert_datas(self, entities) -> list[RefreshTokenDTO]:
+        raise NotImplementedError
 
     async def select_data_by_jti(self, jti: str) -> RefreshTokenDTO | None:
         return self._store.get(jti)
@@ -61,6 +118,50 @@ class MockRefreshTokenRepository:
         revoked = dto.model_copy(update={"revoked_at": datetime.now(UTC)})
         self._store[jti] = revoked
         return revoked
+
+    async def revoke_all_by_user_id(self, user_id: int) -> int:
+        revoked = 0
+        now = datetime.now(UTC)
+        for jti, dto in self._store.items():
+            if dto.user_id == user_id and dto.revoked_at is None:
+                self._store[jti] = dto.model_copy(update={"revoked_at": now})
+                revoked += 1
+        return revoked
+
+    async def select_datas(self, page: int, page_size: int) -> list[RefreshTokenDTO]:
+        return list(self._store.values())
+
+    async def select_data_by_id(self, data_id: int) -> RefreshTokenDTO:
+        raise NotImplementedError
+
+    async def select_datas_by_ids(self, data_ids: list[int]) -> list[RefreshTokenDTO]:
+        raise NotImplementedError
+
+    async def exists_by_id(self, data_id: int) -> bool:
+        return False
+
+    async def exists_by_fields(self, filters, *, exclude_id=None) -> bool:
+        return False
+
+    async def existing_values_by_field(
+        self, field: str, values: list, *, exclude_id=None
+    ) -> set:
+        return set()
+
+    async def select_datas_with_count(
+        self, page: int, page_size: int, query_filter=None
+    ) -> tuple[list[RefreshTokenDTO], int]:
+        items = list(self._store.values())
+        return items, len(items)
+
+    async def update_data_by_data_id(self, data_id: int, entity) -> RefreshTokenDTO:
+        raise NotImplementedError
+
+    async def delete_data_by_data_id(self, data_id: int) -> bool:
+        return False
+
+    async def count_datas(self) -> int:
+        return len(self._store)
 
 
 @pytest.fixture

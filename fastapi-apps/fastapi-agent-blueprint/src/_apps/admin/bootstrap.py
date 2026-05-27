@@ -6,12 +6,16 @@ from nicegui import ui
 
 from src._apps.admin.di.container import create_admin_container
 from src._apps.admin.pages import (
+    accounts,  # noqa: F401 (registers @ui.page)
+    change_password,  # noqa: F401 (registers @ui.page)
     dashboard,  # noqa: F401 (registers @ui.page)
     login,  # noqa: F401 (registers @ui.page)
+    setup,  # noqa: F401 (registers @ui.page)
 )
 from src._core.config import settings
 from src._core.infrastructure.admin.auth import (
     AdminAuthProvider,
+    configure_admin_account_use_case_provider,
     configure_admin_auth_provider,
 )
 from src._core.infrastructure.admin.base_admin_page import BaseAdminPage
@@ -30,6 +34,9 @@ def bootstrap_admin(fastapi_app: FastAPI) -> None:
             auth_use_case_provider=admin_container.auth_container.auth_use_case
         )
     )
+    configure_admin_account_use_case_provider(
+        admin_container.auth_container.admin_account_use_case
+    )
     _install_bootstrap_admin_seed(fastapi_app, admin_container)
 
     # Shared list — domain pages and dashboard both reference this same object.
@@ -38,6 +45,14 @@ def bootstrap_admin(fastapi_app: FastAPI) -> None:
     _discover_and_register_pages(page_configs, admin_container)
 
     dashboard.page_configs = page_configs
+    accounts.page_configs = page_configs
+    change_password.page_configs = page_configs
+
+    # Populate the permission registry from successfully registered page_configs.
+    # Fixed keys (e.g. 'accounts') are pre-seeded in the registry; domain keys are added here.
+    permission_registry = admin_container.auth_container.permission_registry()
+    for cfg in page_configs:
+        permission_registry.register(cfg.domain_name)
 
     ui.run_with(fastapi_app, storage_secret=settings.admin_storage_secret)
 
@@ -59,11 +74,14 @@ def _install_bootstrap_admin_seed(fastapi_app: FastAPI, admin_container) -> None
                 password=password,
             )
         )
-        _logger.info(
-            "admin_bootstrap_user_ready",
-            user_id=user.id,
-            username=user.username,
-        )
+        if user is not None:
+            _logger.info(
+                "admin_bootstrap_user_ready",
+                user_id=user.id,
+                username=user.username,
+            )
+        else:
+            _logger.info("admin_bootstrap_seed_skipped")
 
     fastapi_app.add_event_handler("startup", _seed_admin_user)
 

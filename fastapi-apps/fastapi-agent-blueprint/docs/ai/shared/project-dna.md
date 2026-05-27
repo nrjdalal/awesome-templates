@@ -599,7 +599,7 @@ class {Name}Container(containers.DeclarativeContainer):
 | Structured Logging (structlog) | Active | structlog + asgi-correlation-id, RequestLogMiddleware (server), StructlogContextMiddleware (worker), LOG_LEVEL / LOG_JSON_FORMAT env vars, sqlalchemy.engine double-emit fix (#9) |
 | JWT/Authentication | Active | `src/auth/` provides HS256 access/refresh tokens, refresh-token rotation/revocation persistence, `/v1/auth/*`, and Bearer protection for `user` API routes (#4) |
 | File Upload (UploadFile) | Not implemented | |
-| RBAC/Permissions | Active | Minimal `user.role` admin authorization protects NiceGUI admin access (#154); permission tables and role-management UI are not implemented |
+| RBAC/Permissions | Active | Page-level admin permissions via `User.permissions` (JSON column) added in #194. `User.role` determines admin status; `permissions` list controls which admin pages each admin can access. `/admin/accounts` UI manages accounts and per-page permission grants. Bootstrap one-time setup wizard creates the first real admin with all permissions. Server-route RBAC for `/v1/user` (reads + CUD) added in #199 via the `require_admin` interface dependency (`role == admin` and not `is_bootstrap_admin`); non-user `/v1/*` route-level role gating is not yet implemented. |
 | Rate Limiting (slowapi) | Not implemented | |
 | WebSocket | Not implemented | |
 
@@ -714,17 +714,19 @@ page_configs: list[BaseAdminPage] = []
 
 @ui.page("/admin/{name}")
 async def {name}_list_page(page: int = 1, search: str = ""):
-    if not await require_auth():
+    session = await require_auth(page_key="{name}")
+    if session is None:
         return
-    admin_layout(page_configs, current_domain="{name}")
+    admin_layout(page_configs, current_domain="{name}", session=session)
     await {name}_admin_page.render_list(page=page, search=search)
 
 
 @ui.page("/admin/{name}/{record_id}")
 async def {name}_detail_page(record_id: int):
-    if not await require_auth():
+    session = await require_auth(page_key="{name}")
+    if session is None:
         return
-    admin_layout(page_configs, current_domain="{name}")
+    admin_layout(page_configs, current_domain="{name}", session=session)
     await {name}_admin_page.render_detail(record_id=record_id)
 ```
 
@@ -742,13 +744,14 @@ For domain-specific rendering, subclass `BaseAdminPage` in the config file and o
 - `render_detail_card(dto)` — custom detail view
 - `_fetch_list_data(page, search)` / `_fetch_detail_data(record_id)` — custom data fetching
 
-### Admin Auth & Session (durable invariants — promoted from PR #155 ICs)
+### Admin Auth & Session (durable invariants — promoted from PR #155 ICs, extended by #194)
 
-The NiceGUI admin layer integrates with the auth-domain JWT credential check (PR #155 / ADR 047 IC promotion). The following invariants are durable and apply to all future admin work:
+The NiceGUI admin layer integrates with the auth-domain credential check (PR #155 / ADR 047 IC promotion; page-level permissions added #194). The following invariants are durable and apply to all future admin work:
 
-- **Session storage scope (IC-155-1)**: NiceGUI admin session storage may contain only authentication metadata needed by the UI — `authenticated`, `user_id`, `username`, `role`. Access tokens, refresh tokens, and raw JWTs MUST NOT be stored in NiceGUI session metadata.
-- **DB-role authorisation (IC-155-2)**: admin authorisation is DB-role based via `User.role`. Non-admin users and wrong passwords both surface as a single "invalid credentials" error to avoid enumeration leakage.
-- **Seed-only bootstrapping (IC-155-3)**: `ADMIN_BOOTSTRAP_USERNAME` / `ADMIN_BOOTSTRAP_EMAIL` / `ADMIN_BOOTSTRAP_PASSWORD` env vars are seed-only. They may create or promote the initial admin user idempotently at server boot, but they are never the primary login authority. The auth-domain `/v1/auth/login` flow is the canonical credential channel.
+- **Session storage scope (IC-155-1)**: NiceGUI admin session storage may contain only the four authentication keys — `authenticated`, `user_id`, `username`, `role`. Access tokens, refresh tokens, raw JWTs, `permissions`, and `password_temporary` MUST NOT be stored in session. The ephemeral `setup_granted` flag is the sole permitted exception (set by login on bootstrap detect; cleared immediately after setup completes).
+- **DB-role + page-permission authorisation (IC-155-2)**: admin access requires `User.role == "admin"` AND the target page key present in `User.permissions`. Both are re-read from the DB on every request via `refresh_session()` — never cached from session. Non-admin users and wrong passwords surface as a single "invalid credentials" error to prevent enumeration.
+- **One-time setup bootstrapping (IC-155-3)**: `ADMIN_BOOTSTRAP_*` env vars seed an `is_bootstrap_admin=True` account on boot. When no real admin (`is_bootstrap_admin=False`) exists, the bootstrap credential triggers the setup wizard — it never reaches the dashboard. Once the first real admin is created, the bootstrap account is deleted and the credential is permanently disabled (raises `AdminCredentialDisabledException`). Re-setting the env vars + restarting re-seeds the bootstrap row for recovery.
+- **Mandatory page-key gate (IC-155-4)**: every `@ui.page("/admin/...")` route (except `/admin/login` and `/admin/setup`) MUST call `require_auth(page_key="<key>")` or `require_auth_allowlisted()` as its first statement and return on `None`. `require_auth` enforces the IC-155-2 DB read + page-key check; `require_auth_allowlisted` enforces only the DB read (used for `dashboard` and `change-password`). Nav-drawer filtering is cosmetic only — the gate is the real control.
 
 Quickstart prints the seeded `admin / admin` credentials only when `ENV=quickstart`; production / staging deployments must override the bootstrap env vars or disable seeding.
 

@@ -81,7 +81,7 @@ Check `interface/admin/` files and compare with `project-dna` section 11.
 - [ ] [MEDIUM] Page file imports config from the configs module instead of defining it inline
 - [ ] [HIGH] Page files do not import domain services directly
 - [ ] [MEDIUM] `page_configs: list[BaseAdminPage] = []` is declared at module level
-- [ ] Admin endpoint access restriction enforced — see security-checklist.md §2 for canonical rule and severity
+- [ ] [HIGH][IC-155-4] Admin endpoint access restriction enforced — every `@ui.page("/admin/")` route calls `require_auth(page_key=...)` or `require_auth_allowlisted()` as its first statement. See security-checklist.md §2 for grep pattern and AST test reference.
 - [ ] [HIGH] Sensitive fields use `masked=True` in `ColumnConfig`
 
 ## 8. Bootstrap Wiring

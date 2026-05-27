@@ -1,11 +1,11 @@
 from pydantic import BaseModel
-from sqlalchemy import select
+from sqlalchemy import and_, select
 
 from src._core.domain.validation import collect_unique_field_errors
 from src._core.infrastructure.persistence.rdb.base_repository import BaseRepository
 from src._core.infrastructure.persistence.rdb.database import Database
 from src._core.infrastructure.persistence.rdb.exceptions import DatabaseException
-from src.user.domain.dtos.user_dto import UserDTO
+from src.user.domain.dtos.user_dto import USER_ROLE_ADMIN, UserDTO
 from src.user.domain.exceptions.user_exceptions import UserAlreadyExistsException
 from src.user.infrastructure.database.models.user_model import UserModel
 
@@ -55,6 +55,55 @@ class UserRepository(BaseRepository[UserDTO]):
             if data is None:
                 return None
             return UserDTO.model_validate(data, from_attributes=True)
+
+    async def has_real_admin(self) -> bool:
+        async with self.database.session() as session:
+            result = await session.execute(
+                select(UserModel.id)
+                .where(
+                    and_(
+                        UserModel.role == USER_ROLE_ADMIN,
+                        UserModel.is_bootstrap_admin.is_(False),
+                    )
+                )
+                .limit(1)
+            )
+            return result.scalar_one_or_none() is not None
+
+    async def delete_data_by_username(self, username: str) -> bool:
+        async with self.database.session() as session:
+            result = await session.execute(
+                select(UserModel).where(UserModel.username == username)
+            )
+            data = result.scalar_one_or_none()
+            if data is None:
+                return False
+            await session.delete(data)
+            await session.commit()
+            return True
+
+    async def count_accounts_permission_holders(
+        self, exclude_user_id: int | None = None
+    ) -> int:
+        async with self.database.session() as session:
+            result = await session.execute(
+                select(UserModel).where(UserModel.role == USER_ROLE_ADMIN)
+            )
+            rows = result.scalars().all()
+            return sum(
+                1
+                for r in rows
+                if "accounts" in (r.permissions or [])
+                and (exclude_user_id is None or r.id != exclude_user_id)
+            )
+
+    async def select_all_admins(self) -> list[UserDTO]:
+        async with self.database.session() as session:
+            result = await session.execute(
+                select(UserModel).where(UserModel.role == USER_ROLE_ADMIN)
+            )
+            rows = result.scalars().all()
+            return [UserDTO.model_validate(r, from_attributes=True) for r in rows]
 
     async def _raise_user_unique_conflict_if_present(
         self,

@@ -1,0 +1,99 @@
+from nicegui import app, ui
+
+from src._core.config import settings
+from src._core.infrastructure.admin.auth import (
+    AdminAuthProvider,
+    get_admin_account_use_case,
+)
+from src.auth.domain.exceptions.auth_exceptions import AdminSetupForbiddenException
+from src.user.domain.exceptions.user_exceptions import UserAlreadyExistsException
+
+
+@ui.page("/admin/setup")
+async def setup_page():
+    """One-time first-admin setup wizard.
+
+    Only accessible after authenticating with bootstrap credentials when no
+    real admin exists.  A session flag 'setup_granted' is set by login.py
+    upon AdminSetupRequiredException; this page checks that flag and also
+    re-verifies server-side that setup is still needed.
+    """
+    if not app.storage.user.get("setup_granted"):
+        ui.navigate.to("/admin/login")
+        return
+
+    with ui.card().classes("absolute-center w-96"):
+        ui.label("Initial Admin Setup").classes("text-h5 q-mb-md")
+        ui.label("Create the first administrator account.").classes(
+            "text-subtitle2 q-mb-md text-grey-7"
+        )
+
+        username_input = ui.input("Username").classes("full-width")
+        full_name_input = ui.input("Full Name").classes("full-width")
+        email_input = ui.input("Email").classes("full-width")
+
+        result_card = ui.card().classes("w-full q-mt-md bg-green-1")
+        result_card.set_visibility(False)
+
+        async def create_first_admin():
+            username = username_input.value.strip()
+            full_name = full_name_input.value.strip()
+            email = email_input.value.strip()
+            if not (username and full_name and email):
+                ui.notify("All fields are required", type="warning")
+                return
+
+            try:
+                (
+                    new_admin,
+                    temp_password,
+                ) = await get_admin_account_use_case().create_first_admin(
+                    username=username,
+                    full_name=full_name,
+                    email=email,
+                    bootstrap_username=settings.admin_bootstrap_username,
+                )
+            except AdminSetupForbiddenException:
+                ui.notify("Setup is already complete. Please log in.", type="warning")
+                ui.navigate.to("/admin/login")
+                return
+            except UserAlreadyExistsException as exc:
+                ui.notify(str(exc.message), type="negative")
+                return
+            except Exception as exc:
+                ui.notify(f"Error: {exc}", type="negative")
+                return
+
+            # Clear bootstrap session flag; user must log in as the new admin.
+            AdminAuthProvider.logout()
+            app.storage.user.pop("setup_granted", None)
+
+            result_card.clear()
+            result_card.set_visibility(True)
+            with result_card:
+                ui.label("Account created!").classes(
+                    "text-weight-bold text-positive q-mb-sm"
+                )
+                ui.label(f"Username: {new_admin.username}")
+                ui.separator().classes("q-my-sm")
+                ui.label("Temporary password (copy now — shown once):").classes(
+                    "text-caption text-grey-7"
+                )
+                ui.label(temp_password).classes(
+                    "text-mono text-weight-bold text-body1 q-mt-xs"
+                )
+                ui.button(
+                    "Copy password",
+                    on_click=lambda: ui.run_javascript(
+                        f"navigator.clipboard.writeText('{temp_password}')"
+                    ),
+                ).props("flat size=sm color=primary").classes("q-mt-sm")
+                ui.separator().classes("q-my-sm")
+                ui.label("You will be redirected to login in 8 seconds.").classes(
+                    "text-caption text-grey-6"
+                )
+                ui.timer(8.0, lambda: ui.navigate.to("/admin/login"), once=True)
+
+        ui.button("Create Admin Account", on_click=create_first_admin).classes(
+            "q-mt-md full-width"
+        ).props("color=primary")

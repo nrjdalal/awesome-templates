@@ -88,17 +88,19 @@ page_configs: list[BaseAdminPage] = []
 
 @ui.page("/admin/{name}")
 async def {name}_list_page(page: int = 1, search: str = ""):
-    if not await require_auth():
+    session = await require_auth(page_key="{name}")
+    if session is None:
         return
-    admin_layout(page_configs, current_domain="{name}")
+    admin_layout(page_configs, current_domain="{name}", session=session)
     await {name}_admin_page.render_list(page=page, search=search)
 
 
 @ui.page("/admin/{name}/{record_id}")
 async def {name}_detail_page(record_id: int):
-    if not await require_auth():
+    session = await require_auth(page_key="{name}")
+    if session is None:
         return
-    admin_layout(page_configs, current_domain="{name}")
+    admin_layout(page_configs, current_domain="{name}", session=session)
     await {name}_admin_page.render_detail(record_id=record_id)
 ```
 

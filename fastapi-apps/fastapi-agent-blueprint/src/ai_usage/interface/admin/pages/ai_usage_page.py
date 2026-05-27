@@ -19,17 +19,19 @@ page_configs: list[BaseAdminPage] = []
 
 @ui.page("/admin/ai_usage")
 async def ai_usage_list_page(page: int = 1, search: str = "") -> None:
-    if not await require_auth():
+    session = await require_auth(page_key="ai_usage")
+    if session is None:
         return
-    admin_layout(page_configs, current_domain="ai_usage")
+    admin_layout(page_configs, current_domain="ai_usage", session=session)
     await ai_usage_admin_page.render_list(page=page, search=search)
 
 
 @ui.page("/admin/ai_usage/summary")
 async def ai_usage_summary_page() -> None:
-    if not await require_auth():
+    session = await require_auth(page_key="ai_usage")
+    if session is None:
         return
-    admin_layout(page_configs, current_domain="ai_usage")
+    admin_layout(page_configs, current_domain="ai_usage", session=session)
     ui.label("AI Usage Summary").classes("text-h5 q-mb-md")
 
     try:
@@ -69,9 +71,10 @@ async def ai_usage_summary_page() -> None:
 
 @ui.page("/admin/ai_usage/{record_id}")
 async def ai_usage_detail_page(record_id: int) -> None:
-    if not await require_auth():
+    session = await require_auth(page_key="ai_usage")
+    if session is None:
         return
-    admin_layout(page_configs, current_domain="ai_usage")
+    admin_layout(page_configs, current_domain="ai_usage", session=session)
     await ai_usage_admin_page.render_detail(record_id=record_id)
 
 

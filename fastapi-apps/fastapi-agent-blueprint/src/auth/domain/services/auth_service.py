@@ -89,6 +89,9 @@ class AuthService:
             raise
         return await self.issue_token_pair(user)
 
+    async def revoke_all_tokens_for_user(self, user_id: int) -> int:
+        return await self._refresh_token_repository.revoke_all_by_user_id(user_id)
+
     async def revoke_refresh_token(self, token: str) -> bool:
         payload = self._decode_token(token, expected_type=REFRESH_TOKEN_TYPE)
         token_row = await self._refresh_token_repository.select_data_by_jti(

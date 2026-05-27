@@ -2,7 +2,7 @@ from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, Query
 
 from src._core.application.dtos.base_response import SuccessResponse
-from src.auth.interface.server.dependencies.auth_dependencies import get_current_user
+from src.auth.interface.server.dependencies.auth_dependencies import require_admin
 from src.user.domain.services.user_service import UserService
 from src.user.infrastructure.di.user_container import UserContainer
 from src.user.interface.server.schemas.user_schema import (
@@ -11,7 +11,10 @@ from src.user.interface.server.schemas.user_schema import (
     UserResponse,
 )
 
-router = APIRouter(dependencies=[Depends(get_current_user)])
+# All /v1/user routes are admin-only (#199): user management (read + CUD)
+# exposes other users' PII. Self-service profile reads use /v1/auth/me.
+# New routes added to this router inherit the admin gate by default (default-deny).
+router = APIRouter(dependencies=[Depends(require_admin)])
 
 
 # ==========================================================================================

@@ -1,10 +1,14 @@
-from nicegui import ui
+from nicegui import app, ui
 
 from src._core.infrastructure.admin.auth import (
     AdminAuthProvider,
     get_admin_auth_provider,
 )
-from src.auth.domain.exceptions.auth_exceptions import InvalidCredentialsException
+from src.auth.domain.exceptions.auth_exceptions import (
+    AdminCredentialDisabledException,
+    AdminSetupRequiredException,
+    InvalidCredentialsException,
+)
 
 
 @ui.page("/admin/login")
@@ -22,7 +26,10 @@ def login_page():
                     username.value,
                     password.value,
                 )
-            except InvalidCredentialsException:
+            except AdminSetupRequiredException:
+                app.storage.user["setup_granted"] = True
+                ui.navigate.to("/admin/setup")
+            except (InvalidCredentialsException, AdminCredentialDisabledException):
                 ui.notify("Invalid credentials", type="negative")
             else:
                 AdminAuthProvider.login(session)

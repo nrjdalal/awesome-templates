@@ -28,6 +28,21 @@ class RefreshTokenRepository(BaseRepository[RefreshTokenDTO]):
                 return None
             return RefreshTokenDTO.model_validate(data, from_attributes=True)
 
+    async def revoke_all_by_user_id(self, user_id: int) -> int:
+        async with self.database.session() as session:
+            result = await session.execute(
+                select(RefreshTokenModel).where(
+                    RefreshTokenModel.user_id == user_id,
+                    RefreshTokenModel.revoked_at.is_(None),
+                )
+            )
+            rows = result.scalars().all()
+            now = datetime.now(UTC)
+            for row in rows:
+                row.revoked_at = now
+            await session.commit()
+            return len(rows)
+
     async def revoke_by_jti(self, jti: str) -> RefreshTokenDTO | None:
         async with self.database.session() as session:
             result = await session.execute(

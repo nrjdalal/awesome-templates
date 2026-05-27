@@ -1,5 +1,9 @@
 from src.auth.domain.dtos.auth_dto import AdminSessionDTO, AuthTokenConfig
-from src.auth.domain.exceptions.auth_exceptions import InvalidCredentialsException
+from src.auth.domain.exceptions.auth_exceptions import (
+    AdminCredentialDisabledException,
+    AdminSetupRequiredException,
+    InvalidCredentialsException,
+)
 from src.auth.domain.services.auth_service import AuthService
 from src.auth.interface.server.schemas.auth_schema import (
     LoginRequest,
@@ -35,6 +39,8 @@ class AuthUseCase:
             request.username,
             request.password,
         )
+        if user.password_temporary:
+            raise InvalidCredentialsException()
         return await self._token_pair_for_user(user)
 
     async def admin_login(self, request: LoginRequest) -> AdminSessionDTO:
@@ -42,6 +48,10 @@ class AuthUseCase:
             request.username,
             request.password,
         )
+        if user.is_bootstrap_admin:
+            if not await self._user_service.has_real_admin_exists():
+                raise AdminSetupRequiredException()
+            raise AdminCredentialDisabledException()
         return self._admin_session_for_user(user)
 
     async def get_admin_session(self, user_id: int) -> AdminSessionDTO:
@@ -82,4 +92,10 @@ class AuthUseCase:
     def _admin_session_for_user(self, user: UserDTO) -> AdminSessionDTO:
         if user.role != USER_ROLE_ADMIN:
             raise InvalidCredentialsException()
-        return AdminSessionDTO(user_id=user.id, username=user.username, role=user.role)
+        return AdminSessionDTO(
+            user_id=user.id,
+            username=user.username,
+            role=user.role,
+            password_temporary=user.password_temporary,
+            permissions=user.permissions,
+        )

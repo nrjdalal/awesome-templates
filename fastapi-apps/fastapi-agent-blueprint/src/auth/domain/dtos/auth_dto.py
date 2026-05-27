@@ -38,3 +38,5 @@ class AdminSessionDTO(BaseModel):
     user_id: int
     username: str
     role: UserRole
+    password_temporary: bool = False
+    permissions: list[str] = Field(default_factory=list)
