@@ -1,21 +1,22 @@
 from __future__ import annotations
 
-import logging
-
 from nicegui import ui
 
 from src._core.infrastructure.admin.auth import require_auth
 from src._core.infrastructure.admin.base_admin_page import BaseAdminPage
+from src._core.infrastructure.admin.error_handler import (
+    AdminErrorHandler,
+    admin_error_boundary,
+)
 from src._core.infrastructure.admin.layout import admin_layout
 from src.docs.interface.admin.configs.docs_admin_config import docs_admin_page
-
-logger = logging.getLogger(__name__)
 
 # page_configs is injected by bootstrap_admin() after discovery
 page_configs: list[BaseAdminPage] = []
 
 
 @ui.page("/admin/docs")
+@admin_error_boundary(context="docs_list")
 async def docs_list_page(page: int = 1, search: str = "") -> None:
     session = await require_auth(page_key="docs")
     if session is None:
@@ -25,6 +26,7 @@ async def docs_list_page(page: int = 1, search: str = "") -> None:
 
 
 @ui.page("/admin/docs/query")
+@admin_error_boundary(context="docs_query")
 async def docs_query_page() -> None:
     session = await require_auth(page_key="docs")
     if session is None:
@@ -58,9 +60,8 @@ async def docs_query_page() -> None:
             answer, retrieved_count = await service.answer_question(
                 question=question, top_k=int(top_k_input.value or 5)
             )
-        except Exception as exc:
-            logger.exception("Docs admin query failed")
-            ui.notify("Query failed: " + str(exc), type="negative")
+        except Exception as exc:  # noqa: BLE001 - delegated to AdminErrorHandler
+            await AdminErrorHandler.handle(exc, context="docs_query")
             return
 
         answer_card.clear()
@@ -93,6 +94,7 @@ async def docs_query_page() -> None:
 
 
 @ui.page("/admin/docs/{record_id}")
+@admin_error_boundary(context="docs_detail")
 async def docs_detail_page(record_id: int) -> None:
     session = await require_auth(page_key="docs")
     if session is None:

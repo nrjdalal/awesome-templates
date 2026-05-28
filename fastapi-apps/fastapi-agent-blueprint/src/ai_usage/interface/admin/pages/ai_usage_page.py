@@ -1,23 +1,24 @@
 from __future__ import annotations
 
-import logging
-
 from nicegui import ui
 
 from src._core.infrastructure.admin.auth import require_auth
 from src._core.infrastructure.admin.base_admin_page import BaseAdminPage
+from src._core.infrastructure.admin.error_handler import (
+    AdminErrorHandler,
+    admin_error_boundary,
+)
 from src._core.infrastructure.admin.layout import admin_layout
 from src.ai_usage.interface.admin.configs.ai_usage_admin_config import (
     ai_usage_admin_page,
 )
-
-logger = logging.getLogger(__name__)
 
 # page_configs is injected by bootstrap_admin() after discovery
 page_configs: list[BaseAdminPage] = []
 
 
 @ui.page("/admin/ai_usage")
+@admin_error_boundary(context="ai_usage_list")
 async def ai_usage_list_page(page: int = 1, search: str = "") -> None:
     session = await require_auth(page_key="ai_usage")
     if session is None:
@@ -27,6 +28,7 @@ async def ai_usage_list_page(page: int = 1, search: str = "") -> None:
 
 
 @ui.page("/admin/ai_usage/summary")
+@admin_error_boundary(context="ai_usage_summary")
 async def ai_usage_summary_page() -> None:
     session = await require_auth(page_key="ai_usage")
     if session is None:
@@ -37,9 +39,8 @@ async def ai_usage_summary_page() -> None:
     try:
         service = ai_usage_admin_page._get_service()
         summary, by_org = await service.get_usage_summary()
-    except Exception:
-        logger.exception("AI usage admin summary failed")
-        ui.notify("Failed to load AI usage summary", type="negative")
+    except Exception as exc:  # noqa: BLE001 - delegated to AdminErrorHandler
+        await AdminErrorHandler.handle(exc, context="ai_usage_summary")
         return
 
     with ui.row().classes("q-gutter-md q-mb-md"):
@@ -70,6 +71,7 @@ async def ai_usage_summary_page() -> None:
 
 
 @ui.page("/admin/ai_usage/{record_id}")
+@admin_error_boundary(context="ai_usage_detail")
 async def ai_usage_detail_page(record_id: int) -> None:
     session = await require_auth(page_key="ai_usage")
     if session is None:

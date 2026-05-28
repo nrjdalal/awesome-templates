@@ -2,13 +2,14 @@ import importlib
 
 import structlog
 from fastapi import FastAPI
-from nicegui import ui
+from nicegui import app, ui
 
 from src._apps.admin.di.container import create_admin_container
 from src._apps.admin.pages import (
     accounts,  # noqa: F401 (registers @ui.page)
     change_password,  # noqa: F401 (registers @ui.page)
     dashboard,  # noqa: F401 (registers @ui.page)
+    error,  # noqa: F401 (registers @ui.page)
     login,  # noqa: F401 (registers @ui.page)
     setup,  # noqa: F401 (registers @ui.page)
 )
@@ -19,16 +20,32 @@ from src._core.infrastructure.admin.auth import (
     configure_admin_auth_provider,
 )
 from src._core.infrastructure.admin.base_admin_page import BaseAdminPage
+from src._core.infrastructure.admin.error_handler import (
+    handle_uncaught_admin_exception,
+)
 from src._core.infrastructure.discovery import discover_domains
 from src.user.domain.dtos.user_dto import BootstrapAdminUserDTO
 
 _logger = structlog.stdlib.get_logger(__name__)
+
+# Guards against duplicate registration of the global exception handler when
+# bootstrap_admin() runs more than once in a process (e.g. test reloads).
+_global_exception_handler_registered = False
 
 
 def bootstrap_admin(fastapi_app: FastAPI) -> None:
     """Bootstrap NiceGUI admin dashboard onto the existing FastAPI app."""
     admin_container = create_admin_container()
     fastapi_app.state.admin_container = admin_container
+
+    # Global safety net (#195): uniformly structured-log any exception that
+    # escapes a page handler, event callback, or timer — even where a local
+    # try/except or @admin_error_boundary did not catch it. Registered once per
+    # process to avoid duplicate-log accumulation on repeated bootstrap calls.
+    global _global_exception_handler_registered
+    if not _global_exception_handler_registered:
+        app.on_exception(handle_uncaught_admin_exception)
+        _global_exception_handler_registered = True
     configure_admin_auth_provider(
         AdminAuthProvider(
             auth_use_case_provider=admin_container.auth_container.auth_use_case

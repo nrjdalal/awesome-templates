@@ -4,6 +4,10 @@ Exempt routes (with justification):
   /admin/login   — this IS the auth entry point; no gate needed
   /admin/setup   — guarded by setup_granted session flag (ephemeral bootstrap gate,
                    not a regular auth gate; only reachable via login redirect)
+  /admin/error   — critical-failure page (#195); a critical error may be a DB/auth
+                   outage and the auth gate hits the DB, so gating here would loop.
+                   Shows only a generic message + validated correlation id; no DB,
+                   no session mutation, no sensitive data.
 """
 
 from __future__ import annotations
@@ -16,7 +20,9 @@ _SRC_ROOT = pathlib.Path("src")
 _AUTH_GATE_NAMES = frozenset({"require_auth", "require_auth_allowlisted"})
 
 # Routes that intentionally have no require_auth call (with documented reason above).
-_EXEMPT_ROUTES: frozenset[str] = frozenset({"/admin/login", "/admin/setup"})
+_EXEMPT_ROUTES: frozenset[str] = frozenset(
+    {"/admin/login", "/admin/setup", "/admin/error"}
+)
 
 
 def _collect_admin_routes(filepath: pathlib.Path) -> list[tuple[str, bool]]:
@@ -89,6 +95,72 @@ def test_every_admin_route_has_auth_gate():
     assert not ungated, (
         "The following /admin routes are missing an auth gate "
         "(require_auth or require_auth_allowlisted):\n  " + "\n  ".join(ungated)
+    )
+
+
+# ── #195: raw-exception leakage guard ──────────────────────────────────────
+
+# Variable names that conventionally hold a caught exception. A ui.notify that
+# interpolates one of these is leaking internal detail to the operator.
+_EXC_VAR_NAMES = frozenset({"exc", "e", "err", "error", "exception"})
+
+
+def _is_ui_notify(func: ast.expr) -> bool:
+    return isinstance(func, ast.Attribute) and func.attr == "notify"
+
+
+def _is_str_call(arg: ast.expr) -> bool:
+    return (
+        isinstance(arg, ast.Call)
+        and isinstance(arg.func, ast.Name)
+        and arg.func.id == "str"
+    )
+
+
+def _is_exception_fstring(arg: ast.expr) -> bool:
+    if not isinstance(arg, ast.JoinedStr):
+        return False
+    return any(
+        isinstance(value, ast.FormattedValue)
+        and isinstance(value.value, ast.Name)
+        and value.value.id in _EXC_VAR_NAMES
+        for value in arg.values
+    )
+
+
+def _find_notify_leaks(filepath: pathlib.Path) -> list[str]:
+    """Return 'file:line' for each ui.notify that leaks a raw exception."""
+    source = filepath.read_text(encoding="utf-8")
+    try:
+        tree = ast.parse(source)
+    except SyntaxError:
+        return []
+
+    leaks: list[str] = []
+    for node in ast.walk(tree):
+        if not (isinstance(node, ast.Call) and _is_ui_notify(node.func)):
+            continue
+        if not node.args:
+            continue
+        first = node.args[0]
+        if _is_str_call(first) or _is_exception_fstring(first):
+            leaks.append(f"{filepath}:{node.lineno}")
+    return leaks
+
+
+def test_admin_pages_do_not_leak_raw_exception_to_ui():
+    """#195: ui.notify must never surface str(exc) or an exception f-string.
+
+    Sanitized messages flow through AdminErrorHandler instead, so the raw
+    exception text reaches the structured server log only.
+    """
+    leaks: list[str] = []
+    for filepath in _find_admin_page_files():
+        leaks.extend(_find_notify_leaks(filepath))
+
+    assert not leaks, (
+        "ui.notify must not surface a raw exception (use AdminErrorHandler.handle "
+        "or a sanitized message):\n  " + "\n  ".join(leaks)
     )
 
 

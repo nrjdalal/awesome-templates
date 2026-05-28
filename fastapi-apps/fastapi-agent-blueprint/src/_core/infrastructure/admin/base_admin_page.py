@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import logging
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
@@ -9,12 +8,10 @@ from nicegui import ui
 
 from src._core.domain.protocols.admin_service_protocol import AdminCrudServiceProtocol
 from src._core.domain.value_objects.query_filter import QueryFilter
-from src._core.exceptions.base_exception import BaseCustomException
+from src._core.infrastructure.admin.error_handler import AdminErrorHandler
 
 if TYPE_CHECKING:
     from src._core.application.dtos.base_response import PaginationInfo
-
-logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -96,15 +93,8 @@ class BaseAdminPage:
         """
         try:
             dtos, pagination = await self._fetch_list_data(page, search)
-        except BaseCustomException as e:
-            logger.warning("Admin list load failed: %s", e)
-            ui.notify(e.message, type="negative")
-            return
-        except Exception:
-            logger.exception(
-                "Unexpected error loading admin list for %s", self.domain_name
-            )
-            ui.notify("Failed to load data. Please try again later.", type="negative")
+        except Exception as exc:  # noqa: BLE001 - delegated to AdminErrorHandler
+            await AdminErrorHandler.handle(exc, context=f"{self.domain_name}_list")
             return
 
         self.render_list_header()
@@ -120,18 +110,8 @@ class BaseAdminPage:
         """
         try:
             dto = await self._fetch_detail_data(record_id)
-        except BaseCustomException as e:
-            logger.warning("Admin detail load failed: %s", e)
-            ui.notify(e.message, type="negative")
-            self._render_back_button()
-            return
-        except Exception:
-            logger.exception(
-                "Unexpected error loading detail for %s #%s",
-                self.domain_name,
-                record_id,
-            )
-            ui.notify("Failed to load record. Please try again later.", type="negative")
+        except Exception as exc:  # noqa: BLE001 - delegated to AdminErrorHandler
+            await AdminErrorHandler.handle(exc, context=f"{self.domain_name}_detail")
             self._render_back_button()
             return
 

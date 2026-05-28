@@ -5,6 +5,10 @@ from src._core.infrastructure.admin.auth import (
     require_auth,
 )
 from src._core.infrastructure.admin.base_admin_page import BaseAdminPage
+from src._core.infrastructure.admin.error_handler import (
+    AdminErrorHandler,
+    admin_error_boundary,
+)
 from src._core.infrastructure.admin.layout import admin_layout
 from src.auth.domain.exceptions.auth_exceptions import (
     AdminLastAccountsGuardException,
@@ -17,6 +21,7 @@ page_configs: list[BaseAdminPage] = []
 
 
 @ui.page("/admin/accounts")
+@admin_error_boundary(context="admin_accounts")
 async def accounts_page():
     session = await require_auth(page_key="accounts")
     if session is None:
@@ -31,10 +36,16 @@ async def accounts_page():
     admins_container = ui.column().classes("w-full q-gutter-sm")
 
     async def refresh_list():
-        admins = await use_case.list_admin_accounts()
-        admins_container.clear()
-        with admins_container:
-            _render_admin_list(admins, session.user_id, all_keys, refresh_list)
+        # Defensive: this also runs after a successful create/update/delete
+        # (outside those callbacks' try blocks), so a refresh-time failure must
+        # still route through the central handler rather than escaping uncaught.
+        try:
+            admins = await use_case.list_admin_accounts()
+            admins_container.clear()
+            with admins_container:
+                _render_admin_list(admins, session.user_id, all_keys, refresh_list)
+        except Exception as exc:  # noqa: BLE001 - delegated to AdminErrorHandler
+            await AdminErrorHandler.handle(exc, context="admin_accounts_refresh")
 
     # ── Create admin form ──
     with ui.expansion("Create New Admin", icon="person_add").classes("w-full q-mb-md"):
@@ -68,8 +79,8 @@ async def accounts_page():
                         permissions=selected,
                     )
                 )
-            except Exception as exc:
-                ui.notify(str(exc), type="negative")
+            except Exception as exc:  # noqa: BLE001 - delegated to AdminErrorHandler
+                await AdminErrorHandler.handle(exc, context="admin_account_create")
                 return
 
             new_username.set_value("")
@@ -142,8 +153,10 @@ def _render_admin_list(
                                         type="negative",
                                     )
                                     return
-                                except Exception as exc:
-                                    ui.notify(str(exc), type="negative")
+                                except Exception as exc:  # noqa: BLE001 - delegated
+                                    await AdminErrorHandler.handle(
+                                        exc, context="admin_account_update_permissions"
+                                    )
                                     return
                                 ui.notify("Permissions updated", type="positive")
                                 dlg.close()
@@ -190,9 +203,11 @@ def _render_admin_list(
                                     )
                                     dlg.close()
                                     return
-                                except Exception as exc:
-                                    ui.notify(str(exc), type="negative")
+                                except Exception as exc:  # noqa: BLE001 - delegated
                                     dlg.close()
+                                    await AdminErrorHandler.handle(
+                                        exc, context="admin_account_delete"
+                                    )
                                     return
                                 ui.notify(
                                     "Admin '" + a.username + "' removed",

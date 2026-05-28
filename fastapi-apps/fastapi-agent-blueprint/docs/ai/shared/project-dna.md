@@ -705,6 +705,7 @@ from nicegui import ui
 
 from src._core.infrastructure.admin.auth import require_auth
 from src._core.infrastructure.admin.base_admin_page import BaseAdminPage
+from src._core.infrastructure.admin.error_handler import admin_error_boundary
 from src._core.infrastructure.admin.layout import admin_layout
 from src.{name}.interface.admin.configs.{name}_admin_config import {name}_admin_page
 
@@ -713,6 +714,7 @@ page_configs: list[BaseAdminPage] = []
 
 
 @ui.page("/admin/{name}")
+@admin_error_boundary(context="{name}_list")
 async def {name}_list_page(page: int = 1, search: str = ""):
     session = await require_auth(page_key="{name}")
     if session is None:
@@ -722,6 +724,7 @@ async def {name}_list_page(page: int = 1, search: str = ""):
 
 
 @ui.page("/admin/{name}/{record_id}")
+@admin_error_boundary(context="{name}_detail")
 async def {name}_detail_page(record_id: int):
     session = await require_auth(page_key="{name}")
     if session is None:
@@ -729,6 +732,10 @@ async def {name}_detail_page(record_id: int):
     admin_layout(page_configs, current_domain="{name}", session=session)
     await {name}_admin_page.render_detail(record_id=record_id)
 ```
+
+> `@ui.page` stays outermost; `@admin_error_boundary` (inner) catches unhandled
+> page-load errors. Event callbacks (button clicks) are separate invocations —
+> call `AdminErrorHandler.handle(exc, context=...)` inside them. See §11 IC-195-1.
 
 ### DI & Auto-discovery
 
@@ -751,7 +758,8 @@ The NiceGUI admin layer integrates with the auth-domain credential check (PR #15
 - **Session storage scope (IC-155-1)**: NiceGUI admin session storage may contain only the four authentication keys — `authenticated`, `user_id`, `username`, `role`. Access tokens, refresh tokens, raw JWTs, `permissions`, and `password_temporary` MUST NOT be stored in session. The ephemeral `setup_granted` flag is the sole permitted exception (set by login on bootstrap detect; cleared immediately after setup completes).
 - **DB-role + page-permission authorisation (IC-155-2)**: admin access requires `User.role == "admin"` AND the target page key present in `User.permissions`. Both are re-read from the DB on every request via `refresh_session()` — never cached from session. Non-admin users and wrong passwords surface as a single "invalid credentials" error to prevent enumeration.
 - **One-time setup bootstrapping (IC-155-3)**: `ADMIN_BOOTSTRAP_*` env vars seed an `is_bootstrap_admin=True` account on boot. When no real admin (`is_bootstrap_admin=False`) exists, the bootstrap credential triggers the setup wizard — it never reaches the dashboard. Once the first real admin is created, the bootstrap account is deleted and the credential is permanently disabled (raises `AdminCredentialDisabledException`). Re-setting the env vars + restarting re-seeds the bootstrap row for recovery.
-- **Mandatory page-key gate (IC-155-4)**: every `@ui.page("/admin/...")` route (except `/admin/login` and `/admin/setup`) MUST call `require_auth(page_key="<key>")` or `require_auth_allowlisted()` as its first statement and return on `None`. `require_auth` enforces the IC-155-2 DB read + page-key check; `require_auth_allowlisted` enforces only the DB read (used for `dashboard` and `change-password`). Nav-drawer filtering is cosmetic only — the gate is the real control.
+- **Mandatory page-key gate (IC-155-4)**: every `@ui.page("/admin/...")` route (except `/admin/login`, `/admin/setup`, and `/admin/error`) MUST call `require_auth(page_key="<key>")` or `require_auth_allowlisted()` as its first statement and return on `None`. `require_auth` enforces the IC-155-2 DB read + page-key check; `require_auth_allowlisted` enforces only the DB read (used for `dashboard` and `change-password`). Nav-drawer filtering is cosmetic only — the gate is the real control.
+- **Centralized error handling (IC-195-1)**: admin errors route through `AdminErrorHandler` (`src/_core/infrastructure/admin/error_handler.py`) across three layers — (a) `@admin_error_boundary` on every `@ui.page` admin handler catches page-load errors; (b) event callbacks (button clicks, post-success refresh) call `AdminErrorHandler.handle(...)` directly; (c) a global `app.on_exception(handle_uncaught_admin_exception)` registered in `bootstrap_admin` structured-logs ANY uncaught admin exception (page / callback / timer) as a uniform last-resort safety net. Raw `str(exc)` is NEVER surfaced to the UI — only a 4xx `BaseCustomException.message` is shown (as a `warning`); `>= 500` domain errors and arbitrary exceptions show a generic message (`negative`). Full detail (`context`, `admin_user`, `error_type`, `error_code`; `request_id` auto-injected) goes to the structured server log only. An explicit `handle(..., critical=True)` redirects to `/admin/error`, the fourth gate-exempt route (IC-155-4): it has no auth gate (a critical failure may itself be a DB/auth outage and the gate hits the DB), performs no DB/session/`admin_layout` access, and echoes only a regex-validated correlation id passed via `?rid=`. No production path passes `critical=True` yet, so `/admin/error` is currently a defensive escalation surface; the global `on_exception` handler is the active uniform-logging control.
 
 Quickstart prints the seeded `admin / admin` credentials only when `ENV=quickstart`; production / staging deployments must override the bootstrap env vars or disable seeding.
 

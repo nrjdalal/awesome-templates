@@ -55,10 +55,16 @@ Check router files and configuration files:
   - When not implemented: treat as `[OPEN][BLOCKING]` and require production-safe auth before release
 ### Admin Dashboard Security
 - [ ] [Always][BLOCKING] Admin endpoint access restriction verified
-  - Grep: Every `@ui.page("/admin/")` function (except `/admin/login` and `/admin/setup`) calls
-    `require_auth(page_key="<key>")` or `require_auth_allowlisted()` as its first statement
-    and returns immediately on `None`. An AST test at
+  - Grep: Every `@ui.page("/admin/")` function (except `/admin/login`, `/admin/setup`, and
+    `/admin/error`) calls `require_auth(page_key="<key>")` or `require_auth_allowlisted()` as its
+    first statement and returns immediately on `None`. An AST test at
     `tests/unit/_core/infrastructure/admin/test_route_coverage.py` enforces this invariant (IC-155-4).
+    `/admin/error` is exempt because a critical error may itself be a DB/auth outage and the gate
+    hits the DB; it exposes no sensitive data (IC-195-1).
+- [ ] [Always][HIGH] Admin error UI does not leak raw exception detail
+  - Grep: No `ui.notify(str(exc))` / `ui.notify(f"...{exc}...")` in `interface/admin/pages/` or
+    `src/_apps/admin/pages/`; errors route through `AdminErrorHandler` (IC-195-1). The AST test
+    `test_route_coverage.py::test_admin_pages_do_not_leak_raw_exception_to_ui` enforces this.
 - [ ] [Always][HIGH] Admin authentication delegates credential checks to the auth domain
   - Grep: Verify `AdminAuthProvider` calls `AuthUseCase.admin_login()` and password verification stays in `AuthService.verify_credentials()`
 - [ ] [Always][HIGH] Sensitive fields masked in admin grid

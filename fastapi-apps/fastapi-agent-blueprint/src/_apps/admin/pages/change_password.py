@@ -6,6 +6,10 @@ from src._core.infrastructure.admin.auth import (
     require_auth_allowlisted,
 )
 from src._core.infrastructure.admin.base_admin_page import BaseAdminPage
+from src._core.infrastructure.admin.error_handler import (
+    AdminErrorHandler,
+    admin_error_boundary,
+)
 from src._core.infrastructure.admin.layout import admin_layout
 from src.auth.domain.exceptions.auth_exceptions import InvalidCredentialsException
 
@@ -14,6 +18,7 @@ page_configs: list[BaseAdminPage] = []
 
 
 @ui.page("/admin/change-password")
+@admin_error_boundary(context="admin_change_password")
 async def change_password_page():
     """Forced or voluntary password change for the current admin."""
     session = await require_auth_allowlisted()
@@ -60,8 +65,8 @@ async def change_password_page():
             except InvalidCredentialsException:
                 ui.notify("Current password is incorrect", type="negative")
                 return
-            except Exception as exc:
-                ui.notify(f"Error: {exc}", type="negative")
+            except Exception as exc:  # noqa: BLE001 - delegated to AdminErrorHandler
+                await AdminErrorHandler.handle(exc, context="admin_change_password")
                 return
 
             ui.notify("Password changed successfully", type="positive")
