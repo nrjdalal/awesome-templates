@@ -18,6 +18,12 @@ from src._core.exceptions.exception_handlers import (
     http_exception_handler,
     validation_exception_handler,
 )
+
+# Register cross-cutting _core models on Base.metadata BEFORE
+# _bootstrap_quickstart_schema_if_applicable() calls Base.metadata.create_all().
+# The admin bootstrap also imports the audit package, but it may run after
+# the quickstart create_all call — importing here is the durable hook.
+from src._core.infrastructure.admin.audit import models as _audit_models  # noqa: F401
 from src._core.infrastructure.discovery import discover_domains
 from src._core.infrastructure.logging.configure import configure_logging
 from src._core.infrastructure.logging.request_log_middleware import (

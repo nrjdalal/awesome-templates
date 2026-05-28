@@ -52,6 +52,11 @@ dev:
 worker:
 	uv run python run_worker_local.py
 
+## Start Taskiq scheduler locally — separate process from the worker; enqueues
+## @broker.task schedule labels. Skip in deployments that prefer external cron.
+scheduler:
+	uv run python run_scheduler_local.py --env local
+
 ## Create local Langfuse env file with random secrets
 langfuse-env: $(LANGFUSE_ENV_FILE)
 

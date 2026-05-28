@@ -63,6 +63,27 @@ def load_models():
         except Exception as e:
             print(f"Warning: Failed to load {module_name} - {e}")
     
+    # Shared _core infrastructure models that live outside the per-domain
+    # ``{name}/infrastructure/database/models/`` layout the loop above scans.
+    # Add explicit paths here when introducing new cross-cutting tables (e.g.
+    # admin audit log — #196).
+    _CORE_MODEL_PACKAGES = (
+        "src._core.infrastructure.admin.audit.models",
+    )
+    for pkg_name in _CORE_MODEL_PACKAGES:
+        try:
+            pkg = importlib.import_module(pkg_name)
+            for _, submodule_name, _ in pkgutil.walk_packages(
+                pkg.__path__, pkg.__name__ + "."
+            ):
+                try:
+                    importlib.import_module(submodule_name)
+                    print(f"Model module loaded: {submodule_name}")
+                except Exception as e:
+                    print(f"Warning: Failed to load {submodule_name} - {e}")
+        except Exception as e:
+            print(f"Warning: Failed to load {pkg_name} - {e}")
+
     print("=" * 100)
     print("All models loaded successfully")
     print("=" * 100)

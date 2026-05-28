@@ -1,13 +1,14 @@
 from __future__ import annotations
 
-_FIXED_KEYS: frozenset[str] = frozenset({"accounts"})
+_FIXED_KEYS: frozenset[str] = frozenset({"accounts", "audit_log"})
 
 
 class AdminPermissionRegistry:
     """Registry of admin page permission keys.
 
     Built at bootstrap time from registered page_configs (domain page keys) plus
-    the fixed 'accounts' key (the account-management gate).
+    the fixed cross-cutting keys — ``accounts`` (the account-management gate)
+    and ``audit_log`` (the admin audit-log viewer, #206 Phase 2).
 
     Keys added here are the canonical source for:
     - The checkbox list shown on /admin/accounts (edit-perms form)

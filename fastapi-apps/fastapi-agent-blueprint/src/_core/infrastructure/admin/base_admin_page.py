@@ -8,6 +8,8 @@ from nicegui import ui
 
 from src._core.domain.protocols.admin_service_protocol import AdminCrudServiceProtocol
 from src._core.domain.value_objects.query_filter import QueryFilter
+from src._core.infrastructure.admin.audit import AdminAction, AuditResult
+from src._core.infrastructure.admin.audit.logger import get_audit_logger
 from src._core.infrastructure.admin.error_handler import AdminErrorHandler
 
 if TYPE_CHECKING:
@@ -45,6 +47,10 @@ class BaseAdminPage:
     default_sort_order: str = "desc"
     page_size: int = 20
     readonly: bool = True
+    # Per-domain opt-in for VIEW_LIST / VIEW_DETAIL audit events (#206 Phase 2).
+    # Default off — read-event volume is high relative to forensic value and
+    # should be a deliberate choice. Compliance-heavy domains can flip this.
+    log_reads: bool = False
     # Declare extra services by alias → container attr name.
     # Bootstrap resolves each by attr name from the domain container and stores
     # the callable in ``_extra_services``. Use ``_get_extra_service(alias)`` to
@@ -91,11 +97,24 @@ class BaseAdminPage:
 
         Override individual hook methods to customize rendering.
         """
+        skeleton = self._render_list_skeleton()
         try:
+            # Flush the skeleton to the client before the (slow) fetch so it is
+            # actually visible during loading — not just built then replaced.
+            await ui.context.client.connected()
             dtos, pagination = await self._fetch_list_data(page, search)
         except Exception as exc:  # noqa: BLE001 - delegated to AdminErrorHandler
             await AdminErrorHandler.handle(exc, context=f"{self.domain_name}_list")
             return
+        finally:
+            skeleton.delete()  # finally: also covers cancellation / disconnect
+
+        if self.log_reads:
+            await get_audit_logger().log(
+                action=AdminAction.VIEW_LIST,
+                domain=self.domain_name,
+                result=AuditResult.SUCCESS,
+            )
 
         self.render_list_header()
         self.render_search_bar(search)
@@ -108,15 +127,66 @@ class BaseAdminPage:
 
         Override individual hook methods to customize rendering.
         """
+        skeleton = self._render_detail_skeleton()
         try:
+            # Flush the skeleton to the client before the (slow) fetch so it is
+            # actually visible during loading — not just built then replaced.
+            await ui.context.client.connected()
             dto = await self._fetch_detail_data(record_id)
         except Exception as exc:  # noqa: BLE001 - delegated to AdminErrorHandler
             await AdminErrorHandler.handle(exc, context=f"{self.domain_name}_detail")
             self._render_back_button()
             return
+        finally:
+            skeleton.delete()  # finally: also covers cancellation / disconnect
+
+        if self.log_reads:
+            await get_audit_logger().log(
+                action=AdminAction.VIEW_DETAIL,
+                domain=self.domain_name,
+                result=AuditResult.SUCCESS,
+                record_id=str(record_id),
+            )
 
         self.render_detail_header(record_id)
         self.render_detail_card(dto)
+
+    # ── Loading skeletons ──
+
+    def _list_skeleton_rows(self) -> int:
+        """Placeholder row count for the list skeleton (default 8; less if the
+        page size is smaller)."""
+        return min(self.page_size, 8)
+
+    def _render_list_skeleton(self) -> ui.element:
+        """Render a list-shaped skeleton (heading + search + summary + rows)
+        shown while ``_fetch_list_data`` is pending. Caller deletes it."""
+        with ui.column().classes("w-full q-gutter-sm") as container:
+            ui.skeleton(type="text", width="45%", height="32px")
+            ui.skeleton(type="rect", width="280px", height="40px")
+            ui.skeleton(type="text", width="25%", height="16px")
+            for _ in range(self._list_skeleton_rows()):
+                ui.skeleton(type="rect", width="100%", height="44px")
+        return container
+
+    def _detail_skeleton_rows(self) -> int:
+        """Placeholder field-row count for the detail skeleton (mirrors visible
+        columns, minimum 4)."""
+        return max(len(self.get_visible_columns()), 4)
+
+    def _render_detail_skeleton(self) -> ui.element:
+        """Render a detail-shaped skeleton (back-button header + field rows)
+        shown while ``_fetch_detail_data`` is pending. Caller deletes it."""
+        with ui.column().classes("w-full q-gutter-sm") as container:
+            with ui.row().classes("items-center q-gutter-sm"):
+                ui.skeleton(type="QBtn", width="36px", height="36px")
+                ui.skeleton(type="text", width="200px", height="32px")
+            with ui.card().classes("w-full"):
+                for _ in range(self._detail_skeleton_rows()):
+                    with ui.row().classes("items-center q-py-xs"):
+                        ui.skeleton(type="text", width="160px", height="18px")
+                        ui.skeleton(type="text", width="300px", height="18px")
+        return container
 
     # ── Data fetching (overridable) ──
 

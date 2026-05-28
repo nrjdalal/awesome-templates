@@ -7,6 +7,7 @@ from nicegui import app, ui
 from src._apps.admin.di.container import create_admin_container
 from src._apps.admin.pages import (
     accounts,  # noqa: F401 (registers @ui.page)
+    audit_log,  # noqa: F401 (registers @ui.page)
     change_password,  # noqa: F401 (registers @ui.page)
     dashboard,  # noqa: F401 (registers @ui.page)
     error,  # noqa: F401 (registers @ui.page)
@@ -14,6 +15,14 @@ from src._apps.admin.pages import (
     setup,  # noqa: F401 (registers @ui.page)
 )
 from src._core.config import settings
+from src._core.infrastructure.admin.audit import (  # noqa: F401 — also registers AdminAuditLog on Base.metadata for quickstart create_all()
+    AdminAuditLogRepository,
+)
+from src._core.infrastructure.admin.audit.logger import (
+    AuditLogger,
+    configure_audit_logger,
+    configure_audit_repository,
+)
 from src._core.infrastructure.admin.auth import (
     AdminAuthProvider,
     configure_admin_account_use_case_provider,
@@ -51,6 +60,14 @@ def bootstrap_admin(fastapi_app: FastAPI) -> None:
             auth_use_case_provider=admin_container.auth_container.auth_use_case
         )
     )
+    # Wire the audit infrastructure (#196 Phase 1 + #206 Phase 2) before any
+    # admin action can fire. The logger and the repository share the same
+    # instance — the logger uses it for writes, the audit-log UI for queries,
+    # and the cleanup task for retention deletes.
+    database = admin_container.core_container.database()
+    audit_repo = AdminAuditLogRepository(database)
+    configure_audit_repository(audit_repo)
+    configure_audit_logger(AuditLogger(audit_repo))
     configure_admin_account_use_case_provider(
         admin_container.auth_container.admin_account_use_case
     )
@@ -63,6 +80,7 @@ def bootstrap_admin(fastapi_app: FastAPI) -> None:
 
     dashboard.page_configs = page_configs
     accounts.page_configs = page_configs
+    audit_log.page_configs = page_configs
     change_password.page_configs = page_configs
 
     # Populate the permission registry from successfully registered page_configs.

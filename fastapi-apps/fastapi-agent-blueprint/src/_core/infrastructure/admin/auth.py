@@ -7,10 +7,16 @@ from nicegui import app, ui
 from pydantic import ValidationError
 
 from src._core.exceptions.base_exception import BaseCustomException
+from src._core.infrastructure.admin.audit import AdminAction, AuditResult
+from src._core.infrastructure.admin.audit.logger import get_audit_logger
 from src.auth.application.use_cases.admin_account_use_case import AdminAccountUseCase
 from src.auth.application.use_cases.auth_use_case import AuthUseCase
 from src.auth.domain.dtos.auth_dto import AdminSessionDTO
-from src.auth.domain.exceptions.auth_exceptions import InvalidCredentialsException
+from src.auth.domain.exceptions.auth_exceptions import (
+    AdminCredentialDisabledException,
+    AdminSetupRequiredException,
+    InvalidCredentialsException,
+)
 from src.auth.interface.server.schemas.auth_schema import LoginRequest
 from src.user.domain.dtos.user_dto import USER_ROLE_ADMIN
 
@@ -25,13 +31,68 @@ class AdminAuthProvider:
     def __init__(self, auth_use_case_provider: Callable[[], AuthUseCase]) -> None:
         self._auth_use_case_provider = auth_use_case_provider
 
-    async def authenticate(self, username: str, password: str) -> AdminSessionDTO:
-        """Authenticate and return session. Raises on bad credentials or setup state."""
+    async def authenticate(
+        self,
+        username: str,
+        password: str,
+        *,
+        ip_address: str | None = None,
+    ) -> AdminSessionDTO:
+        """Authenticate and return session. Raises on bad credentials or setup state.
+
+        Records an audit entry (#196 Phase 1): LOGIN success on return,
+        LOGIN failure on credential/disabled exceptions (with the exception's
+        ``error_code`` as ``failure_reason`` — never the raw message). The
+        bootstrap-required path is not audited here; the setup flow logs
+        ``FIRST_ADMIN_CREATE`` once the first real admin lands.
+        """
         try:
             request = LoginRequest(username=username or "", password=password or "")
         except ValidationError as exc:
+            # No session yet → actor user_id is explicitly None (don't auto-fill
+            # from any stale session storage).
+            await get_audit_logger().log(
+                action=AdminAction.LOGIN,
+                domain="auth",
+                result=AuditResult.FAILURE,
+                admin_user_id=None,
+                admin_username=username or "unknown",
+                failure_reason=InvalidCredentialsException().error_code,
+                ip_address=ip_address,
+            )
             raise InvalidCredentialsException() from exc
-        return await self._auth_use_case_provider().admin_login(request)
+
+        try:
+            session = await self._auth_use_case_provider().admin_login(request)
+        except (
+            InvalidCredentialsException,
+            AdminCredentialDisabledException,
+        ) as exc:
+            await get_audit_logger().log(
+                action=AdminAction.LOGIN,
+                domain="auth",
+                result=AuditResult.FAILURE,
+                admin_user_id=None,
+                admin_username=username or "unknown",
+                failure_reason=exc.error_code,
+                ip_address=ip_address,
+            )
+            raise
+        except AdminSetupRequiredException:
+            # Bootstrap → setup wizard. The setup flow records FIRST_ADMIN_CREATE
+            # itself once the first real admin is created; this branch is not a
+            # login event in its own right.
+            raise
+
+        await get_audit_logger().log(
+            action=AdminAction.LOGIN,
+            domain="auth",
+            result=AuditResult.SUCCESS,
+            admin_user_id=session.user_id,
+            admin_username=session.username,
+            ip_address=ip_address,
+        )
+        return session
 
     async def refresh_session(self) -> AdminSessionDTO | None:
         """Re-derive session from DB. Returns None if user is gone or not admin."""

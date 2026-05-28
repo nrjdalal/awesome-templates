@@ -8,7 +8,7 @@ from src._core.infrastructure.admin.error_handler import (
     AdminErrorHandler,
     admin_error_boundary,
 )
-from src._core.infrastructure.admin.layout import admin_layout
+from src._core.infrastructure.admin.layout import admin_layout, button_loading
 from src.docs.interface.admin.configs.docs_admin_config import docs_admin_page
 
 # page_configs is injected by bootstrap_admin() after discovery
@@ -55,14 +55,15 @@ async def docs_query_page() -> None:
         if not question:
             ui.notify("Question is required", type="warning")
             return
-        try:
-            service = docs_admin_page._get_extra_service("query")
-            answer, retrieved_count = await service.answer_question(
-                question=question, top_k=int(top_k_input.value or 5)
-            )
-        except Exception as exc:  # noqa: BLE001 - delegated to AdminErrorHandler
-            await AdminErrorHandler.handle(exc, context="docs_query")
-            return
+        async with button_loading(ask_btn):
+            try:
+                service = docs_admin_page._get_extra_service("query")
+                answer, retrieved_count = await service.answer_question(
+                    question=question, top_k=int(top_k_input.value or 5)
+                )
+            except Exception as exc:  # noqa: BLE001 - delegated to AdminErrorHandler
+                await AdminErrorHandler.handle(exc, context="docs_query")
+                return
 
         answer_card.clear()
         answer_card.style("display: block")
@@ -90,7 +91,7 @@ async def docs_query_page() -> None:
                             "text-caption"
                         )
 
-    ui.button("Ask", on_click=_run_query).props("color=primary")
+    ask_btn = ui.button("Ask", on_click=_run_query).props("color=primary")
 
 
 @ui.page("/admin/docs/{record_id}")

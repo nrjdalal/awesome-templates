@@ -116,6 +116,19 @@ class Settings(BaseSettings):
     )
 
     # ----------------------------------------------------------------
+    # Admin audit log retention (#206 Phase 2)
+    #
+    # ``audit_cleanup_task`` deletes ``admin_audit_log`` rows older than this
+    # many days. Range-validated so a bogus env can't silently wipe history.
+    # ----------------------------------------------------------------
+    audit_log_retention_days: int = Field(
+        default=90,
+        validation_alias="AUDIT_LOG_RETENTION_DAYS",
+        ge=1,
+        le=3650,
+    )
+
+    # ----------------------------------------------------------------
     # Authentication (JWT)
     #
     # Local and quickstart use an auto-generated secret for zero-config

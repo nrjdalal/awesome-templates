@@ -45,3 +45,13 @@ async def dashboard_page():
                 with ui.row().classes("items-center q-pa-sm"):
                     ui.icon("manage_accounts").classes("text-h4 text-blue-800")
                     ui.label("Accounts").classes("text-h6")
+
+        if "audit_log" in permissions:
+            with (
+                ui.card()
+                .classes("cursor-pointer")
+                .on("click", lambda: ui.navigate.to("/admin/audit-log"))
+            ):
+                with ui.row().classes("items-center q-pa-sm"):
+                    ui.icon("fact_check").classes("text-h4 text-blue-800")
+                    ui.label("Audit Log").classes("text-h6")
