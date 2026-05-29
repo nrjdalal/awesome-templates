@@ -4,6 +4,7 @@ from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, Query
 
 from src._core.application.dtos.base_response import SuccessResponse
+from src.auth.interface.server.dependencies.auth_dependencies import get_current_user
 from src.docs.domain.services.docs_query_service import DocsQueryService
 from src.docs.domain.services.document_service import DocumentService
 from src.docs.infrastructure.di.docs_container import DocsContainer
@@ -20,6 +21,12 @@ from src.docs.interface.worker.tasks.document_ingestion_task import (
 
 router = APIRouter()
 
+# #197 Phase 1+2 — protect write ops + the LLM-invoking query.
+# RAG indirect injection's supply surface is `POST /docs/documents`, so it
+# must require authentication even though the model is invoked elsewhere.
+# GET endpoints intentionally left public; if PO wants full-gating, add
+# `dependencies=[Depends(get_current_user)]` to them as a one-line follow-up.
+
 
 # ==========================================================================================
 # Document CRUD
@@ -31,6 +38,7 @@ router = APIRouter()
     summary="Create and ingest a docs document",
     response_model=SuccessResponse[DocumentResponse],
     response_model_exclude={"pagination"},
+    dependencies=[Depends(get_current_user)],
 )
 @inject
 async def create_document(
@@ -92,6 +100,7 @@ async def get_document(
     summary="Delete docs document and its chunks",
     response_model=SuccessResponse,
     response_model_exclude={"data", "pagination"},
+    dependencies=[Depends(get_current_user)],
 )
 @inject
 async def delete_document(
@@ -114,6 +123,7 @@ async def delete_document(
     summary="Ask a question over ingested documents",
     response_model=SuccessResponse[QueryResponse],
     response_model_exclude={"pagination"},
+    dependencies=[Depends(get_current_user)],
 )
 @inject
 async def query_docs(

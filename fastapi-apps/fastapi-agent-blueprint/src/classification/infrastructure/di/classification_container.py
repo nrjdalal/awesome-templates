@@ -22,6 +22,7 @@ class ClassificationContainer(containers.DeclarativeContainer):
         real=providers.Singleton(
             PydanticAIClassifier,
             llm_model=core_container.llm_model,
+            guardrails_enabled=settings.guardrails_enabled,
         ),
         stub=providers.Singleton(StubClassifier),
     )

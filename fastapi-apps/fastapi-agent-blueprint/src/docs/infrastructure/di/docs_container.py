@@ -67,6 +67,7 @@ class DocsContainer(containers.DeclarativeContainer):
         real=providers.Singleton(
             PydanticAIAnswerAgent,
             llm_model=core_container.llm_model,
+            guardrails_enabled=settings.guardrails_enabled,
         ),
         stub=providers.Singleton(StubAnswerAgent),
     )

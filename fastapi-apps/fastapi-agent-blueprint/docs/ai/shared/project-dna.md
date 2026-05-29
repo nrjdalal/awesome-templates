@@ -6,7 +6,7 @@
 > This file is auto-extracted/updated from `src/user/` (reference domain) and `src/_core/` (Base classes)
 > when `/sync-guidelines` is run. **Run `/sync-guidelines` instead of editing manually.**
 >
-> Last updated: 2026-05-28 (#206 admin audit log Phase 2 — UI + scheduler + cleanup)
+> Last updated: 2026-05-29 (#209 / #197 Phase 3 — runtime prompt-injection guard + PII output validator)
 
 ## Section Index
 §0 Project Scale and Design Philosophy |
@@ -937,14 +937,30 @@ class ClassificationService:
 # 2. Infrastructure adapter: PydanticAI Agent lives here
 class PydanticAIClassifier:
     def __init__(self, llm_model: Any) -> None:
+        # `instructions=` (modern PydanticAI slot) is preferred over the legacy
+        # `system_prompt=` since #197 Phase 1+2 — instructions are separated from
+        # the user prompt parts and, on the OpenAI Responses provider, are sent as
+        # a dedicated top-level `instructions` field. This is NOT a secrecy
+        # boundary (PydanticAI still stores the rendered instructions on the
+        # ModelRequest); the value is separation-from-user-input, not concealment.
+        # The persona prose is typed as `Final[LiteralString]` so pyright blocks
+        # any future f-string interpolation of untrusted runtime data into the
+        # agent's behavioural contract.
         self._agent: Agent[None, ClassificationDTO] = Agent(
             model=llm_model,
             output_type=ClassificationDTO,
-            system_prompt="...",
+            instructions=_INSTRUCTIONS,
         )
 
     async def classify(self, text: str, categories: list[str] | None = None) -> ClassificationDTO:
-        result = await self._agent.run(text)
+        # All dynamic prompt fields (user text, category labels, retrieved chunk
+        # title/content, user question) go through ``escape_for_prompt_xml`` in
+        # ``src/_core/infrastructure/llm/prompt_boundaries.py`` and are wrapped
+        # in named XML boundary tags (`<user_text>`, `<category>`, `<documents>`
+        # / `<document>` / `<title>` / `<content>`). The `instructions=` text
+        # tells the model to treat the wrapped content as untrusted DATA and
+        # NEVER follow embedded directives — see #197 Phase 1+2.
+        result = await self._agent.run(_format_prompt(text, categories))
         return result.output
 
 # 3. DI container: Selector wires real vs stub
@@ -967,6 +983,13 @@ classification_service = providers.Factory(ClassificationService, classifier=cla
 - Structured output via `Agent[DepsType, OutputType]` — type-checked at build time
 - Domain service injects `ClassifierProtocol` (or equivalent), not `llm_model` directly
 - ADR 043: Domain → Protocol → Infra Adapter → Selector is the canonical AI feature pattern
+
+### Prompt-injection guardrails (#197)
+
+Two layers, both living at the **adapter** boundary (not the PydanticAI Hooks/capabilities API — the adapters own the call sites, so plain functions are simpler, fully testable, and version-decoupled):
+
+- **Structural (Phase 1+2, PR #208)**: `instructions=` over `system_prompt=`; every dynamic prompt field escaped via `escape_for_prompt_xml` and wrapped in named XML boundary tags; instruction constants typed `Final[LiteralString]`. See §14 code comments + `src/_core/infrastructure/llm/prompt_boundaries.py`.
+- **Runtime (Phase 3, #209)**: `src/_core/infrastructure/llm/guardrails.py` plain functions. `detect_prompt_injection` (input guard, scans every user-supplied field — RAG question; classifier `text` + each `categories` label — before `agent.run()`, raises `PromptInjectionDetected` 400). RAG output guard diffs `scan_pii(answer)` vs PII in `source_title`+`content` of the chunks and raises `GuardrailBlocked` 422 on fabrication; verbatim prompt-leak is log-only. `GUARDRAILS_ENABLED` (default True) is the DI-wired kill-switch. Guardrail exceptions carry no `details` (handler serializes `exc.details` to the response). Out of scope until a later phase: `Document.trust_level`, base64/ROT13 decode, classifier output guard, per-user rate/budget caps (Phase 4 #210), `ai_usage.guardrail_triggered` ledger + red-team suite (Phase 5 #211).
 
 ## §15. Auth Domain Pattern
 

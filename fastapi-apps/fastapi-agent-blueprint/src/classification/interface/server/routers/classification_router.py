@@ -2,6 +2,7 @@ from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends
 
 from src._core.application.dtos.base_response import SuccessResponse
+from src.auth.interface.server.dependencies.auth_dependencies import get_current_user
 from src.classification.domain.services.classification_service import (
     ClassificationService,
 )
@@ -13,7 +14,11 @@ from src.classification.interface.server.schemas.classification_schema import (
     ClassifyRequest,
 )
 
-router = APIRouter()
+# Router-level auth (#197 Phase 1+2). Single POST endpoint → router-level is
+# cleaner than per-operation. Any future GET endpoint added here would also
+# be authenticated by default — flip to per-operation if a public read is
+# ever needed.
+router = APIRouter(dependencies=[Depends(get_current_user)])
 
 
 @router.post(

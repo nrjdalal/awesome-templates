@@ -356,6 +356,20 @@ class Settings(BaseSettings):
         ),
     )
 
+    # Runtime prompt-injection + PII guardrails (#197 Phase 3 / #209).
+    # Read once at agent-adapter construction (DI), not in the hot path.
+    # Kill-switch: set GUARDRAILS_ENABLED=false to disable runtime detection
+    # in dev/CI or instantly in prod if false-positive rates spike.
+    guardrails_enabled: bool = Field(
+        default=True,
+        validation_alias="GUARDRAILS_ENABLED",
+        description=(
+            "Enable runtime LLM guardrails (input prompt-injection detection + "
+            "output PII-fabrication blocking) on the RAG and classifier agents. "
+            "Default True; the structural Phase 1+2 escaping stays active regardless."
+        ),
+    )
+
     # ----------------------------------------------------------------
     # Network Policy
     # ----------------------------------------------------------------

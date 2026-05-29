@@ -1,13 +1,31 @@
 from __future__ import annotations
 
 import pytest
+import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 
 from src._apps.server.app import app
+from src._apps.server.testing import override_current_user, reset_current_user_override
+from tests.factories.user_factory import make_user_dto
 
 
 def _client() -> AsyncClient:
     return AsyncClient(transport=ASGITransport(app=app), base_url="http://localhost")
+
+
+@pytest_asyncio.fixture(autouse=True)
+async def _authenticated_user_override():
+    """Bypass the JWT gate added in #197 Phase 1+2 for existing business-logic
+    tests. CUD + query routes now require ``get_current_user`` — overriding it
+    with a fake non-admin user lets these tests keep asserting behaviour
+    without minting a real Bearer. The dedicated unauthenticated test below
+    resets the override locally to exercise the 401 path.
+    """
+    override_current_user(app, make_user_dto())
+    try:
+        yield
+    finally:
+        reset_current_user_override(app)
 
 
 async def _create_document(client: AsyncClient, title: str, content: str) -> dict:
@@ -17,6 +35,34 @@ async def _create_document(client: AsyncClient, title: str, content: str) -> dic
     )
     assert response.status_code == 200, response.text
     return response.json()
+
+
+# ── #197 Phase 1+2: auth gate on docs CUD + query ───────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_docs_protected_routes_return_401_without_bearer():
+    """POST /docs/documents, DELETE /docs/documents/{id}, POST /docs/query
+    all require a Bearer header. GET endpoints stay public (intentional).
+    """
+    reset_current_user_override(app)
+    try:
+        async with _client() as client:
+            create = await client.post(
+                "/v1/docs/documents",
+                json={"title": "x", "content": "y"},
+            )
+            delete = await client.delete("/v1/docs/documents/1")
+            query = await client.post(
+                "/v1/docs/query",
+                json={"question": "x", "topK": 1},
+            )
+    finally:
+        override_current_user(app, make_user_dto())
+
+    for resp in (create, delete, query):
+        assert resp.status_code == 401, resp.text
+        assert resp.json()["errorCode"] == "UNAUTHORIZED"
 
 
 @pytest.mark.asyncio

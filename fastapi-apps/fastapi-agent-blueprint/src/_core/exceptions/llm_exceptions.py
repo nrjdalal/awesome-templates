@@ -45,3 +45,40 @@ class LLMContextLengthExceededException(LLMException):
             message=msg,
             error_code="LLM_CONTEXT_LENGTH_EXCEEDED",
         )
+
+
+class PromptInjectionDetected(LLMException):
+    """Raised by the input guardrail when a prompt-injection pattern is detected
+    in user-supplied input (#197 Phase 3 / #209).
+
+    Carries NO ``details``: ``custom_exception_handler`` serializes
+    ``exc.details`` into the client response (``error_details``), so the matched
+    rule name must NEVER be passed here — it goes to structlog only. The
+    user-facing message is deliberately generic so an attacker cannot probe
+    which rule fired.
+    """
+
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=400,
+            message="Request blocked by input guardrail.",
+            error_code="PROMPT_INJECTION_DETECTED",
+            details=None,
+        )
+
+
+class GuardrailBlocked(LLMException):
+    """Raised by the output guardrail when the model response violates a policy
+    (e.g. fabricated PII not present in the retrieved context) (#197 Phase 3 / #209).
+
+    Like :class:`PromptInjectionDetected`, carries NO ``details`` — the offending
+    token / count / type goes to structlog only, never to the client response.
+    """
+
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=422,
+            message="Response blocked by output guardrail.",
+            error_code="GUARDRAIL_BLOCKED",
+            details=None,
+        )
