@@ -7,6 +7,7 @@ output guard deterministically without a real LLM.
 from __future__ import annotations
 
 import pytest
+from structlog.testing import capture_logs
 
 from src._core.domain.dtos.rag import BaseChunkDTO
 from src._core.exceptions.llm_exceptions import (
@@ -71,6 +72,44 @@ async def test_output_guard_blocks_fabricated_pii() -> None:
     agent = _agent("Contact the author at hacker@evil.com for details.")
     with pytest.raises(GuardrailBlocked):
         await agent.answer("Who wrote this?", [_chunk("An article about networking.")])
+
+
+@pytest.mark.asyncio
+async def test_output_guard_blocks_fabricated_ipv4() -> None:
+    """#214: ``ipv4`` is in ``_BLOCKING_PII_TYPES`` (range-validated dotted quad,
+    low collision) so a fabricated IP absent from the context must block too —
+    not just email."""
+    agent = _agent("The server IP is 203.0.113.42 according to the logs.")
+    with pytest.raises(GuardrailBlocked):
+        await agent.answer("What is the server IP?", [_chunk("No IP in this text.")])
+
+
+@pytest.mark.asyncio
+async def test_output_guard_log_carries_no_pii_value() -> None:
+    """#214: a blocked-fabrication log event must carry only count + token
+    TYPES — never the raw PII value (it would defeat the sanitized response)."""
+    fabricated = "leaker@evil.com"
+    agent = _agent(f"Contact {fabricated} for more details.")
+    with capture_logs() as logs:
+        with pytest.raises(GuardrailBlocked):
+            await agent.answer(
+                "Who wrote this?", [_chunk("An article about networking.")]
+            )
+
+    blocking = [
+        e
+        for e in logs
+        if e.get("event") == "guardrail_triggered"
+        and e.get("rule") == "pii_fabrication"
+    ]
+    assert blocking, "expected a pii_fabrication blocking log event"
+    event = blocking[0]
+    assert event["stage"] == "output"
+    assert event["count"] == 1
+    assert event["types"] == ["email"]
+    # The raw PII value must NOT leak into ANY captured log field.
+    assert fabricated not in repr(logs)
+    assert "leaker" not in repr(logs)
 
 
 @pytest.mark.asyncio
