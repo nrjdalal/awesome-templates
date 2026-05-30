@@ -62,7 +62,7 @@
     "babel-plugin-react-compiler": "1.0.0",
     "eslint": "^9",
     "eslint-config-next": "16.2.6",
-    "lint-staged": "^17.0.5",
+    "lint-staged": "^17.0.6",
     "prettier": "^3.8.3",
     "prettier-plugin-tailwindcss": "^0.8.0",
     "simple-git-hooks": "^2.13.1",
