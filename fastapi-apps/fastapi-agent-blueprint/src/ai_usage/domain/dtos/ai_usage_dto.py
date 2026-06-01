@@ -47,6 +47,10 @@ class AiUsageDTO(BaseModel):
     trace_id: str | None = Field(default=None, description="Optional trace ID")
     span_id: str | None = Field(default=None, description="Optional span ID")
     error_code: str | None = Field(default=None, description="Sanitized error code")
+    guardrail_triggered: bool = Field(
+        default=False,
+        description="True when a runtime LLM guardrail blocked this call",
+    )
     usage_metadata: dict[str, Any] = Field(
         default_factory=dict,
         description=(

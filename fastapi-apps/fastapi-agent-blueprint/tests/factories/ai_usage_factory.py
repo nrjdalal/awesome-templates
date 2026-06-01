@@ -28,6 +28,7 @@ def make_agent_usage_record(
     provider_cost_currency: str | None = None,
     provider_cost_source: ProviderCostSource | None = None,
     usage_metadata: dict[str, Any] | None = None,
+    guardrail_triggered: bool = False,
 ) -> AgentUsageRecord:
     return AgentUsageRecord(
         call_id=call_id,
@@ -45,6 +46,7 @@ def make_agent_usage_record(
         provider_cost_currency=provider_cost_currency,
         provider_cost_source=provider_cost_source,
         usage_metadata=usage_metadata or {},
+        guardrail_triggered=guardrail_triggered,
     )
 
 
@@ -57,6 +59,7 @@ def make_create_ai_usage_request(
     provider_cost_amount: Decimal | None = None,
     provider_cost_currency: str | None = None,
     provider_cost_source: ProviderCostSource | None = None,
+    guardrail_triggered: bool = False,
 ) -> CreateAiUsageRequest:
     return CreateAiUsageRequest(
         call_id=call_id,
@@ -74,6 +77,7 @@ def make_create_ai_usage_request(
         provider_cost_amount=provider_cost_amount,
         provider_cost_currency=provider_cost_currency,
         provider_cost_source=provider_cost_source,
+        guardrail_triggered=guardrail_triggered,
     )
 
 
@@ -82,6 +86,9 @@ def make_ai_usage_dto(
     call_id: str = "call-1",
     org_id: str | None = "org-1",
     created_at: datetime | None = None,
+    status: str = "ok",
+    error_code: str | None = None,
+    guardrail_triggered: bool = False,
 ) -> AiUsageDTO:
     now = _utcnow_naive()
     return AiUsageDTO(
@@ -92,7 +99,7 @@ def make_ai_usage_dto(
         agent_name="classification",
         provider="openai",
         model="gpt-test",
-        status="ok",
+        status=status,
         occurred_at=now,
         duration_ms=100,
         input_tokens=10,
@@ -102,6 +109,8 @@ def make_ai_usage_dto(
         reasoning_tokens=3,
         total_tokens=21,
         requests=1,
+        error_code=error_code,
+        guardrail_triggered=guardrail_triggered,
         usage_metadata={},
         created_at=created_at or now,
     )

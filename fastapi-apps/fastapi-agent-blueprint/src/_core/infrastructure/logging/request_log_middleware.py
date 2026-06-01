@@ -44,10 +44,20 @@ class RequestLogMiddleware:
                 status_holder["code"] = int(message.get("status", 0))
             await send(message)
 
-        structlog.contextvars.bind_contextvars(
-            http_method=method,
-            http_path=path,
-        )
+        # Bind request_id into structlog contextvars (not just the log-render
+        # processor) so non-logging consumers can read it — notably the
+        # ai_usage ledger's `_default_request_id()`, which inspects structlog
+        # contextvars when recording guardrail/usage rows (#197 Phase 5).
+        bindings: dict[str, str] = {"http_method": method, "http_path": path}
+        try:
+            from asgi_correlation_id import correlation_id
+
+            rid = correlation_id.get()
+            if rid:
+                bindings["request_id"] = rid
+        except ImportError:
+            pass
+        structlog.contextvars.bind_contextvars(**bindings)
         try:
             await self.app(scope, receive, send_wrapper)
         except Exception:
@@ -74,8 +84,10 @@ class RequestLogMiddleware:
             # Unbind per-request keys so the worker thread / next request
             # starts clean. ``clear_contextvars`` would wipe everything
             # including anything the caller bound *around* this request;
-            # remove only the keys this middleware owns.
-            _unbind_if_present("http_method", "http_path")
+            # remove only the keys owned by this request. ``user_id`` is bound
+            # later by the auth dependency (#197 Phase 5) but cleaned up here so
+            # it cannot bleed into the next request handled in this context.
+            _unbind_if_present("http_method", "http_path", "request_id", "user_id")
 
 
 def _unbind_if_present(*keys: str) -> None:

@@ -24,6 +24,7 @@ class AiUsageRepositoryProtocol(BaseRepositoryProtocol[AiUsageDTO], Protocol):
         agent_name: str | None = None,
         model: str | None = None,
         status: str | None = None,
+        guardrail_triggered: bool | None = None,
         start_at: datetime | None = None,
         end_at: datetime | None = None,
     ) -> tuple[list[AiUsageDTO], int]: ...
@@ -35,6 +36,7 @@ class AiUsageRepositoryProtocol(BaseRepositoryProtocol[AiUsageDTO], Protocol):
         agent_name: str | None = None,
         model: str | None = None,
         status: str | None = None,
+        guardrail_triggered: bool | None = None,
         start_at: datetime | None = None,
         end_at: datetime | None = None,
     ) -> AiUsageSummaryDTO: ...
@@ -46,6 +48,7 @@ class AiUsageRepositoryProtocol(BaseRepositoryProtocol[AiUsageDTO], Protocol):
         agent_name: str | None = None,
         model: str | None = None,
         status: str | None = None,
+        guardrail_triggered: bool | None = None,
         start_at: datetime | None = None,
         end_at: datetime | None = None,
     ) -> list[AiUsageByOrgDTO]: ...

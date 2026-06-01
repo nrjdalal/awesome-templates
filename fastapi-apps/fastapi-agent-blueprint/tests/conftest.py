@@ -2,9 +2,26 @@ import os
 
 import pytest
 import pytest_asyncio
+import structlog
 
 from src._core.infrastructure.persistence.rdb.config import DatabaseConfig
 from src._core.infrastructure.persistence.rdb.database import Base, Database
+
+
+@pytest.fixture(autouse=True)
+def _reset_structlog() -> None:
+    """Reset structlog to library defaults before each test.
+
+    Production ``configure_logging()`` sets ``cache_logger_on_first_use=True``.
+    Once an app-startup test (e2e) runs, that caching persists for the whole
+    session, so the first use of any module-level ``get_logger`` proxy caches a
+    concrete bound logger that ``structlog.testing.capture_logs()`` can no
+    longer intercept — making capture-based assertions order-dependent (#197
+    Phase 5 surfaced this). Resetting to the (non-caching) defaults before each
+    test keeps ``capture_logs`` deterministic; tests that need the configured
+    pipeline call ``configure_logging()`` themselves.
+    """
+    structlog.reset_defaults()
 
 
 def _build_test_database() -> Database:

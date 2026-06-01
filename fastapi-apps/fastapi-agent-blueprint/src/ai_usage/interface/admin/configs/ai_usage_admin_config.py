@@ -20,6 +20,12 @@ ai_usage_admin_page = BaseAdminPage(
         ColumnConfig(field_name="provider", header_name="Provider"),
         ColumnConfig(field_name="model", header_name="Model", searchable=True),
         ColumnConfig(field_name="status", header_name="Status", width=120),
+        # Per-column AG Grid filter applies to the CURRENTLY-LOADED page only
+        # (client-side). Cross-page guardrail observability is served by the
+        # server-side `/v1/usage?guardrailTriggered=` API filter (#197 Phase 5).
+        ColumnConfig(
+            field_name="guardrail_triggered", header_name="Guardrail", width=120
+        ),
         ColumnConfig(field_name="total_tokens", header_name="Tokens", width=120),
         ColumnConfig(field_name="requests", header_name="Requests", width=120),
         ColumnConfig(field_name="provider_cost_amount", header_name="Provider Cost"),

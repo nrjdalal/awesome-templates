@@ -55,6 +55,13 @@ class AgentUsageRecord(ValueObject):
     trace_id: str | None = Field(default=None, max_length=64)
     span_id: str | None = Field(default=None, max_length=64)
     error_code: str | None = Field(default=None, max_length=50)
+    guardrail_triggered: bool = Field(
+        default=False,
+        description=(
+            "True when a runtime LLM guardrail blocked this call "
+            "(prompt-injection or PII-fabrication). #197 Phase 5."
+        ),
+    )
     usage_metadata: dict[str, Any] = Field(
         default_factory=dict,
         description=(

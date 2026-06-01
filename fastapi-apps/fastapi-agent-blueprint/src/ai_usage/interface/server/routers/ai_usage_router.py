@@ -31,6 +31,7 @@ async def list_usage_logs(
     agent_name: str | None = Query(default=None, alias="agentName", max_length=100),
     model: str | None = Query(default=None, max_length=200),
     status: str | None = Query(default=None, max_length=20),
+    guardrail_triggered: bool | None = Query(default=None, alias="guardrailTriggered"),
     start_at: datetime | None = Query(default=None, alias="startAt"),
     end_at: datetime | None = Query(default=None, alias="endAt"),
     ai_usage_service: AiUsageService = Depends(
@@ -44,6 +45,7 @@ async def list_usage_logs(
         agent_name=agent_name,
         model=model,
         status=status,
+        guardrail_triggered=guardrail_triggered,
         start_at=start_at,
         end_at=end_at,
     )
@@ -68,6 +70,7 @@ async def summarize_usage_logs(
     agent_name: str | None = Query(default=None, alias="agentName", max_length=100),
     model: str | None = Query(default=None, max_length=200),
     status: str | None = Query(default=None, max_length=20),
+    guardrail_triggered: bool | None = Query(default=None, alias="guardrailTriggered"),
     start_at: datetime | None = Query(default=None, alias="startAt"),
     end_at: datetime | None = Query(default=None, alias="endAt"),
     ai_usage_service: AiUsageService = Depends(
@@ -79,6 +82,7 @@ async def summarize_usage_logs(
         agent_name=agent_name,
         model=model,
         status=status,
+        guardrail_triggered=guardrail_triggered,
         start_at=start_at,
         end_at=end_at,
     )

@@ -7,6 +7,10 @@ from src._core.domain.services.rag_pipeline import RagPipeline
 from src._core.infrastructure.rag.pydantic_ai_answer_agent import PydanticAIAnswerAgent
 from src._core.infrastructure.rag.stub_answer_agent import StubAnswerAgent
 from src._core.infrastructure.rag.stub_embedder import StubEmbedder
+from src.ai_usage.domain.services.ai_usage_service import AiUsageService
+from src.ai_usage.infrastructure.repositories.ai_usage_repository import (
+    AiUsageRepository,
+)
 from src.docs.domain.services.docs_query_service import DocsQueryService
 from src.docs.domain.services.document_service import DocumentService
 from src.docs.infrastructure.repositories.document_repository import DocumentRepository
@@ -62,12 +66,28 @@ class DocsContainer(containers.DeclarativeContainer):
         stub=providers.Singleton(StubEmbedder),
     )
 
+    # Cross-domain usage recorder (#197 Phase 5). Wiring-only import of the
+    # ai_usage implementation; the adapter itself depends on the Protocol. A
+    # second AiUsageRepository singleton is acceptable — the DB unique
+    # constraint on call_id is the real idempotency boundary.
+    ai_usage_repository = providers.Singleton(
+        AiUsageRepository,
+        database=core_container.database,
+    )
+    ai_usage_recorder = providers.Singleton(
+        AiUsageService,
+        ai_usage_repository=ai_usage_repository,
+    )
+
     answer_agent = providers.Selector(
         _answer_agent_selector,
         real=providers.Singleton(
             PydanticAIAnswerAgent,
             llm_model=core_container.llm_model,
             guardrails_enabled=settings.guardrails_enabled,
+            usage_recorder=ai_usage_recorder,
+            model_name=settings.llm_model_name or "",
+            provider=settings.llm_provider,
         ),
         stub=providers.Singleton(StubAnswerAgent),
     )

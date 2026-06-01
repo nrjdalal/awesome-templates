@@ -93,6 +93,7 @@ class AiUsageRepository(BaseRepository[AiUsageDTO]):
         agent_name: str | None = None,
         model: str | None = None,
         status: str | None = None,
+        guardrail_triggered: bool | None = None,
         start_at: datetime | None = None,
         end_at: datetime | None = None,
     ) -> tuple[list[AiUsageDTO], int]:
@@ -103,6 +104,7 @@ class AiUsageRepository(BaseRepository[AiUsageDTO]):
                 agent_name=agent_name,
                 model=model,
                 status=status,
+                guardrail_triggered=guardrail_triggered,
                 start_at=start_at,
                 end_at=end_at,
             ).order_by(AiUsageModel.occurred_at.desc(), AiUsageModel.id.desc())
@@ -112,6 +114,7 @@ class AiUsageRepository(BaseRepository[AiUsageDTO]):
                 agent_name=agent_name,
                 model=model,
                 status=status,
+                guardrail_triggered=guardrail_triggered,
                 start_at=start_at,
                 end_at=end_at,
             )
@@ -133,6 +136,7 @@ class AiUsageRepository(BaseRepository[AiUsageDTO]):
         agent_name: str | None = None,
         model: str | None = None,
         status: str | None = None,
+        guardrail_triggered: bool | None = None,
         start_at: datetime | None = None,
         end_at: datetime | None = None,
     ) -> AiUsageSummaryDTO:
@@ -143,6 +147,7 @@ class AiUsageRepository(BaseRepository[AiUsageDTO]):
                 agent_name=agent_name,
                 model=model,
                 status=status,
+                guardrail_triggered=guardrail_triggered,
                 start_at=start_at,
                 end_at=end_at,
             )
@@ -157,6 +162,7 @@ class AiUsageRepository(BaseRepository[AiUsageDTO]):
         agent_name: str | None = None,
         model: str | None = None,
         status: str | None = None,
+        guardrail_triggered: bool | None = None,
         start_at: datetime | None = None,
         end_at: datetime | None = None,
     ) -> list[AiUsageByOrgDTO]:
@@ -169,6 +175,7 @@ class AiUsageRepository(BaseRepository[AiUsageDTO]):
                 agent_name=agent_name,
                 model=model,
                 status=status,
+                guardrail_triggered=guardrail_triggered,
                 start_at=start_at,
                 end_at=end_at,
             ).order_by(AiUsageModel.org_id.asc())
@@ -197,6 +204,7 @@ def _apply_filters(
     agent_name: str | None,
     model: str | None,
     status: str | None,
+    guardrail_triggered: bool | None,
     start_at: datetime | None,
     end_at: datetime | None,
 ) -> Select[Any]:
@@ -208,6 +216,8 @@ def _apply_filters(
         query = query.where(AiUsageModel.model == model)
     if status is not None:
         query = query.where(AiUsageModel.status == status)
+    if guardrail_triggered is not None:
+        query = query.where(AiUsageModel.guardrail_triggered == guardrail_triggered)
     if start_at is not None:
         query = query.where(AiUsageModel.occurred_at >= start_at)
     if end_at is not None:

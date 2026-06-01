@@ -58,6 +58,11 @@ class PromptInjectionDetected(LLMException):
     which rule fired.
     """
 
+    # Duck-typed marker read by ``track_agent_usage`` (#197 Phase 5) so the
+    # application layer can flag ``guardrail_triggered`` WITHOUT importing this
+    # class — the usage-tracker architecture test forbids that import.
+    is_guardrail_block: bool = True
+
     def __init__(self) -> None:
         super().__init__(
             status_code=400,
@@ -74,6 +79,9 @@ class GuardrailBlocked(LLMException):
     Like :class:`PromptInjectionDetected`, carries NO ``details`` — the offending
     token / count / type goes to structlog only, never to the client response.
     """
+
+    # See :class:`PromptInjectionDetected` — duck-typed marker for #197 Phase 5.
+    is_guardrail_block: bool = True
 
     def __init__(self) -> None:
         super().__init__(

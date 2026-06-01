@@ -74,7 +74,11 @@ class AgentUsageCapture:
         self.provider_cost_source = source
 
     async def record(
-        self, *, status: UsageStatus, error_code: str | None = None
+        self,
+        *,
+        status: UsageStatus,
+        error_code: str | None = None,
+        guardrail_triggered: bool = False,
     ) -> None:
         usage_values = _extract_usage_values(self.result)
         duration_ms = round((time.perf_counter() - self._started_perf) * 1000)
@@ -105,6 +109,7 @@ class AgentUsageCapture:
             trace_id=self.trace_id,
             span_id=self.span_id,
             error_code=error_code,
+            guardrail_triggered=guardrail_triggered,
             usage_metadata=usage_values["usage_metadata"],
         )
         await _record_usage(self.recorder, record)
@@ -148,8 +153,18 @@ async def track_agent_usage(
         yield capture
     except Exception as exc:
         try:
+            # Prefer the exception's own stable ``error_code`` (e.g.
+            # ``PROMPT_INJECTION_DETECTED``) over the class name, but sanitize it
+            # so a non-custom exception with a long/non-string ``error_code``
+            # can never break the ``AgentUsageRecord`` (max_length=50) and drop
+            # the row. ``is_guardrail_block`` is a duck-typed marker on the
+            # guardrail exceptions (#197 Phase 5) so this layer never imports
+            # them (usage-tracker architecture test); ``is True`` keeps an
+            # unrelated truthy attribute from flipping the flag.
             await capture.record(
-                status=_status_from_exception(exc), error_code=type(exc).__name__
+                status=_status_from_exception(exc),
+                error_code=_safe_error_code(exc),
+                guardrail_triggered=getattr(exc, "is_guardrail_block", False) is True,
             )
         except Exception:
             _logger.exception(
@@ -189,6 +204,17 @@ def _default_request_id() -> str | None:
         if value:
             return str(value)
     return None
+
+
+def _safe_error_code(exc: Exception) -> str:
+    """A ledger-safe error code: the exception's own ``error_code`` when it is a
+    short string, else the class name. Bounded to 50 chars to match the
+    ``AgentUsageRecord.error_code`` constraint so recording never fails on it.
+    """
+    code = getattr(exc, "error_code", None)
+    if isinstance(code, str) and code:
+        return code[:50]
+    return type(exc).__name__[:50]
 
 
 def _status_from_exception(exc: Exception) -> UsageStatus:

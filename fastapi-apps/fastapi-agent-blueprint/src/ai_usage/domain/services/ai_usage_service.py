@@ -42,6 +42,7 @@ class AiUsageService(
         agent_name: str | None = None,
         model: str | None = None,
         status: str | None = None,
+        guardrail_triggered: bool | None = None,
         start_at: datetime | None = None,
         end_at: datetime | None = None,
     ) -> tuple[list[AiUsageDTO], int]:
@@ -52,6 +53,7 @@ class AiUsageService(
             agent_name=agent_name,
             model=model,
             status=status,
+            guardrail_triggered=guardrail_triggered,
             start_at=start_at,
             end_at=end_at,
         )
@@ -63,6 +65,7 @@ class AiUsageService(
         agent_name: str | None = None,
         model: str | None = None,
         status: str | None = None,
+        guardrail_triggered: bool | None = None,
         start_at: datetime | None = None,
         end_at: datetime | None = None,
     ) -> tuple[AiUsageSummaryDTO, list[AiUsageByOrgDTO]]:
@@ -71,6 +74,7 @@ class AiUsageService(
             agent_name=agent_name,
             model=model,
             status=status,
+            guardrail_triggered=guardrail_triggered,
             start_at=start_at,
             end_at=end_at,
         )
@@ -79,6 +83,7 @@ class AiUsageService(
             agent_name=agent_name,
             model=model,
             status=status,
+            guardrail_triggered=guardrail_triggered,
             start_at=start_at,
             end_at=end_at,
         )

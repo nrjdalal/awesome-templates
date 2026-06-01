@@ -1,10 +1,16 @@
 from __future__ import annotations
 
 from typing import Any, Final, LiteralString
+from uuid import uuid4
 
 import structlog
 
+from src._core.application.usage_tracker import track_agent_usage
+from src._core.domain.protocols.agent_usage_recorder_protocol import (
+    AgentUsageRecorderProtocol,
+)
 from src._core.exceptions.llm_exceptions import PromptInjectionDetected
+from src._core.infrastructure.llm.guardrail_telemetry import log_guardrail_event
 from src._core.infrastructure.llm.guardrails import detect_prompt_injection
 from src._core.infrastructure.llm.prompt_boundaries import (
     CLASSIFIER_INSTRUCTIONS_TAIL,
@@ -13,6 +19,8 @@ from src._core.infrastructure.llm.prompt_boundaries import (
 from src.classification.domain.dtos.classification_dto import ClassificationDTO
 
 _logger = structlog.stdlib.get_logger(__name__)
+
+_AGENT_NAME: Final[str] = "classification"
 
 _PERSONA: Final[LiteralString] = (
     "You are a precise text classifier. "
@@ -29,7 +37,15 @@ _INSTRUCTIONS: Final[LiteralString] = _PERSONA + CLASSIFIER_INSTRUCTIONS_TAIL
 class PydanticAIClassifier:
     """Real LLM-backed classifier via PydanticAI Agent."""
 
-    def __init__(self, llm_model: Any, *, guardrails_enabled: bool = True) -> None:
+    def __init__(
+        self,
+        llm_model: Any,
+        *,
+        guardrails_enabled: bool = True,
+        usage_recorder: AgentUsageRecorderProtocol | None = None,
+        model_name: str = "",
+        provider: str | None = None,
+    ) -> None:
         try:
             from pydantic_ai import Agent
         except ImportError:
@@ -39,6 +55,11 @@ class PydanticAIClassifier:
             )
 
         self._guardrails_enabled = guardrails_enabled
+        # None → untracked (preserves existing unit tests); DI injects the
+        # recorder in production.
+        self._usage_recorder = usage_recorder
+        self._model_name = model_name
+        self._provider = provider
         self._agent: Agent[None, ClassificationDTO] = Agent(
             model=llm_model,
             output_type=ClassificationDTO,
@@ -50,18 +71,46 @@ class PydanticAIClassifier:
         text: str,
         categories: list[str] | None = None,
     ) -> ClassificationDTO:
+        if self._usage_recorder is None:
+            return await self._classify_guarded(text, categories, capture=None)
+
+        async with track_agent_usage(
+            call_id=uuid4().hex,
+            agent_name=_AGENT_NAME,
+            model=self._model_name,
+            provider=self._provider,
+            recorder=self._usage_recorder,
+            strict_record=False,
+        ) as capture:
+            return await self._classify_guarded(text, categories, capture)
+
+    async def _classify_guarded(
+        self,
+        text: str,
+        categories: list[str] | None,
+        capture: Any | None,
+    ) -> ClassificationDTO:
         # Input guard (#197 Phase 3): both `text` AND every `categories` label
         # are user-supplied (request-body list[str], not a server registry) and
         # reach the prompt, so all of them are scanned for injection imperatives.
+        # Raised before agent.run() → zero-token blocked usage row.
         if self._guardrails_enabled:
             for field in (text, *(categories or [])):
                 rule = detect_prompt_injection(field)
                 if rule is not None:
-                    _logger.warning("guardrail_triggered", stage="input", rule=rule)
+                    log_guardrail_event(
+                        _logger,
+                        agent=_AGENT_NAME,
+                        stage="input",
+                        rule=rule,
+                        action="block",
+                    )
                     raise PromptInjectionDetected()
 
         prompt = _format_prompt(text, categories)
         result = await self._agent.run(prompt)
+        if capture is not None:
+            capture.set_result(result)
         return result.output
 
 

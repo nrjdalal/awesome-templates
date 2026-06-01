@@ -48,6 +48,10 @@ class CreateAiUsageRequest(BaseRequest):
     trace_id: str | None = Field(default=None, max_length=64)
     span_id: str | None = Field(default=None, max_length=64)
     error_code: str | None = Field(default=None, max_length=50)
+    guardrail_triggered: bool = Field(
+        default=False,
+        description="True when a runtime LLM guardrail blocked this call.",
+    )
     usage_metadata: dict[str, Any] = Field(
         default_factory=dict,
         description=(
@@ -117,6 +121,7 @@ class AiUsageResponse(BaseResponse):
     trace_id: str | None = None
     span_id: str | None = None
     error_code: str | None = None
+    guardrail_triggered: bool = False
     usage_metadata: dict[str, Any] = Field(
         ...,
         description=(

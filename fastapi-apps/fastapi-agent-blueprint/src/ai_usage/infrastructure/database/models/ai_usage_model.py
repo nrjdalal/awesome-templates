@@ -6,6 +6,7 @@ from typing import Any
 from sqlalchemy import (
     JSON,
     BigInteger,
+    Boolean,
     CheckConstraint,
     DateTime,
     Index,
@@ -13,6 +14,7 @@ from sqlalchemy import (
     Numeric,
     String,
     UniqueConstraint,
+    false,
     func,
 )
 from sqlalchemy.orm import Mapped, mapped_column
@@ -61,6 +63,13 @@ class AiUsageModel(Base):
         ),
         Index("ix_ai_usage_log_model_occurred", "model", "occurred_at"),
         Index("ix_ai_usage_log_status_occurred", "status", "occurred_at"),
+        # Backs the guardrail-observability query ("how many guardrail-blocked
+        # in the last 24h"): sparse True values + a time window (#197 Phase 5).
+        Index(
+            "ix_ai_usage_log_guardrail_occurred",
+            "guardrail_triggered",
+            "occurred_at",
+        ),
     )
 
     id: Mapped[int] = mapped_column(
@@ -102,6 +111,18 @@ class AiUsageModel(Base):
     trace_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
     span_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
     error_code: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    guardrail_triggered: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+        server_default=false(),
+        comment=(
+            "True when a runtime LLM guardrail blocked this call "
+            "(prompt-injection input block or PII-fabrication output block). "
+            "Pairs with status='error' + error_code in "
+            "{PROMPT_INJECTION_DETECTED, GUARDRAIL_BLOCKED} (#197 Phase 5)."
+        ),
+    )
     usage_metadata: Mapped[dict[str, Any]] = mapped_column(
         JSON,
         nullable=False,
