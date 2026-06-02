@@ -2,6 +2,7 @@ from fastapi import Request
 from nicegui import app, ui
 
 from src._core.config import settings
+from src._core.infrastructure.admin import components as c
 from src._core.infrastructure.admin.auth import (
     AdminAuthProvider,
     get_admin_auth_provider,
@@ -33,12 +34,8 @@ def login_page(request: Request):
         ui.label("ADMIN").classes(f"{AdminClasses.MUTED} q-mb-md").style(
             "letter-spacing: 0.25em; font-size: 0.7rem"
         )
-        username = ui.input("Username").props("outlined").classes("full-width")
-        password = (
-            ui.input("Password", password=True, password_toggle_button=True)
-            .props("outlined")
-            .classes("full-width q-mt-sm")
-        )
+        username = c.text_field("Username").classes("full-width")
+        password = c.text_field("Password", password=True).classes("full-width q-mt-sm")
 
         async def try_login():
             target: str | None = None

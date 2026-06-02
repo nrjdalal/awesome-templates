@@ -60,16 +60,41 @@ def _extract_ui_page_route(decorator: ast.expr) -> str | None:
     return None
 
 
+def _is_auth_gate_call(value: ast.expr | None) -> bool:
+    """True if ``value`` is a (possibly awaited) call to an auth-gate function."""
+    if isinstance(value, ast.Await):
+        value = value.value
+    if not isinstance(value, ast.Call):
+        return False
+    func = value.func
+    if isinstance(func, ast.Name) and func.id in _AUTH_GATE_NAMES:
+        return True
+    return isinstance(func, ast.Attribute) and func.attr in _AUTH_GATE_NAMES
+
+
 def _body_has_auth_gate(func_node: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
-    """True if the function body contains a call to any auth gate function."""
-    for node in ast.walk(func_node):
-        if not isinstance(node, ast.Call):
-            continue
-        func = node.func
-        if isinstance(func, ast.Name) and func.id in _AUTH_GATE_NAMES:
-            return True
-        if isinstance(func, ast.Attribute) and func.attr in _AUTH_GATE_NAMES:
-            return True
+    """True if the auth gate is the FIRST real statement (after any docstring).
+
+    Stronger than "exists somewhere": project-dna requires ``require_auth*`` to
+    be the first statement of every gated /admin route, so nothing renders
+    before the gate. Accepts ``session = await require_auth(...)`` (Assign) or a
+    bare ``await require_auth(...)`` (Expr)."""
+    body = list(func_node.body)
+    # Skip a leading docstring.
+    if (
+        body
+        and isinstance(body[0], ast.Expr)
+        and isinstance(body[0].value, ast.Constant)
+        and isinstance(body[0].value.value, str)
+    ):
+        body = body[1:]
+    if not body:
+        return False
+    first = body[0]
+    if isinstance(first, (ast.Assign, ast.AnnAssign)):
+        return _is_auth_gate_call(first.value)
+    if isinstance(first, ast.Expr):
+        return _is_auth_gate_call(first.value)
     return False
 
 

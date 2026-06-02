@@ -653,6 +653,11 @@ class {Name}AlreadyExistsException(BaseCustomException):
 
 ## §11. Admin Page Pattern
 
+> Design system (#193): admin UI is token-driven (`_core/infrastructure/admin/theme.py`)
+> and composed from the component builders in `_core/infrastructure/admin/components/`.
+> CRUD pages are config-only and inherit it via `BaseAdminPage`; custom pages compose
+> the builders. Catalog + DO/DON'T: [`admin-design-system.md`](admin-design-system.md).
+
 ### File Structure & Naming Convention
 
 ```

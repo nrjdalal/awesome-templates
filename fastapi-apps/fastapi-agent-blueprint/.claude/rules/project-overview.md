@@ -1,6 +1,7 @@
 # Project Overview
 
-> Last synced: 2026-06-01 via #218 (admin-identity realm separation reviewed; App Entrypoints unchanged — the new `admin_identity` domain is auto-discovered, and the `src/_apps/admin/` entrypoint is unchanged. New `ADMIN_JWT_*` settings + realm-collapse validation added to `src/_core/config.py`; admin login provider now backed by `admin_identity` instead of the user table.)
+> Last synced: 2026-06-02 via #193 (admin UI/UX + design system). Admin shell is now token-driven: `src/_core/infrastructure/admin/theme.py` (4 style presets + dark mode + Wanted Sans) + a `components/` builder library; pages compose builders (see `docs/ai/shared/admin-design-system.md`). New admin-shell settings in `config.py`: `ADMIN_DARK_MODE_DEFAULT` (None=follow OS), `ADMIN_THEME_PALETTE` (default|linear|shadcn|supabase), `ADMIN_BRAND_NAME`. Entrypoints unchanged.
+> Prior: 2026-06-01 via #218 (admin-identity realm separation; `ADMIN_JWT_*` settings + realm-collapse validation; admin login backed by `admin_identity`).
 > For tech stack, refer to project-dna.md §8; for layer structure, refer to §1.
 > For the Optional infra toggle surface (env var → disabled behavior per infra), see AGENTS.md "Optional Infrastructure Toggles" + [ADR 042](../../docs/history/042-optional-infrastructure-di-pattern.md).
 > This file only contains **project-level context** not covered in project-dna.md.
@@ -11,7 +12,7 @@ AI Agent Backend Platform built on FastAPI with DDD modular layered architecture
 ## App Entrypoints
 - Server: `src/_apps/server/` — FastAPI (uvicorn)
 - Worker: `src/_apps/worker/` — Taskiq (broker abstraction: SQS/RabbitMQ/InMemory)
-- Admin: `src/_apps/admin/` — NiceGUI (mounted on server via ui.run_with) — **mounted only when the `admin` extra is installed**; otherwise the server boots normally and emits only an `admin_mount_skipped` structured log line (#104)
+- Admin: `src/_apps/admin/` — NiceGUI (mounted on server via ui.run_with) — **mounted only when the `admin` extra is installed**; otherwise the server boots normally and emits only an `admin_mount_skipped` structured log line (#104). UI follows the admin design system (token theme + `components/` builders, #193).
 - AWS infrastructure (ObjectStorage/DynamoDB/S3Vectors) requires the `aws` extra. If the relevant env vars are unset, the lazy import never fires, so boot succeeds without the extra (#104 Part 2)
 
 ## Dependency Direction

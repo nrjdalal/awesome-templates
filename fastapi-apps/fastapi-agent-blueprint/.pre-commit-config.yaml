@@ -17,7 +17,9 @@ repos:
       - id: check-json
       - id: check-toml
       - id: check-added-large-files
-        args: ["--maxkb=1000"]
+        # 1300KB to allow the self-hosted Wanted Sans variable woff2 (~1.26MB,
+        # #193 admin design system). Keep new non-font assets well under this.
+        args: ["--maxkb=1300"]
       - id: check-merge-conflict
       - id: debug-statements
         exclude: ^migrations/

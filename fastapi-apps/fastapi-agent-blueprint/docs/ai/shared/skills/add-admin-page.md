@@ -27,6 +27,7 @@ After implementation, route to:
 - `src/user/interface/admin/configs/user_admin_config.py` — config pattern
 - `src/user/interface/admin/pages/user_page.py` — page route pattern
 - Admin Page Pattern: refer to `docs/ai/shared/project-dna.md` section 11
+- **Design system** (tokens + component builders + DO/DON'T): `docs/ai/shared/admin-design-system.md`. Custom (non-CRUD) pages MUST compose `admin.components` builders, not raw `ui.*`.
 
 ## Implementation Order
 
@@ -79,6 +80,7 @@ from nicegui import ui
 
 from src._core.infrastructure.admin.auth import require_auth
 from src._core.infrastructure.admin.base_admin_page import BaseAdminPage
+from src._core.infrastructure.admin.error_handler import admin_error_boundary
 from src._core.infrastructure.admin.layout import admin_layout
 from src.{name}.interface.admin.configs.{name}_admin_config import {name}_admin_page
 
@@ -87,8 +89,9 @@ page_configs: list[BaseAdminPage] = []
 
 
 @ui.page("/admin/{name}")
+@admin_error_boundary(context="{name}_list")
 async def {name}_list_page(page: int = 1, search: str = ""):
-    session = await require_auth(page_key="{name}")
+    session = await require_auth(page_key="{name}")  # MUST be the first statement
     if session is None:
         return
     admin_layout(page_configs, current_domain="{name}", session=session)
@@ -96,13 +99,42 @@ async def {name}_list_page(page: int = 1, search: str = ""):
 
 
 @ui.page("/admin/{name}/{record_id}")
+@admin_error_boundary(context="{name}_detail")
 async def {name}_detail_page(record_id: int):
-    session = await require_auth(page_key="{name}")
+    session = await require_auth(page_key="{name}")  # MUST be the first statement
     if session is None:
         return
     admin_layout(page_configs, current_domain="{name}", session=session)
     await {name}_admin_page.render_detail(record_id=record_id)
 ```
+
+> `@admin_error_boundary` is required on every admin route (project-dna §). The
+> auth gate must be the route's **first statement** — enforced by
+> `tests/unit/_core/infrastructure/admin/test_route_coverage.py`.
+
+### Custom / non-CRUD pages
+
+For summary pages, dashboard widgets, playgrounds, or write actions, do **not**
+hand-roll `ui.card` / `ui.aggrid` / `ui.dialog`. Compose the design-system
+builders so the page matches every other admin surface:
+
+```python
+from src._core.infrastructure.admin import components as c
+
+@ui.page("/admin/{name}/summary")
+@admin_error_boundary(context="{name}_summary")
+async def {name}_summary_page():
+    session = await require_auth(page_key="{name}")
+    if session is None:
+        return
+    admin_layout(page_configs, current_domain="{name}", session=session)
+    c.page_header("{Name} Summary")
+    with ui.row().classes("q-gutter-md q-mb-md"):
+        c.stat_card("Total", total)
+    c.data_grid(column_defs, rows, compact=True)
+```
+
+Catalog + DO/DON'T + the `confirm_dialog` contract: `docs/ai/shared/admin-design-system.md`.
 
 ## Core Rules
 - Config file contains ONLY the `BaseAdminPage` instance declaration (no routes, no `ui` import)

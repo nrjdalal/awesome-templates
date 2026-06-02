@@ -60,20 +60,53 @@ def admin_layout(
         if permissions is None or pc.domain_name in permissions
     ]
 
-    # Create the drawer first so the header hamburger can toggle it. Quasar
-    # auto-overlays the drawer below its breakpoint (narrow viewports); the
-    # hamburger also lets desktop users collapse it.
+    # Create the drawer first so the header hamburger can toggle it. Both the
+    # full drawer and the collapsed mini rail offset the content (push, not
+    # overlay) on desktop; Quasar still auto-overlays below its breakpoint on
+    # narrow viewports. (``mini-to-overlay`` was dropped — it made the expanded
+    # desktop drawer overlay and hide content.)
     drawer = ui.left_drawer(top_corner=True, bottom_corner=True).classes(
         AdminClasses.DRAWER
     )
 
+    # On desktop the toggle collapses the drawer to an icon-only mini rail
+    # rather than hiding it, so navigation stays reachable while reclaiming
+    # content width. On narrow viewports Quasar overlays the drawer and ``mini``
+    # has no effect, so there we fall back to a plain show/hide toggle — without
+    # this, the menu button would do nothing on mobile (Codex cross-review).
+    # ``collapse_icon`` is the in-drawer chevron whose direction flips on toggle.
+    nav_state: dict[str, object] = {"mini": False, "collapse_icon": None}
+
+    async def _toggle_nav() -> None:
+        # run_javascript may raise TimeoutError (NiceGUI 3.9+) if the client is
+        # slow/disconnected; fall back to the desktop mini toggle rather than
+        # letting the event handler raise.
+        try:
+            width = await ui.run_javascript("window.innerWidth", timeout=2.0)
+        except Exception:  # noqa: BLE001 - timeout/transport error → desktop default
+            width = None
+        if isinstance(width, (int, float)) and width < 1024:
+            drawer.toggle()
+            return
+        mini = not nav_state["mini"]
+        nav_state["mini"] = mini
+        drawer.props(add="mini") if mini else drawer.props(remove="mini")
+        icon = nav_state["collapse_icon"]
+        if isinstance(icon, ui.icon):
+            icon.props(f"name={'chevron_right' if mini else 'chevron_left'}")
+
     with ui.header(elevated=True).classes(
         f"items-center justify-between {AdminClasses.HEADER}"
     ):
-        # Brand: a hamburger (responsive toggle) + an icon standing in for a
-        # project logo (swap for ui.image in a fork) + the brand name.
+        # Brand: a hamburger + an icon standing in for a project logo (swap for
+        # ui.image in a fork) + the brand name. The hamburger is mobile-only
+        # (``lt-md``): below the breakpoint Quasar overlays the drawer and the
+        # in-drawer collapse control is hidden with it, so a header trigger is
+        # the only way to reopen. On desktop the in-drawer control owns this.
         with ui.row().classes(f"items-center q-gutter-sm {AdminClasses.BRAND}"):
-            ui.button(icon="menu", on_click=drawer.toggle).props("flat dense")
+            ui.button(icon="menu", on_click=_toggle_nav).props(
+                'flat dense aria-label="Toggle navigation"'
+            ).classes("lt-md")
             ui.icon("smart_toy").classes("text-h5")
             ui.label(settings.admin_brand_name).classes("text-h6")
         with ui.row().classes("items-center q-gutter-xs"):
@@ -92,6 +125,12 @@ def admin_layout(
             ).props("flat")
 
     with drawer:
+        # Collapse control at the TOP of the drawer (above the nav), set off by a
+        # separator: prominent enough to notice, and the directional chevron +
+        # divider keep it from reading as just another nav icon in the mini rail.
+        _render_collapse_control(on_click=_toggle_nav, icon_holder=nav_state)
+        ui.separator().classes("q-my-xs")
+
         _nav_item(
             label="Dashboard",
             icon="dashboard",
@@ -134,9 +173,34 @@ def _nav_section(title: str) -> None:
     ui.label(title).classes(f"{AdminClasses.NAV_SECTION} q-mt-md q-mb-xs q-ml-md")
 
 
+def _render_collapse_control(*, on_click, icon_holder: dict) -> None:
+    """Render the 'Collapse' control (top of the drawer) that toggles the mini rail.
+
+    Attached to the drawer (not the header) so the affordance sits on the panel
+    it controls — far more discoverable than the detached header hamburger, and
+    placed at the top (above a separator) so it is noticeable without being
+    mistaken for a nav item. Built as a ``ui.item`` so Quasar hides the text
+    label in the mini rail, leaving just the chevron (whose direction flips on
+    toggle). The stored icon handle lets :func:`admin_layout`'s toggle flip it.
+    """
+    item = ui.item(on_click=on_click).props('aria-label="Collapse sidebar"')
+    with item:
+        with ui.item_section().props("avatar"):
+            icon_holder["collapse_icon"] = ui.icon("chevron_left").classes(
+                AdminClasses.MUTED
+            )
+        with ui.item_section():
+            ui.label("Collapse").classes(AdminClasses.MUTED)
+
+
 def _nav_item(*, label: str, icon: str, target: str, active: bool) -> None:
-    """Render one sidebar nav item, highlighted when it is the active route."""
+    """Render one sidebar nav item, highlighted when it is the active route.
+
+    Carries a tooltip + ``aria-label`` so the item stays identifiable when the
+    drawer collapses to the icon-only mini rail (the text label is hidden then).
+    """
     item = ui.item(on_click=lambda: ui.navigate.to(target))
+    item.props(f'aria-label="{label}"').tooltip(label)
     if active:
         item.classes(AdminClasses.NAV_ACTIVE_ITEM)
     with item:

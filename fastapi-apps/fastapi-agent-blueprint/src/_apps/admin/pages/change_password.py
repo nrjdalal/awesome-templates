@@ -1,5 +1,6 @@
 from nicegui import ui
 
+from src._core.infrastructure.admin import components as c
 from src._core.infrastructure.admin.audit import AdminAction, AuditResult
 from src._core.infrastructure.admin.audit.logger import get_audit_logger
 from src._core.infrastructure.admin.auth import (
@@ -42,15 +43,15 @@ async def change_password_page():
         else:
             ui.label("Change Password").classes("text-h5 q-mb-md")
 
-        current_pw = ui.input(
-            "Current password", password=True, password_toggle_button=True
-        ).classes("full-width")
-        new_pw = ui.input(
-            "New password (min 8 chars)", password=True, password_toggle_button=True
-        ).classes("full-width")
-        confirm_pw = ui.input(
-            "Confirm new password", password=True, password_toggle_button=True
-        ).classes("full-width")
+        current_pw = c.text_field("Current password", password=True).classes(
+            "full-width"
+        )
+        new_pw = c.text_field("New password (min 8 chars)", password=True).classes(
+            "full-width"
+        )
+        confirm_pw = c.text_field("Confirm new password", password=True).classes(
+            "full-width"
+        )
 
         async def do_change():
             if len(new_pw.value) < 8:

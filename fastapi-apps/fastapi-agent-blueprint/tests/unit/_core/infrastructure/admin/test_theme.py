@@ -16,6 +16,7 @@ from src._core.infrastructure.admin.theme import (
     AdminMetrics,
     AdminVars,
     build_admin_css,
+    palette_accent,
 )
 
 
@@ -37,6 +38,19 @@ def test_css_var_names_are_custom_properties():
     values = _public_values(AdminVars)
     assert values
     assert all(isinstance(v, str) and v.startswith("--") for v in values)
+
+
+def test_palette_accent_tracks_selected_preset():
+    """Chart fill resolves per-preset (so charts match ADMIN_THEME_PALETTE)."""
+    # supabase is the most divergent preset (green, not indigo).
+    assert palette_accent("supabase") == "#3ecf8e"
+    assert palette_accent("default") == AdminColors.PRIMARY
+    # Every preset resolves to a hex color.
+    assert all(palette_accent(p).startswith("#") for p in PALETTES)
+
+
+def test_palette_accent_unknown_falls_back_to_default():
+    assert palette_accent("does-not-exist") == palette_accent(DEFAULT_PALETTE)
 
 
 def test_helper_class_names_are_admin_prefixed():
@@ -153,3 +167,12 @@ def test_css_defines_style_tokens_and_component_overrides():
     # Quasar components are restyled globally so every page inherits the look.
     assert ".q-card" in css
     assert ".admin-header .q-btn" in css  # header text is token-driven, not white
+
+
+def test_font_is_self_hosted_not_cdn():
+    """Wanted Sans is bundled + served locally (#193) — no external CDN."""
+    css = build_admin_css()
+    assert "@font-face" in css
+    assert '"Wanted Sans Variable"' in css
+    assert "/admin-static/fonts/WantedSansVariable.woff2" in css
+    assert "cdn.jsdelivr.net" not in css  # never reintroduce the CDN dependency

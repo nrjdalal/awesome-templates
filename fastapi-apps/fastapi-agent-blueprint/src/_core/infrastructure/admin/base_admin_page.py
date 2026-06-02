@@ -8,14 +8,11 @@ from nicegui import ui
 
 from src._core.domain.protocols.admin_service_protocol import AdminCrudServiceProtocol
 from src._core.domain.value_objects.query_filter import QueryFilter
+from src._core.infrastructure.admin import components as c
 from src._core.infrastructure.admin.audit import AdminAction, AuditResult
 from src._core.infrastructure.admin.audit.logger import get_audit_logger
 from src._core.infrastructure.admin.error_handler import AdminErrorHandler
-from src._core.infrastructure.admin.theme import (
-    EMPTY_DISPLAY,
-    AdminClasses,
-    AdminMetrics,
-)
+from src._core.infrastructure.admin.theme import EMPTY_DISPLAY, AdminMetrics
 
 if TYPE_CHECKING:
     from src._core.application.dtos.base_response import PaginationInfo
@@ -220,7 +217,7 @@ class BaseAdminPage:
 
     def render_list_header(self) -> None:
         """Hook: render list page heading."""
-        ui.label(f"{self.display_name} Management").classes("text-h5 q-mb-md")
+        c.page_header(f"{self.display_name} Management")
 
     def render_search_bar(self, search: str) -> None:
         """Hook: render search input if searchable_fields configured."""
@@ -234,23 +231,21 @@ class BaseAdminPage:
             params = f"?search={query}" if query else ""
             ui.navigate.to(f"/admin/{self.domain_name}{params}")
 
-        ui.input(
-            placeholder=f"Search by {field_labels}...",
+        c.text_field(
+            "Search",
             value=search,
-            on_change=lambda: None,
-        ).on("keydown.enter", _on_search).props("outlined dense clearable").classes(
-            "w-80 q-mb-sm"
-        )
+            placeholder=f"Search by {field_labels}...",
+            clearable=True,
+        ).on("keydown.enter", _on_search).classes("w-80 q-mb-sm")
 
     def render_empty_state(self, search: str = "") -> None:
         """Hook: render a friendly placeholder when the list has no records."""
-        with ui.column().classes(f"w-full {AdminClasses.EMPTY_STATE}"):
-            ui.icon("inbox").classes("text-h2")
-            message = (
-                f'No results for "{search}"'
-                if search
-                else f"No {self.display_name.lower()} records yet"
-            )
+        message = (
+            f'No results for "{search}"'
+            if search
+            else f"No {self.display_name.lower()} records yet"
+        )
+        with c.empty_state():
             ui.label(message).classes("text-subtitle1")
 
     def render_list_summary(self, pagination: PaginationInfo) -> None:
@@ -262,30 +257,16 @@ class BaseAdminPage:
             ).classes("text-caption")
 
     def render_grid(self, dtos: list) -> None:
-        """Hook: render AG Grid table."""
-        column_defs = self.build_column_defs()
+        """Hook: render AG Grid table (delegates to the data_grid builder)."""
         masked_fields = self.get_masked_field_names()
-        row_data = self.build_row_data(dtos, masked_fields)
-
-        grid = ui.aggrid(
-            {
-                "columnDefs": column_defs,
-                "rowData": row_data,
-                "rowSelection": {"mode": "singleRow"},
-                "rowHeight": AdminMetrics.GRID_ROW_HEIGHT,
-                "defaultColDef": {"resizable": True, "filter": True},
-            }
-        ).classes(f"w-full {AdminClasses.GRID}")
-
-        grid.on(
-            "cellClicked",
-            lambda e: ui.navigate.to(
-                f"/admin/{self.domain_name}/{e.args['data']['id']}"
-            ),
+        c.data_grid(
+            self.build_column_defs(),
+            self.build_row_data(dtos, masked_fields),
+            row_click_to=lambda row: f"/admin/{self.domain_name}/{row['id']}",
         )
 
     def render_pagination(self, pagination: PaginationInfo, search: str) -> None:
-        """Hook: render prev/next pagination buttons."""
+        """Hook: render prev/next pagination (delegates to the pagination builder)."""
 
         def _build_page_url(target_page: int) -> str:
             params = f"page={target_page}"
@@ -293,38 +274,28 @@ class BaseAdminPage:
                 params += f"&search={search}"
             return f"/admin/{self.domain_name}?{params}"
 
-        with ui.row().classes(
-            f"items-center q-mt-md q-gutter-sm {AdminClasses.PAGINATION}"
-        ):
-            ui.button(
-                "Previous",
-                on_click=lambda: ui.navigate.to(
-                    _build_page_url(pagination.previous_page)
-                ),
-            ).props("flat" if pagination.has_previous else "flat disable")
-            ui.label(f"{pagination.current_page} / {pagination.total_pages}")
-            ui.button(
-                "Next",
-                on_click=lambda: ui.navigate.to(_build_page_url(pagination.next_page)),
-            ).props("flat" if pagination.has_next else "flat disable")
+        c.pagination(
+            current=pagination.current_page,
+            total_pages=pagination.total_pages,
+            on_prev=lambda: ui.navigate.to(_build_page_url(pagination.previous_page)),
+            on_next=lambda: ui.navigate.to(_build_page_url(pagination.next_page)),
+        )
 
     # ── Detail page hooks ──
 
     def render_detail_header(self, record_id: int) -> None:
         """Hook: render detail page heading with back button."""
-        with ui.row().classes("items-center q-mb-md q-gutter-sm"):
-            ui.button(
-                icon="arrow_back",
-                on_click=lambda: ui.navigate.to(f"/admin/{self.domain_name}"),
-            ).props("flat round")
-            ui.label(f"{self.display_name} #{record_id}").classes("text-h5")
+        c.page_header(
+            f"{self.display_name} #{record_id}",
+            back_to=f"/admin/{self.domain_name}",
+        )
 
     def render_detail_card(self, dto) -> None:
         """Hook: render detail card with all fields."""
         masked_fields = self.get_masked_field_names()
         data = dto.model_dump()
 
-        with ui.card().classes("w-full"):
+        with c.card(classes="w-full"):
             for col in self.columns:
                 value = data.get(col.field_name, "")
                 is_empty = value is None or value == ""
@@ -337,11 +308,7 @@ class BaseAdminPage:
                 else:
                     display_value = str(value)
 
-                with ui.row().classes("items-center q-py-xs"):
-                    ui.label(col.header_name).classes(AdminClasses.FIELD_LABEL)
-                    value_label = ui.label(display_value)
-                    if is_empty:
-                        value_label.classes(AdminClasses.EMPTY_VALUE)
+                c.field_row(col.header_name, display_value, is_empty=is_empty)
 
     # ── Data transformation helpers ──
 

@@ -1,6 +1,7 @@
 from nicegui import app, ui
 
 from src._core.config import settings
+from src._core.infrastructure.admin import components as c
 from src._core.infrastructure.admin.audit import (
     AdminAction,
     AuditResult,
@@ -42,9 +43,9 @@ async def setup_page():
             f"text-subtitle2 q-mb-md {AdminClasses.MUTED}"
         )
 
-        username_input = ui.input("Username").classes("full-width")
-        full_name_input = ui.input("Full Name").classes("full-width")
-        email_input = ui.input("Email").classes("full-width")
+        username_input = c.text_field("Username").classes("full-width")
+        full_name_input = c.text_field("Full Name").classes("full-width")
+        email_input = c.text_field("Email").classes("full-width")
 
         result_card = ui.card().classes(
             f"w-full q-mt-md {AdminClasses.SUCCESS_SURFACE}"

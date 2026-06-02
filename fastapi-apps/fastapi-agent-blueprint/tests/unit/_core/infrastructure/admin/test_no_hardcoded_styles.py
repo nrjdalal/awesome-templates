@@ -53,9 +53,15 @@ def _find_admin_page_files() -> list[pathlib.Path]:
     ]
 
 
+_COMPONENTS_DIR = _SRC_ROOT / "_core" / "infrastructure" / "admin" / "components"
+
+
 def _guarded_files() -> list[pathlib.Path]:
     files = _find_admin_page_files()
     files.extend(p for p in _EXTRA_GUARDED if p.exists())
+    # The design-system component library is the single place tokens become
+    # elements — guard it too (glob so new submodules are covered automatically).
+    files.extend(p for p in _COMPONENTS_DIR.rglob("*.py") if "__init__" not in p.name)
     return files
 
 

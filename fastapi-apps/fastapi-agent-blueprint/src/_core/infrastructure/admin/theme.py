@@ -39,6 +39,11 @@ class AdminColors:
     NEGATIVE: Final = "#dc2626"
     WARNING: Final = "#d97706"
     INFO: Final = "#0284c7"
+    # Chart axis/grid neutrals — mid-tone so they read on both the light and
+    # dark content surfaces without client-side dark-mode detection (charts
+    # render their own canvas, outside the --admin-* CSS var cascade).
+    CHART_AXIS: Final = "#94a3b8"
+    CHART_GRID: Final = "#94a3b833"  # CHART_AXIS @ ~0.2 alpha (hex8)
 
 
 class AdminVars:
@@ -75,10 +80,12 @@ class AdminVars:
     SHADOW: Final = "--admin-shadow"
     CARD_BORDER: Final = "--admin-card-border"
 
-    # Layout metrics.
+    # Layout metrics + typography.
     GRID_HEIGHT: Final = "--admin-grid-height"
     GRID_HEIGHT_COMPACT: Final = "--admin-grid-height-compact"
+    CHART_HEIGHT: Final = "--admin-chart-height"
     LABEL_COL_WIDTH: Final = "--admin-label-col-width"
+    FONT: Final = "--admin-font"
 
 
 class AdminMetrics:
@@ -106,6 +113,7 @@ class AdminClasses:
     SUCCESS_SURFACE: Final = "admin-success-surface"
     GRID: Final = "admin-grid"
     GRID_COMPACT: Final = "admin-grid-compact"
+    CHART: Final = "admin-chart"
     PAGINATION: Final = "admin-pagination"
     EMPTY_STATE: Final = "admin-empty-state"
     LOGIN_BG: Final = "admin-login-bg"
@@ -124,17 +132,44 @@ DEFAULT_PALETTE: Final = "default"
 _LAYOUT_TOKENS: Final = {
     AdminVars.GRID_HEIGHT: "calc(100vh - 240px)",
     AdminVars.GRID_HEIGHT_COMPACT: "calc(100vh - 360px)",
+    AdminVars.CHART_HEIGHT: "260px",
     AdminVars.LABEL_COL_WIDTH: "160px",
+    # Wanted Sans (self-hosted, see _FONT_FACE_CSS) with a graceful system-font
+    # fallback — so the UI still renders cleanly if the asset fails to load.
+    AdminVars.FONT: (
+        '"Wanted Sans Variable", -apple-system, BlinkMacSystemFont, '
+        '"Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+    ),
 }
 
+# Wanted Sans webfont (open-sourced by Wanted, SIL OFL 1.1) — self-hosted from
+# the repo (src/_apps/admin/static/fonts/), served at /admin-static by
+# bootstrap_admin(). No external CDN dependency. The AdminVars.FONT stack falls
+# back to system fonts if the asset is missing, so the UI degrades gracefully.
+_FONT_FACE_CSS: Final = """
+@font-face {
+  font-family: "Wanted Sans Variable";
+  font-style: normal;
+  font-weight: 400 1000;
+  font-display: swap;
+  src: url("/admin-static/fonts/WantedSansVariable.woff2") format("woff2-variations");
+}
+"""
+
+# Neutral charcoal dark surfaces (not blue-navy) so the content area is
+# cohesive with the neutral/charcoal chrome of the shadcn / supabase / linear
+# presets (the prior navy tones clashed). Deliberately lifted off pure black
+# (a near-OLED #09090b read as harsh) into a soft charcoal, with a three-step
+# elevation — page (darkest) < chrome (#18181b) < card — so cards separate
+# without relying on contrast alone.
 _CONTENT_DARK: Final = {
-    AdminVars.BG: "#0b1120",
-    AdminVars.SURFACE: "#161b2c",
-    AdminVars.BORDER: "#2a3142",
-    AdminVars.TEXT_MUTED: "#94a3b8",
-    AdminVars.SUCCESS_BG: "#052e16",
-    AdminVars.ROW_ALT: "#10172a",
-    AdminVars.ROW_HOVER: "#1c2438",
+    AdminVars.BG: "#131316",
+    AdminVars.SURFACE: "#1f1f24",
+    AdminVars.BORDER: "#323239",
+    AdminVars.TEXT_MUTED: "#a1a1aa",
+    AdminVars.SUCCESS_BG: "#16311f",
+    AdminVars.ROW_ALT: "#1a1a1f",
+    AdminVars.ROW_HOVER: "#27272e",
 }
 
 _CONTENT_LIGHT: Final = {
@@ -242,6 +277,9 @@ _HELPER_CSS: Final = """
 body, .q-page-container {
   background-color: var(--admin-bg) !important;
 }
+body {
+  font-family: var(--admin-font) !important;
+}
 /* Chrome: dark header + sidebar, light text. */
 .admin-header {
   background-color: var(--admin-header-bg) !important;
@@ -275,6 +313,11 @@ body, .q-page-container {
   letter-spacing: 0.09em;
   text-transform: uppercase;
   font-weight: 600;
+}
+/* Collapsed mini rail: hide section headers (raw labels Quasar can't auto-hide)
+   so they don't overflow the narrow icon-only rail. */
+.q-drawer--mini .admin-nav-section {
+  display: none;
 }
 .admin-nav-active,
 .admin-drawer .admin-nav-active,
@@ -315,6 +358,10 @@ body, .q-page-container {
   --ag-row-hover-color: var(--admin-row-hover);
   --ag-border-radius: var(--admin-radius);
 }
+.admin-chart {
+  width: 100%;
+  height: var(--admin-chart-height);
+}
 .admin-pagination {
   justify-content: flex-end;
 }
@@ -338,7 +385,12 @@ body, .q-page-container {
 .admin-hidden {
   display: none;
 }
-/* Shape/elevation on standard Quasar components. */
+/* Shape/elevation on standard Quasar components. The surface token drives the
+   card background (except success surfaces, which keep their own tint) so the
+   light/dark surface colors actually apply instead of Quasar's defaults. */
+.q-card:not(.admin-success-surface) {
+  background-color: var(--admin-surface) !important;
+}
 .q-card {
   border-radius: var(--admin-radius) !important;
   box-shadow: var(--admin-shadow) !important;
@@ -352,6 +404,18 @@ body, .q-page-container {
   border-radius: var(--admin-radius);
 }
 """
+
+
+def palette_accent(palette: str = DEFAULT_PALETTE) -> str:
+    """Return the selected preset's primary/accent color.
+
+    Used by chart builders whose canvas lives outside the CSS-var cascade, so a
+    palette-driven element (e.g. a bar fill) still tracks ``ADMIN_THEME_PALETTE``
+    instead of hardcoding the default-preset accent. Unknown names fall back to
+    :data:`DEFAULT_PALETTE`.
+    """
+    name = palette if palette in _PALETTES else DEFAULT_PALETTE
+    return _PALETTES[name]["chrome"][AdminVars.Q_PRIMARY]
 
 
 def _emit_vars(mapping: dict[str, str]) -> str:
@@ -373,7 +437,7 @@ def build_admin_css(palette: str = DEFAULT_PALETTE) -> str:
         **_LAYOUT_TOKENS,
     }
     return (
-        f"/* === Admin theme (#193) — palette: {name} === */\n"
+        _FONT_FACE_CSS + f"/* === Admin theme (#193) — palette: {name} === */\n"
         ":root {\n" + _emit_vars(root_vars) + "\n}\n"
         ".body--dark {\n" + _emit_vars(_CONTENT_DARK) + "\n}\n" + _HELPER_CSS
     )

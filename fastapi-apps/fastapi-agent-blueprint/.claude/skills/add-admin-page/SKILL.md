@@ -21,5 +21,16 @@ Domain name: $ARGUMENTS
 2. Implementation — directory structure → admin config → page routes
 3. Verification — pre-commit, import check, server start
 
+## Core Rules
+- CRUD pages are config-only `BaseAdminPage` instances — they inherit the design
+  system automatically (the base class renders via the component builders).
+- **Custom / non-CRUD pages MUST compose `admin.components` builders** (`c.page_header`,
+  `c.card`, `c.stat_card`, `c.data_grid`, `c.confirm_dialog`, …) — never raw
+  `ui.card` / `ui.aggrid` / `ui.dialog` for those shapes, and never hardcoded
+  color classes or inline grid heights (AST-guarded).
+- Every route: `@admin_error_boundary(...)` + `require_auth*` as the first statement.
+- A new shared UI shape gets a builder in `components/`, not an inline page helper.
+
 Read `docs/ai/shared/skills/add-admin-page.md` for detailed steps and code templates.
-Also refer to `docs/ai/shared/project-dna.md` §11 for admin page pattern.
+Refer to `docs/ai/shared/admin-design-system.md` for the component catalog + DO/DON'T,
+and `docs/ai/shared/project-dna.md` §11 for the admin page DI pattern.

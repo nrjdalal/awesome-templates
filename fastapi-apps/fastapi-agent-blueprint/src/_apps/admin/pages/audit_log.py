@@ -17,6 +17,7 @@ from typing import Any
 
 from nicegui import ui
 
+from src._core.infrastructure.admin import components as c
 from src._core.infrastructure.admin.audit import (
     AdminAction,
     AuditLogDTO,
@@ -53,27 +54,20 @@ async def audit_log_page() -> None:
 
     # ── Filter bar ──────────────────────────────────────────────────────────
     with ui.row().classes("q-gutter-md q-mb-md items-end"):
-        username_input = (
-            ui.input("Username contains").props("outlined dense").classes("w-40")
-        )
-        action_select = (
-            ui.select(
-                {a.value: a.value for a in AdminAction},
-                label="Action",
-                multiple=True,
-                value=[],
-            )
-            .props("outlined dense use-chips")
-            .classes("w-56")
-        )
-        domain_input = (
-            ui.input("Domain (comma-sep)").props("outlined dense").classes("w-44")
-        )
+        username_input = c.text_field("Username contains").classes("w-40")
+        action_select = c.select_field(
+            "Action",
+            {a.value: a.value for a in AdminAction},
+            value=[],
+            multiple=True,
+            use_chips=True,
+        ).classes("w-56")
+        domain_input = c.text_field("Domain (comma-sep)").classes("w-44")
         result_toggle = ui.toggle(
             {"": "All", "SUCCESS": "Success", "FAILURE": "Failure"}, value=""
         )
-        since_input = ui.input("Since (ISO)").props("outlined dense").classes("w-44")
-        until_input = ui.input("Until (ISO)").props("outlined dense").classes("w-44")
+        since_input = c.text_field("Since (ISO)").classes("w-44")
+        until_input = c.text_field("Until (ISO)").classes("w-44")
         apply_btn = ui.button("Apply", on_click=lambda: _apply()).props("color=primary")
 
     grid_container = ui.column().classes("w-full")
@@ -154,30 +148,26 @@ def _render_grid(
     show_detail_cb,
 ) -> None:
     row_data = [r.model_dump(mode="json") for r in rows]
-    grid = ui.aggrid(
-        {
-            "columnDefs": [
-                {"headerName": "Time (UTC)", "field": "created_at", "width": 200},
-                {"headerName": "User", "field": "admin_username", "width": 140},
-                {"headerName": "Action", "field": "action", "width": 160},
-                {"headerName": "Domain", "field": "domain", "width": 100},
-                {"headerName": "Record", "field": "record_id", "width": 100},
-                {"headerName": "Result", "field": "result", "width": 100},
-                {"headerName": "Reason", "field": "failure_reason", "width": 180},
-                {"headerName": "IP", "field": "ip_address", "width": 130},
-            ],
-            "rowData": row_data,
-            "defaultColDef": {"resizable": True, "sortable": True},
-            "rowSelection": "single",
-        }
-    ).classes(f"w-full {AdminClasses.GRID}")
 
     async def _on_row_clicked(event) -> None:
         audit_id = event.args.get("data", {}).get("id")
         if isinstance(audit_id, int):
             await show_detail_cb(audit_id)
 
-    grid.on("rowClicked", _on_row_clicked)
+    c.data_grid(
+        [
+            {"headerName": "Time (UTC)", "field": "created_at", "width": 200},
+            {"headerName": "User", "field": "admin_username", "width": 140},
+            {"headerName": "Action", "field": "action", "width": 160},
+            {"headerName": "Domain", "field": "domain", "width": 100},
+            {"headerName": "Record", "field": "record_id", "width": 100},
+            {"headerName": "Result", "field": "result", "width": 100},
+            {"headerName": "Reason", "field": "failure_reason", "width": 180},
+            {"headerName": "IP", "field": "ip_address", "width": 130},
+        ],
+        row_data,
+        on_row_click=_on_row_clicked,
+    )
 
 
 def _render_pagination(state: dict[str, Any], on_prev, on_next) -> None:
@@ -195,14 +185,12 @@ def _render_pagination(state: dict[str, Any], on_prev, on_next) -> None:
 
 
 def _open_detail_dialog(dto: AuditLogDTO) -> None:
-    with ui.dialog() as dlg, ui.card().style("width: 800px; max-width: 95vw"):
-        ui.label(f"#{dto.id} · {dto.action.value} · {dto.result.value}").classes(
-            "text-h6"
-        )
-        created_iso = dto.created_at.isoformat() if dto.created_at else "—"
-        ui.label(f"{dto.admin_username} · {created_iso}").classes(
-            f"text-caption {AdminClasses.MUTED} q-mb-sm"
-        )
+    created_iso = dto.created_at.isoformat() if dto.created_at else "—"
+    with c.action_dialog(
+        f"#{dto.id} · {dto.action.value} · {dto.result.value}",
+        width="800px",
+        subtitle=f"{dto.admin_username} · {created_iso}",
+    ) as (dlg, _card):
         if dto.correlation_id:
             with ui.row().classes("items-center q-gutter-sm q-mb-sm"):
                 ui.label(f"Correlation: {dto.correlation_id}").classes("text-caption")
@@ -233,7 +221,6 @@ def _open_detail_dialog(dto: AuditLogDTO) -> None:
                     _safe_json(dto.after_state) or "(none)", language="json"
                 ).classes("w-full")
         ui.button("Close", on_click=dlg.close).props("color=primary").classes("q-mt-md")
-    dlg.open()
 
 
 def _safe_json(value: dict | None) -> str | None:

@@ -1,5 +1,6 @@
 from nicegui import ui
 
+from src._core.infrastructure.admin import components as c
 from src._core.infrastructure.admin.audit import (
     AdminAction,
     AuditResult,
@@ -59,9 +60,9 @@ async def accounts_page():
 
     # ── Create admin form ──
     with ui.expansion("Create New Admin", icon="person_add").classes("w-full q-mb-md"):
-        new_username = ui.input("Username").classes("full-width")
-        new_full_name = ui.input("Full Name").classes("full-width")
-        new_email = ui.input("Email").classes("full-width")
+        new_username = c.text_field("Username").classes("full-width")
+        new_full_name = c.text_field("Full Name").classes("full-width")
+        new_email = c.text_field("Email").classes("full-width")
 
         ui.label("Permissions").classes("text-subtitle2 q-mt-sm")
         perm_checkboxes: dict[str, ui.checkbox] = {}
@@ -154,10 +155,10 @@ def _render_admin_list(
                 with ui.row().classes("q-gutter-sm"):
                     # ── Edit permissions button ──
                     async def open_edit_perms(a=admin):
-                        with ui.dialog() as dlg, ui.card():
-                            ui.label("Edit permissions: " + a.username).classes(
-                                "text-h6 q-mb-sm"
-                            )
+                        with c.action_dialog("Edit permissions: " + a.username) as (
+                            dlg,
+                            _card,
+                        ):
                             perm_cbs: dict[str, ui.checkbox] = {}
                             with ui.row().classes("q-gutter-sm"):
                                 for key in all_keys:
@@ -221,12 +222,11 @@ def _render_admin_list(
                                 dlg.close()
                                 await refresh_cb()
 
-                            with ui.row().classes("q-mt-md"):
+                            with ui.row().classes("q-mt-md justify-end q-gutter-sm"):
+                                ui.button("Cancel", on_click=dlg.close).props("flat")
                                 save_btn = ui.button("Save", on_click=save_perms).props(
                                     "color=primary"
                                 )
-                                ui.button("Cancel", on_click=dlg.close).props("flat")
-                        dlg.open()
 
                     ui.button(icon="edit", on_click=open_edit_perms).props(
                         "flat round"
@@ -234,71 +234,57 @@ def _render_admin_list(
 
                     # ── Remove admin button ──
                     async def open_remove_confirm(a=admin):
-                        with ui.dialog() as dlg, ui.card():
-                            ui.label("Remove admin: " + a.username + "?").classes(
-                                "text-h6"
-                            )
-                            ui.label("This action cannot be undone.").classes(
-                                "text-caption text-negative q-mb-md"
-                            )
-
-                            async def confirm_remove(a=a):
-                                success = False
-                                audit_failure_reason: str | None = None
-                                async with button_loading(remove_btn):
-                                    try:
-                                        await use_case.delete_account(
-                                            admin_id=a.id,
-                                            requesting_admin_id=requesting_admin_id,
-                                        )
-                                        success = True
-                                    except AdminSelfActionForbiddenException as exc:
-                                        audit_failure_reason = exc.error_code
-                                        ui.notify(
-                                            "Cannot remove your own account",
-                                            type="negative",
-                                        )
-                                    except AdminLastAccountsGuardException as exc:
-                                        audit_failure_reason = exc.error_code
-                                        ui.notify(
-                                            "Cannot remove the last accounts-permission holder",
-                                            type="negative",
-                                        )
-                                    except Exception as exc:  # noqa: BLE001 - delegated
-                                        audit_failure_reason = (
-                                            getattr(exc, "error_code", None)
-                                            or type(exc).__name__
-                                        )
-                                        await AdminErrorHandler.handle(
-                                            exc, context="admin_account_delete"
-                                        )
-                                # Audit + dlg.close() / refresh outside the loading
-                                # context (§11 convention).
-                                await get_audit_logger().log(
-                                    action=AdminAction.ACCOUNT_DELETE,
-                                    domain="user",
-                                    result=AuditResult.SUCCESS
-                                    if success
-                                    else AuditResult.FAILURE,
-                                    record_id=str(a.id),
-                                    before_state=safe_user_snapshot(a),
-                                    failure_reason=audit_failure_reason,
+                        # confirm_dialog owns loading + close/refresh ordering;
+                        # on_confirm owns the work, audit, and notifications and
+                        # returns success so the dialog closes + refreshes only
+                        # then (stays open on failure).
+                        async def _on_confirm(a=a) -> bool:
+                            success = False
+                            audit_failure_reason: str | None = None
+                            try:
+                                await use_case.delete_account(
+                                    admin_id=a.id,
+                                    requesting_admin_id=requesting_admin_id,
                                 )
-                                if success:
-                                    ui.notify(
-                                        "Admin '" + a.username + "' removed",
-                                        type="positive",
-                                    )
-                                dlg.close()
-                                if success:
-                                    await refresh_cb()
+                                success = True
+                            except AdminSelfActionForbiddenException as exc:
+                                audit_failure_reason = exc.error_code
+                                c.toast_error("Cannot remove your own account")
+                            except AdminLastAccountsGuardException as exc:
+                                audit_failure_reason = exc.error_code
+                                c.toast_error(
+                                    "Cannot remove the last accounts-permission holder"
+                                )
+                            except Exception as exc:  # noqa: BLE001 - delegated
+                                audit_failure_reason = (
+                                    getattr(exc, "error_code", None)
+                                    or type(exc).__name__
+                                )
+                                await c.report_error(
+                                    exc, context="admin_account_delete"
+                                )
+                            await get_audit_logger().log(
+                                action=AdminAction.ACCOUNT_DELETE,
+                                domain="user",
+                                result=AuditResult.SUCCESS
+                                if success
+                                else AuditResult.FAILURE,
+                                record_id=str(a.id),
+                                before_state=safe_user_snapshot(a),
+                                failure_reason=audit_failure_reason,
+                            )
+                            if success:
+                                c.toast_success("Admin '" + a.username + "' removed")
+                            return success
 
-                            with ui.row():
-                                remove_btn = ui.button(
-                                    "Remove", on_click=confirm_remove
-                                ).props("color=negative")
-                                ui.button("Cancel", on_click=dlg.close).props("flat")
-                        dlg.open()
+                        await c.confirm_dialog(
+                            "Remove admin: " + a.username + "?",
+                            "This action cannot be undone.",
+                            on_confirm=_on_confirm,
+                            on_success=refresh_cb,
+                            danger=True,
+                            confirm_label="Remove",
+                        )
 
                     is_self = admin.id == requesting_admin_id
                     disable_prop = "disable" if is_self else ""

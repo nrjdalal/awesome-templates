@@ -1,6 +1,6 @@
 # Harness Asset Inventory Matrix
 
-> Last synced: 2026-05-06 (PR-B.2 stale-terminology sweep: LOC corrections + ADR-047 fossil fixes)
+> Last synced: 2026-06-02 (#193: added `admin-design-system.md` Tier 1 row + counts). Prior: 2026-05-06 (PR-B.2 stale-terminology sweep: LOC corrections + ADR-047 fossil fixes)
 > Source of truth: this is a **living inventory**. Update when assets are added, renamed, or removed. `/sync-guidelines` validates that this file matches the actual filesystem.
 > Sibling docs: [ADR 045](../../history/045-hybrid-harness-target-architecture.md) · [target-operating-model.md](target-operating-model.md) · [migration-strategy.md](migration-strategy.md)
 
@@ -164,6 +164,7 @@ rather than primary entry points (`Overlay`).
 | `ai-infrastructure-overview.md` | Keep | Low | Medium |
 | `repo-facts.md` | Keep | Low | Medium |
 | `test-files.md` | Keep | Low | Medium |
+| `admin-design-system.md` | Keep | Low | Medium |
 | `planning-checklists.md` | Overlay | Low | Medium |
 | `drift-checklist.md` | Overlay | Low | Medium |
 | `onboarding-role-tracks.md` | Overlay | Low | Low |
@@ -745,13 +746,13 @@ Six rule files (5 Claude + 1 Codex). All `Keep` except `commands.md` which becom
 
 | Bucket | Count | Share | Notes |
 |---|---|---|---|
-| Keep | 52 | ~79% | Project-specific architecture / safety / reference value (incl. 4 design + 3 self-coherence-recovery process-governor artefacts + 2 Phase 2 #121 hooks + Phase 5 #124 shared governor package now extended by ADR 047 PR B-F with `sync_cosmetic.py`; ADR 047 PR B-F also added `tools/check_governor_footer.py` + `.github/workflows/governor-footer-lint.yml` in place of the removed `tools/check_g_closure.py`) |
+| Keep | 53 | ~79% | Project-specific architecture / safety / reference value (incl. admin-design-system.md #193 + 4 design + 3 self-coherence-recovery process-governor artefacts + 2 Phase 2 #121 hooks + Phase 5 #124 shared governor package now extended by ADR 047 PR B-F with `sync_cosmetic.py`; ADR 047 PR B-F also added `tools/check_governor_footer.py` + `.github/workflows/governor-footer-lint.yml` in place of the removed `tools/check_g_closure.py`) |
 | Overlay | 13 | ~20% | Process discipline now routed by Default Flow (Phase 3 #122 adds 3 verify-first; Phase 4 #123 adds 2 completion-gate hooks; Phase 5 #124 reduces those hooks to thin shims without changing buckets) |
 | Replace | 0 | 0% | None in initial inventory; reserved for future passes |
 | Drop | 1 | ~1% | `tools/check_g_closure.py` retired by ADR 047 PR B-F (Guard G enforcement target moved to PR-description Governor Footer; `tools/check_governor_footer.py` is the replacement and is counted under `Keep`). |
-| **Total** | **66** | 100% | |
+| **Total** | **67** | 100% | |
 
-Counting note: `Tier 0=9` (8 + ADR 045 + `.github/pull_request_template.md`), `Tier 1=20` (12 reference + 3 design living docs + `governor-review-log/` directory + `governor-paths.md` + `.agents/shared/governor/` package + `tools/check_g_closure.py` historical-Drop + `tools/check_governor_footer.py` + `docs/history/047-governor-review-provenance-consolidation.md`), `Tier 2=14` (skill rows; each row covers all 3 wrapper layers), `Tier 3=18` (Phase 4 #123 added `.claude/hooks/completion_gate.py` + `.codex/hooks/completion_gate.py`; Phase 3 = 16, Phase 2 = 13, Phase 1 = 10; Phase 5 #124 converts 6 of these to thin shims without changing the count), `Tier 4=6` — sum 67. The 66 figure above excludes `.claude/settings.local.json` from the active-share count because it is `.gitignore`d. The bucket-share percentages use 66 as the denominator.
+Counting note: `Tier 0=9` (8 + ADR 045 + `.github/pull_request_template.md`), `Tier 1=21` (13 reference incl. `admin-design-system.md` + 3 design living docs + `governor-review-log/` directory + `governor-paths.md` + `.agents/shared/governor/` package + `tools/check_g_closure.py` historical-Drop + `tools/check_governor_footer.py` + `docs/history/047-governor-review-provenance-consolidation.md`), `Tier 2=14` (skill rows; each row covers all 3 wrapper layers), `Tier 3=18` (Phase 4 #123 added `.claude/hooks/completion_gate.py` + `.codex/hooks/completion_gate.py`; Phase 3 = 16, Phase 2 = 13, Phase 1 = 10; Phase 5 #124 converts 6 of these to thin shims without changing the count), `Tier 4=6` — sum 68. The 67 figure above excludes `.claude/settings.local.json` from the active-share count because it is `.gitignore`d. The bucket-share percentages use 67 as the denominator.
 
 This distribution matches the "Mostly Local with Philosophy Overlay" model declared in [ADR 045 §D4](../../history/045-hybrid-harness-target-architecture.md). The `Replace` and `Drop` columns are both empty: no asset's content is being rewritten, and self-verification during cross-link work showed that the only `Drop` candidate identified during the first triage was actually an active component (a sh-wrapper `.py` pair).
 
@@ -793,3 +794,4 @@ The following self-checks must pass before this matrix is treated as authoritati
 - 2026-04-29 — `/sync-guidelines` table parity pass: added `.claude/hooks/completion_gate.py` and `.codex/hooks/completion_gate.py` to the Tier 3 quick-reference table. Detail sections and counts were already present from Phase 4, so there is no count change.
 - 2026-05-02 — ADR 047 PR B-F (#159): `tools/check_g_closure.py` retired (Drop); `tools/check_governor_footer.py` + `.github/workflows/governor-footer-lint.yml` added; `docs/history/047-governor-review-provenance-consolidation.md` added to Tier 1; `.agents/shared/governor/sync_cosmetic.py` added to Phase 5 package. `governor-review-log/` relocated to `docs/history/archive/governor-review-log/` (PR #161). Bucket-share ~79% Keep / ~20% Overlay / ~1% Drop.
 - 2026-05-06 — PR-B.2: LOC corrections (project-dna.md 906→976, scaffolding-layers.md 295→299, ai-infrastructure-overview.md 117→162, drift-checklist.md 189→220, test-files.md 27→33); governor-paths.md Notes updated to reference Governor Footer model (ADR 047, `governor-review-log/` per-PR obligation retired); stop-sync-reminder.sh Notes updated past-tense for Phase 4 + IC-11 Option A; stop-sync-reminder.py role description refreshed for AGENT_LOCALE 5-responsibility orchestrator (#133).
+- 2026-06-02 — #193: added `docs/ai/shared/admin-design-system.md` (Tier 1, Keep) — the admin design-system guide (tokens + component builders + conventions) backing the `/add-admin-page` skill. Total 66 → 67 (Keep 52 → 53); Tier 1 20 → 21. Bucket-share remains ~79% Keep / ~20% Overlay.
