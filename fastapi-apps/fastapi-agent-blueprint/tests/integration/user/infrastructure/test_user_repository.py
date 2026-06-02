@@ -17,12 +17,10 @@ async def test_insert_and_select(test_db):
     created = await repo.insert_data(entity=request)
     assert created.id is not None
     assert created.username == request.username
-    assert created.role == "user"
 
     fetched = await repo.select_data_by_id(data_id=created.id)
     assert fetched.id == created.id
     assert fetched.email == request.email
-    assert fetched.role == "user"
 
     by_username = await repo.select_data_by_username(request.username)
     assert by_username is not None

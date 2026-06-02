@@ -84,7 +84,7 @@ Open `http://127.0.0.1:8001/admin` in a browser.
 
 1. Log in with the bootstrap admin credentials (set via `ADMIN_BOOTSTRAP_*` env vars, or default `admin` / `admin` in quickstart mode).
 2. Browse the **User** and **Docs** admin pages — AG Grid CRUD, field masking on sensitive columns.
-3. The admin login uses the same auth-domain JWT check as the API; the `User.role` field gates admin access.
+3. Admin login is backed by the separate `admin_identity` realm (ADR 049), distinct from the customer `auth` domain; membership in `admin_identity` gates admin access.
 
 ---
 

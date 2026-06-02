@@ -1,6 +1,6 @@
 # Project Overview
 
-> Last synced: 2026-05-01 via /sync-guidelines (#154 admin JWT RBAC + #156 /docs selector revamp reviewed; no Infrastructure / Environment / App Entrypoint surface changes — admin login provider transitioned from env-var to auth-domain JWT but the entrypoint `src/_apps/admin/` is unchanged.)
+> Last synced: 2026-06-01 via #218 (admin-identity realm separation reviewed; App Entrypoints unchanged — the new `admin_identity` domain is auto-discovered, and the `src/_apps/admin/` entrypoint is unchanged. New `ADMIN_JWT_*` settings + realm-collapse validation added to `src/_core/config.py`; admin login provider now backed by `admin_identity` instead of the user table.)
 > For tech stack, refer to project-dna.md §8; for layer structure, refer to §1.
 > For the Optional infra toggle surface (env var → disabled behavior per infra), see AGENTS.md "Optional Infrastructure Toggles" + [ADR 042](../../docs/history/042-optional-infrastructure-di-pattern.md).
 > This file only contains **project-level context** not covered in project-dna.md.

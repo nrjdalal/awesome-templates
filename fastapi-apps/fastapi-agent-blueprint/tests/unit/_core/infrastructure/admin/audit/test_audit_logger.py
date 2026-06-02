@@ -19,12 +19,12 @@ from src._core.infrastructure.admin.audit.logger import (
     configure_audit_logger,
     get_audit_logger,
 )
-from src.user.domain.dtos.user_dto import USER_ROLE_ADMIN, UserDTO
+from src.admin_identity.domain.dtos.admin_identity_dto import AdminIdentityDTO
 
 # ── safe_user_snapshot whitelist ─────────────────────────────────────────────
 
 
-def _user(**overrides) -> UserDTO:
+def _user(**overrides) -> AdminIdentityDTO:
     now = datetime.now()
     defaults: dict = {
         "id": 7,
@@ -32,7 +32,6 @@ def _user(**overrides) -> UserDTO:
         "full_name": "Alice Doe",
         "email": "alice@example.com",
         "password": "hashed-bcrypt-secret",
-        "role": USER_ROLE_ADMIN,
         "password_temporary": False,
         "permissions": ["accounts"],
         "is_bootstrap_admin": False,
@@ -40,7 +39,7 @@ def _user(**overrides) -> UserDTO:
         "updated_at": now,
     }
     defaults.update(overrides)
-    return UserDTO(**defaults)
+    return AdminIdentityDTO(**defaults)
 
 
 def test_safe_user_snapshot_excludes_password_hash():
@@ -53,7 +52,6 @@ def test_safe_user_snapshot_excludes_password_hash():
         "username",
         "full_name",
         "email",
-        "role",
         "permissions",
         "is_bootstrap_admin",
         "password_temporary",

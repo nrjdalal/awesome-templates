@@ -1,6 +1,6 @@
 # Suggested Commands
 
-> Last synced: 2026-05-14 via /sync-guidelines (harness launcher + `make check` target split).
+> Last synced: 2026-06-01 via #218 (admin login note re-pointed to the admin_identity realm; no new CLI/make targets).
 > Purpose: Quick reference for Claude Code when executing shell commands.
 > Also referenced when running Skills.
 > Default Flow context: see [`AGENTS.md` § Default Coding Flow](../../AGENTS.md#default-coding-flow). The commands below are consulted by the `implement` and `verify` steps; this file is **not** a primary entry point in the Default Flow.
@@ -136,7 +136,7 @@ STORAGE_TYPE=s3 python run_server_local.py --env local
 ## Admin Dashboard
 ```bash
 uv sync --extra admin   # install; → http://127.0.0.1:8001/admin
-# Login: auth-domain JWT + user.role admin check (#154/PR#155)
-# Seed admin: ADMIN_BOOTSTRAP_USERNAME/EMAIL/PASSWORD env vars (idempotent on boot)
+# Login: admin_identity-realm credential check (#218/ADR 049; separate from customer auth)
+# Seed admin: ADMIN_BOOTSTRAP_USERNAME/EMAIL/PASSWORD env vars (idempotent on boot, into admin_identity)
 # If not installed: server boots normally, emits admin_mount_skipped log
 ```

@@ -9,7 +9,7 @@ from nicegui import ui
 from src._core.infrastructure.admin.audit import AdminAction, AuditResult
 from src._core.infrastructure.admin.audit.logger import get_audit_logger
 from src._core.infrastructure.admin.auth import AdminAuthProvider
-from src.auth.domain.dtos.auth_dto import AdminSessionDTO
+from src.admin_identity.domain.dtos.admin_identity_dto import AdminSessionDTO
 
 if TYPE_CHECKING:
     from src._core.infrastructure.admin.base_admin_page import BaseAdminPage

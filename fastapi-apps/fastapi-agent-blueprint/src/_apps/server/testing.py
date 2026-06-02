@@ -18,6 +18,10 @@ from __future__ import annotations
 from fastapi import FastAPI
 
 from src._core.infrastructure.persistence.rdb.database import Database
+from src.admin_identity.domain.dtos.admin_identity_dto import AdminIdentityDTO
+from src.admin_identity.interface.server.dependencies.admin_auth_dependencies import (
+    get_current_admin,
+)
 from src.auth.interface.server.dependencies.auth_dependencies import get_current_user
 from src.user.domain.dtos.user_dto import UserDTO
 
@@ -44,6 +48,20 @@ def override_current_user(app: FastAPI, current_user: UserDTO) -> None:
 def reset_current_user_override(app: FastAPI) -> None:
     """Restore the real auth dependency."""
     app.dependency_overrides.pop(get_current_user, None)
+
+
+def override_current_admin(app: FastAPI, current_admin: AdminIdentityDTO) -> None:
+    """Replace the admin-realm dependency with a fixed admin for e2e tests."""
+
+    async def _current_admin_override() -> AdminIdentityDTO:
+        return current_admin
+
+    app.dependency_overrides[get_current_admin] = _current_admin_override
+
+
+def reset_current_admin_override(app: FastAPI) -> None:
+    """Restore the real admin-realm dependency."""
+    app.dependency_overrides.pop(get_current_admin, None)
 
 
 def _core(app: FastAPI):

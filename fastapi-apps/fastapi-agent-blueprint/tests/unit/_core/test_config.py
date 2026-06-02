@@ -25,6 +25,7 @@ def _make_safe_env(env_name: str = "prod") -> dict[str, str]:
         "DATABASE_HOST": "db.internal.example.com",
         "DATABASE_NAME": "myapp_db",
         "JWT_SECRET_KEY": "a-real-jwt-secret-key-with-enough-length",
+        "ADMIN_JWT_SECRET_KEY": "a-distinct-admin-jwt-secret-key-with-length",
         "TASK_NAME_PREFIX": "myapp",
         "BROKER_TYPE": "sqs",
         "AWS_SQS_ACCESS_KEY": "test-key",
@@ -93,7 +94,8 @@ class TestStrictEnvRejectsUnsafeDefaults:
             with pytest.raises(ValidationError) as exc_info:
                 _create_settings()
             error_message = str(exc_info.value)
-            assert "5 error(s)" in error_message
+            # +1 vs pre-ADR-049: ADMIN_JWT_SECRET_KEY must be explicitly set in strict envs
+            assert "6 error(s)" in error_message
 
     def test_admin_bootstrap_requires_password_when_enabled(self):
         env = {"ENV": "local", "ADMIN_BOOTSTRAP_ENABLED": "true", **_REQUIRED_VARS}
@@ -789,3 +791,41 @@ class TestDocsUrlGating:
             assert s.is_dev is False
             assert s.docs_url is None
             assert s.openapi_url is None
+
+
+class TestAdminRealmCollapseGuards:
+    """ADR 049 trust boundary: the admin JWT realm must not collapse into the
+    customer realm. Sharing the secret, audience, or issuer is a hard error."""
+
+    def test_admin_secret_must_differ_from_customer(self):
+        env = _make_safe_env("prod")
+        env["ADMIN_JWT_SECRET_KEY"] = env["JWT_SECRET_KEY"]
+        with patch.dict(os.environ, env, clear=True):
+            with pytest.raises(
+                ValidationError, match="ADMIN_JWT_SECRET_KEY must differ"
+            ):
+                _create_settings()
+
+    def test_admin_audience_must_differ_from_customer(self):
+        env = _make_safe_env("prod")
+        env["JWT_AUDIENCE"] = "shared-aud"
+        env["ADMIN_JWT_AUDIENCE"] = "shared-aud"
+        with patch.dict(os.environ, env, clear=True):
+            with pytest.raises(ValidationError, match="ADMIN_JWT_AUDIENCE must differ"):
+                _create_settings()
+
+    def test_admin_issuer_must_differ_from_customer(self):
+        env = _make_safe_env("prod")
+        env["JWT_ISSUER"] = "shared-iss"
+        env["ADMIN_JWT_ISSUER"] = "shared-iss"
+        with patch.dict(os.environ, env, clear=True):
+            with pytest.raises(ValidationError, match="ADMIN_JWT_ISSUER must differ"):
+                _create_settings()
+
+    def test_distinct_realm_defaults_pass(self):
+        env = _make_safe_env("prod")
+        with patch.dict(os.environ, env, clear=True):
+            settings = _create_settings()
+            assert settings.admin_jwt_secret_key != settings.jwt_secret_key
+            assert settings.admin_jwt_audience != settings.jwt_audience
+            assert settings.admin_jwt_issuer != settings.jwt_issuer

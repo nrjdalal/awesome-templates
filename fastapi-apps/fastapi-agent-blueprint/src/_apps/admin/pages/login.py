@@ -6,10 +6,10 @@ from src._core.infrastructure.admin.auth import (
     get_admin_auth_provider,
 )
 from src._core.infrastructure.admin.layout import button_loading
-from src.auth.domain.exceptions.auth_exceptions import (
+from src.admin_identity.domain.exceptions.admin_identity_exceptions import (
     AdminCredentialDisabledException,
+    AdminInvalidCredentialsException,
     AdminSetupRequiredException,
-    InvalidCredentialsException,
 )
 
 
@@ -39,7 +39,10 @@ def login_page(request: Request):
                 except AdminSetupRequiredException:
                     app.storage.user["setup_granted"] = True
                     target = "/admin/setup"
-                except (InvalidCredentialsException, AdminCredentialDisabledException):
+                except (
+                    AdminInvalidCredentialsException,
+                    AdminCredentialDisabledException,
+                ):
                     ui.notify("Invalid credentials", type="negative")
                 else:
                     AdminAuthProvider.login(session)

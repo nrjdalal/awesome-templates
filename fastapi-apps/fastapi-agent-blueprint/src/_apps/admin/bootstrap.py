@@ -33,7 +33,7 @@ from src._core.infrastructure.admin.error_handler import (
     handle_uncaught_admin_exception,
 )
 from src._core.infrastructure.discovery import discover_domains
-from src.user.domain.dtos.user_dto import BootstrapAdminUserDTO
+from src.admin_identity.domain.dtos.admin_identity_dto import BootstrapAdminDTO
 
 _logger = structlog.stdlib.get_logger(__name__)
 
@@ -57,7 +57,7 @@ def bootstrap_admin(fastapi_app: FastAPI) -> None:
         _global_exception_handler_registered = True
     configure_admin_auth_provider(
         AdminAuthProvider(
-            auth_use_case_provider=admin_container.auth_container.auth_use_case
+            admin_auth_use_case_provider=admin_container.admin_identity_container.admin_auth_use_case
         )
     )
     # Wire the audit infrastructure (#196 Phase 1 + #206 Phase 2) before any
@@ -69,7 +69,7 @@ def bootstrap_admin(fastapi_app: FastAPI) -> None:
     configure_audit_repository(audit_repo)
     configure_audit_logger(AuditLogger(audit_repo))
     configure_admin_account_use_case_provider(
-        admin_container.auth_container.admin_account_use_case
+        admin_container.admin_identity_container.admin_account_use_case
     )
     _install_bootstrap_admin_seed(fastapi_app, admin_container)
 
@@ -85,7 +85,7 @@ def bootstrap_admin(fastapi_app: FastAPI) -> None:
 
     # Populate the permission registry from successfully registered page_configs.
     # Fixed keys (e.g. 'accounts') are pre-seeded in the registry; domain keys are added here.
-    permission_registry = admin_container.auth_container.permission_registry()
+    permission_registry = admin_container.admin_identity_container.permission_registry()
     for cfg in page_configs:
         permission_registry.register(cfg.domain_name)
 
@@ -100,20 +100,20 @@ def _install_bootstrap_admin_seed(fastapi_app: FastAPI, admin_container) -> None
         password = settings.admin_bootstrap_password
         if not password:
             return
-        service = admin_container.user_container.user_service()
-        user = await service.ensure_admin_user(
-            BootstrapAdminUserDTO(
+        service = admin_container.admin_identity_container.admin_identity_service()
+        admin = await service.ensure_admin_user(
+            BootstrapAdminDTO(
                 username=settings.admin_bootstrap_username,
                 full_name=settings.admin_bootstrap_full_name,
                 email=settings.admin_bootstrap_email,
                 password=password,
             )
         )
-        if user is not None:
+        if admin is not None:
             _logger.info(
                 "admin_bootstrap_user_ready",
-                user_id=user.id,
-                username=user.username,
+                admin_id=admin.id,
+                username=admin.username,
             )
         else:
             _logger.info("admin_bootstrap_seed_skipped")

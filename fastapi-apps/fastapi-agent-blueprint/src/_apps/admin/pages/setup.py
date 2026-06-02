@@ -16,7 +16,9 @@ from src._core.infrastructure.admin.error_handler import (
     admin_error_boundary,
 )
 from src._core.infrastructure.admin.layout import button_loading
-from src.auth.domain.exceptions.auth_exceptions import AdminSetupForbiddenException
+from src.admin_identity.domain.exceptions.admin_identity_exceptions import (
+    AdminSetupForbiddenException,
+)
 
 
 @ui.page("/admin/setup")

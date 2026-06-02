@@ -24,7 +24,7 @@ def _token_response(token_data) -> TokenPairResponse:
         refresh_token=token_data.refresh_token,
         token_type=token_data.token_type,
         expires_in=token_data.expires_in,
-        user=UserResponse(**token_data.user.model_dump(exclude={"password", "role"})),
+        user=UserResponse(**token_data.user.model_dump(exclude={"password"})),
     )
 
 
@@ -98,5 +98,5 @@ async def me(
     current_user: UserDTO = Depends(get_current_user),
 ) -> SuccessResponse[UserResponse]:
     return SuccessResponse(
-        data=UserResponse(**current_user.model_dump(exclude={"password", "role"}))
+        data=UserResponse(**current_user.model_dump(exclude={"password"}))
     )

@@ -4,12 +4,9 @@ from fastapi import Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from src.auth.application.use_cases.auth_use_case import AuthUseCase
-from src.auth.domain.exceptions.auth_exceptions import (
-    ForbiddenException,
-    UnauthorizedException,
-)
+from src.auth.domain.exceptions.auth_exceptions import UnauthorizedException
 from src.auth.infrastructure.di.auth_container import AuthContainer
-from src.user.domain.dtos.user_dto import USER_ROLE_ADMIN, UserDTO
+from src.user.domain.dtos.user_dto import UserDTO
 
 bearer_scheme = HTTPBearer(auto_error=False)
 
@@ -29,10 +26,6 @@ async def get_current_user(
     return user
 
 
-async def require_admin(
-    current_user: UserDTO = Depends(get_current_user),
-) -> UserDTO:
-    """Admin-only API gate. Bootstrap admins are setup-only and rejected here."""
-    if current_user.role != USER_ROLE_ADMIN or current_user.is_bootstrap_admin:
-        raise ForbiddenException()
-    return current_user
+# require_admin moved to the admin_identity realm (#218 / ADR 049):
+# src/admin_identity/interface/server/dependencies/admin_auth_dependencies.py.
+# It verifies admin-realm tokens, not customer tokens.

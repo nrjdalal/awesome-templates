@@ -15,9 +15,10 @@ from src._core.infrastructure.admin import auth as admin_auth
 from src._core.infrastructure.admin.audit import AdminAction, AuditResult
 from src._core.infrastructure.admin.audit import logger as audit_logger_module
 from src._core.infrastructure.admin.audit.logger import configure_audit_logger
-from src.auth.domain.dtos.auth_dto import AdminSessionDTO
-from src.auth.domain.exceptions.auth_exceptions import InvalidCredentialsException
-from src.user.domain.dtos.user_dto import USER_ROLE_ADMIN
+from src.admin_identity.domain.dtos.admin_identity_dto import AdminSessionDTO
+from src.admin_identity.domain.exceptions.admin_identity_exceptions import (
+    AdminInvalidCredentialsException,
+)
 
 
 class _RecordingAuditLogger:
@@ -33,7 +34,7 @@ class _FakeUseCase:
         self, session: AdminSessionDTO | None = None, exc: Exception | None = None
     ) -> None:
         self.session = session or AdminSessionDTO(
-            user_id=7, username="alice", role=USER_ROLE_ADMIN, permissions=[]
+            user_id=7, username="alice", permissions=[]
         )
         self.exc = exc
 
@@ -80,10 +81,10 @@ async def test_authenticate_success_emits_login_success_audit(audit_recorder):
 async def test_authenticate_invalid_credentials_emits_login_failure_audit(
     audit_recorder,
 ):
-    fake_uc = _FakeUseCase(exc=InvalidCredentialsException())
+    fake_uc = _FakeUseCase(exc=AdminInvalidCredentialsException())
     provider = admin_auth.AdminAuthProvider(lambda: fake_uc)
 
-    with pytest.raises(InvalidCredentialsException):
+    with pytest.raises(AdminInvalidCredentialsException):
         await provider.authenticate("attacker", "wrong", ip_address="192.0.2.6")
 
     assert len(audit_recorder.calls) == 1
@@ -104,7 +105,7 @@ async def test_authenticate_empty_input_logs_failure_with_invalid_credentials(
 ):
     provider = admin_auth.AdminAuthProvider(lambda: _FakeUseCase())
 
-    with pytest.raises(InvalidCredentialsException):
+    with pytest.raises(AdminInvalidCredentialsException):
         await provider.authenticate("", "")
 
     assert len(audit_recorder.calls) == 1

@@ -9,16 +9,24 @@ from pydantic import ValidationError
 from src._core.exceptions.base_exception import BaseCustomException
 from src._core.infrastructure.admin.audit import AdminAction, AuditResult
 from src._core.infrastructure.admin.audit.logger import get_audit_logger
-from src.auth.application.use_cases.admin_account_use_case import AdminAccountUseCase
-from src.auth.application.use_cases.auth_use_case import AuthUseCase
-from src.auth.domain.dtos.auth_dto import AdminSessionDTO
-from src.auth.domain.exceptions.auth_exceptions import (
-    AdminCredentialDisabledException,
-    AdminSetupRequiredException,
-    InvalidCredentialsException,
+from src.admin_identity.application.use_cases.admin_account_use_case import (
+    AdminAccountUseCase,
 )
-from src.auth.interface.server.schemas.auth_schema import LoginRequest
-from src.user.domain.dtos.user_dto import USER_ROLE_ADMIN
+from src.admin_identity.application.use_cases.admin_auth_use_case import (
+    AdminAuthUseCase,
+)
+from src.admin_identity.domain.dtos.admin_identity_dto import (
+    ADMIN_SESSION_ROLE,
+    AdminSessionDTO,
+)
+from src.admin_identity.domain.exceptions.admin_identity_exceptions import (
+    AdminCredentialDisabledException,
+    AdminInvalidCredentialsException,
+    AdminSetupRequiredException,
+)
+from src.admin_identity.interface.server.schemas.admin_auth_schema import (
+    AdminLoginRequest,
+)
 
 _logger = structlog.stdlib.get_logger(__name__)
 _admin_auth_provider: AdminAuthProvider | None = None
@@ -26,10 +34,12 @@ _admin_account_use_case_provider: Callable[[], AdminAccountUseCase] | None = Non
 
 
 class AdminAuthProvider:
-    """Auth-domain backed admin authentication provider."""
+    """admin_identity-domain backed admin authentication provider."""
 
-    def __init__(self, auth_use_case_provider: Callable[[], AuthUseCase]) -> None:
-        self._auth_use_case_provider = auth_use_case_provider
+    def __init__(
+        self, admin_auth_use_case_provider: Callable[[], AdminAuthUseCase]
+    ) -> None:
+        self._admin_auth_use_case_provider = admin_auth_use_case_provider
 
     async def authenticate(
         self,
@@ -47,7 +57,9 @@ class AdminAuthProvider:
         ``FIRST_ADMIN_CREATE`` once the first real admin lands.
         """
         try:
-            request = LoginRequest(username=username or "", password=password or "")
+            request = AdminLoginRequest(
+                username=username or "", password=password or ""
+            )
         except ValidationError as exc:
             # No session yet → actor user_id is explicitly None (don't auto-fill
             # from any stale session storage).
@@ -57,15 +69,15 @@ class AdminAuthProvider:
                 result=AuditResult.FAILURE,
                 admin_user_id=None,
                 admin_username=username or "unknown",
-                failure_reason=InvalidCredentialsException().error_code,
+                failure_reason=AdminInvalidCredentialsException().error_code,
                 ip_address=ip_address,
             )
-            raise InvalidCredentialsException() from exc
+            raise AdminInvalidCredentialsException() from exc
 
         try:
-            session = await self._auth_use_case_provider().admin_login(request)
+            session = await self._admin_auth_use_case_provider().admin_login(request)
         except (
-            InvalidCredentialsException,
+            AdminInvalidCredentialsException,
             AdminCredentialDisabledException,
         ) as exc:
             await get_audit_logger().log(
@@ -103,7 +115,7 @@ class AdminAuthProvider:
             return None
 
         try:
-            session = await self._auth_use_case_provider().get_admin_session(
+            session = await self._admin_auth_use_case_provider().get_admin_session(
                 parsed_user_id
             )
         except BaseCustomException as exc:
@@ -120,7 +132,7 @@ class AdminAuthProvider:
     def is_authenticated() -> bool:
         return (
             app.storage.user.get("authenticated", False) is True
-            and app.storage.user.get("role") == USER_ROLE_ADMIN
+            and app.storage.user.get("role") == ADMIN_SESSION_ROLE
             and app.storage.user.get("user_id") is not None
         )
 

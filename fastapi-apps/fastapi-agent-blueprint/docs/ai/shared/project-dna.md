@@ -599,7 +599,7 @@ class {Name}Container(containers.DeclarativeContainer):
 | Structured Logging (structlog) | Active | structlog + asgi-correlation-id, RequestLogMiddleware (server), StructlogContextMiddleware (worker), LOG_LEVEL / LOG_JSON_FORMAT env vars, sqlalchemy.engine double-emit fix (#9) |
 | JWT/Authentication | Active | `src/auth/` provides HS256 access/refresh tokens, refresh-token rotation/revocation persistence, `/v1/auth/*`, and Bearer protection for `user` API routes (#4) |
 | File Upload (UploadFile) | Not implemented | |
-| RBAC/Permissions | Active | Page-level admin permissions via `User.permissions` (JSON column) added in #194. `User.role` determines admin status; `permissions` list controls which admin pages each admin can access. `/admin/accounts` UI manages accounts and per-page permission grants. Bootstrap one-time setup wizard creates the first real admin with all permissions. Server-route RBAC for `/v1/user` (reads + CUD) added in #199 via the `require_admin` interface dependency (`role == admin` and not `is_bootstrap_admin`); non-user `/v1/*` route-level role gating is not yet implemented. |
+| RBAC/Permissions | Active | Admin identity is a separate realm (`admin_identity`, #218/ADR 049 — see §17). Membership in `admin_identity` *is* admin status; the record's `permissions` (JSON) list controls which admin pages each admin can access. `/admin/accounts` UI manages accounts and per-page permission grants. Bootstrap one-time setup wizard creates the first real admin with all permissions. Server-route RBAC for `/v1/user` (reads + CUD) added in #199 via the `require_admin` interface dependency, re-pointed to the admin token realm in #218 (verifies admin-realm tokens against `admin_identity`, rejects bootstrap admins); non-user `/v1/*` route-level gating is not yet implemented. |
 | Rate Limiting (slowapi) | Not implemented | |
 | WebSocket | Not implemented | |
 
@@ -753,11 +753,13 @@ For domain-specific rendering, subclass `BaseAdminPage` in the config file and o
 
 ### Admin Auth & Session (durable invariants — promoted from PR #155 ICs, extended by #194)
 
-The NiceGUI admin layer integrates with the auth-domain credential check (PR #155 / ADR 047 IC promotion; page-level permissions added #194). The following invariants are durable and apply to all future admin work:
+The NiceGUI admin layer integrates with the admin-identity credential check (PR #155 / ADR 047 IC promotion; page-level permissions added #194; **admin identity separated into its own domain + token realm by ADR 049 / #218**). The following invariants are durable and apply to all future admin work:
+
+> **ADR 049 update (#218)**: admin identity now lives in the dedicated `admin_identity` bounded context, **not** the `user` table. Where IC-155-* below say `User.role`/`User.permissions`, read them as "the `admin_identity` record / its `permissions`". The NiceGUI session contract (IC-155-1) is unchanged — the `role` key is now a constant session marker (`ADMIN_SESSION_ROLE`) since membership in `admin_identity` *is* the admin role. See §17 for the realm invariants.
 
 - **Session storage scope (IC-155-1)**: NiceGUI admin session storage may contain only the four authentication keys — `authenticated`, `user_id`, `username`, `role`. Access tokens, refresh tokens, raw JWTs, `permissions`, and `password_temporary` MUST NOT be stored in session. The ephemeral `setup_granted` flag is the sole permitted exception (set by login on bootstrap detect; cleared immediately after setup completes).
-- **DB-role + page-permission authorisation (IC-155-2)**: admin access requires `User.role == "admin"` AND the target page key present in `User.permissions`. Both are re-read from the DB on every request via `refresh_session()` — never cached from session. Non-admin users and wrong passwords surface as a single "invalid credentials" error to prevent enumeration.
-- **One-time setup bootstrapping (IC-155-3)**: `ADMIN_BOOTSTRAP_*` env vars seed an `is_bootstrap_admin=True` account on boot. When no real admin (`is_bootstrap_admin=False`) exists, the bootstrap credential triggers the setup wizard — it never reaches the dashboard. Once the first real admin is created, the bootstrap account is deleted and the credential is permanently disabled (raises `AdminCredentialDisabledException`). Re-setting the env vars + restarting re-seeds the bootstrap row for recovery.
+- **DB-membership + page-permission authorisation (IC-155-2, ADR 049 update)**: admin access requires the caller to resolve to an `admin_identity` record AND the target page key present in that record's `permissions`. Both are re-read from the DB on every request via `refresh_session()` — never cached from session. Unknown admins and wrong passwords surface as a single "invalid credentials" error to prevent enumeration.
+- **One-time setup bootstrapping (IC-155-3)**: `ADMIN_BOOTSTRAP_*` env vars seed an `is_bootstrap_admin=True` row in `admin_identity` on boot. When no real admin (`is_bootstrap_admin=False`) exists, the bootstrap credential triggers the setup wizard — it never reaches the dashboard. Once the first real admin is created, the bootstrap row is deleted and the credential is permanently disabled (raises `AdminCredentialDisabledException`). Re-setting the env vars + restarting re-seeds the bootstrap row for recovery.
 - **Mandatory page-key gate (IC-155-4)**: every `@ui.page("/admin/...")` route (except `/admin/login`, `/admin/setup`, and `/admin/error`) MUST call `require_auth(page_key="<key>")` or `require_auth_allowlisted()` as its first statement and return on `None`. `require_auth` enforces the IC-155-2 DB read + page-key check; `require_auth_allowlisted` enforces only the DB read (used for `dashboard` and `change-password`). Nav-drawer filtering is cosmetic only — the gate is the real control.
 - **Centralized error handling (IC-195-1)**: admin errors route through `AdminErrorHandler` (`src/_core/infrastructure/admin/error_handler.py`) across three layers — (a) `@admin_error_boundary` on every `@ui.page` admin handler catches page-load errors; (b) event callbacks (button clicks, post-success refresh) call `AdminErrorHandler.handle(...)` directly; (c) a global `app.on_exception(handle_uncaught_admin_exception)` registered in `bootstrap_admin` structured-logs ANY uncaught admin exception (page / callback / timer) as a uniform last-resort safety net. Raw `str(exc)` is NEVER surfaced to the UI — only a 4xx `BaseCustomException.message` is shown (as a `warning`); `>= 500` domain errors and arbitrary exceptions show a generic message (`negative`). Full detail (`context`, `admin_user`, `error_type`, `error_code`; `request_id` auto-injected) goes to the structured server log only. An explicit `handle(..., critical=True)` redirects to `/admin/error`, the fourth gate-exempt route (IC-155-4): it has no auth gate (a critical failure may itself be a DB/auth outage and the gate hits the DB), performs no DB/session/`admin_layout` access, and echoes only a regex-validated correlation id passed via `?rid=`. No production path passes `critical=True` yet, so `/admin/error` is currently a defensive escalation surface; the global `on_exception` handler is the active uniform-logging control.
 
@@ -1029,3 +1031,29 @@ The `/docs` selector (PR #156) is the contributor-facing OpenAPI spec viewer. Th
 ### UI hygiene
 
 - **No AI-pattern clichés (IC-156-5)**: `linear-gradient`, `-webkit-background-clip`, `backdrop-filter`, ChatGPT-style purple gradient palettes, and similar AI-generated-UI clichés MUST stay out of the docs selector renderer. `test_docs_selector_returns_html` greps for the three CSS clichés as the regression guard. This is a docs-domain test, not a cross-cutting style governance rule.
+
+## §17. Admin Identity Realm (ADR 049, #218)
+
+Admin/operator identity is a dedicated bounded context (`src/admin_identity/`), physically and cryptographically separated from customer identity (`user`). The split exists for credential isolation (blast-radius) and a strong operational trust boundary. The following invariants are durable.
+
+### Store separation
+
+- **Separate identity store (IC-218-1)**: admins live in the `admin_identity` table; customers in `user`. No admin row may exist in `user`, and `user` carries no admin/role columns. Membership in `admin_identity` *is* the admin role — there is no `role` column on `admin_identity`. Cross-realm reads go only through the owning domain's repository/protocol.
+- **Separate refresh store (IC-218-2)**: admin refresh tokens live in `admin_refresh_token` (FK `admin_id`), never `refresh_token` (FK `user_id`). IC-153-2 (hashed-only persistence) applies to both tables.
+
+### Token realm (trust boundary)
+
+- **Distinct token realm (IC-218-3)**: admin tokens are signed with `ADMIN_JWT_SECRET_KEY` and carry `ADMIN_JWT_ISSUER` / `ADMIN_JWT_AUDIENCE`, all distinct from the customer realm. The canonical claim shape (IC-153-4: `sub, jti, type, iat, exp, iss, aud`) is preserved; only `iss`/`aud`/secret differ. Collapsing the realms — admin secret, audience, or issuer equal to the customer realm's (`ADMIN_JWT_SECRET_KEY == JWT_SECRET_KEY`, `ADMIN_JWT_AUDIENCE == JWT_AUDIENCE`, or `ADMIN_JWT_ISSUER == JWT_ISSUER`) — is rejected at startup by `Settings._validate_environment_safety`. Never weaken this for convenience — it is what makes a customer token unusable on an admin route.
+- **Realm-pinned verification (IC-218-4)**: `require_admin` (and any future admin-gated route) MUST verify admin-realm tokens against the `admin_identity` store. A customer-realm token presented to an admin route is rejected at the signature/audience layer (surfaces as `401 INVALID_TOKEN`), never reaching a role check. Bootstrap admins are setup-only and rejected by the gate (`403 FORBIDDEN`). Regression-guarded at both service and e2e level.
+
+### Shared mechanism
+
+- **Mechanism vs boundary (IC-218-5)**: auth *mechanism* is shared — `hash_password`/`verify_password` (`src/_core/common/security.py`) and `JwtTokenCodec` (`src/_core/common/jwt_codec.py`, config-injected). The *trust boundary* is per-realm — store, token config, refresh table, server dependency. New auth realms follow this split: share the mechanism, separate the boundary. Do not re-couple `AuthService` and `AdminAuthService` into one service.
+
+### NiceGUI surface
+
+- **Token-less dashboard session (IC-218-6)**: the NiceGUI admin dashboard keeps the IC-155-1 four-key, token-less session (`AdminAuthProvider`), now backed by `AdminAuthUseCase`. The admin token realm (IC-218-3) exists for the `/v1/admin/*` HTTP API, not the dashboard session. `ADMIN_BOOTSTRAP_*` seeds into `admin_identity`.
+
+### Extension point
+
+- **External IdP is out of scope (IC-218-7)**: external workforce IdP / SSO / MFA / SCIM and a physically separate admin database are NOT implemented. The sanctioned extension is to swap `AdminAuthService.verify_credentials` for an IdP-backed verifier and/or point the `admin_identity` repository at a separate database URL — no core change required.

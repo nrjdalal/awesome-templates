@@ -8,18 +8,19 @@ after reviewing what an operator should see in the audit-log diff.
 
 from typing import Any
 
-from src.user.domain.dtos.user_dto import UserDTO
+from src.admin_identity.domain.dtos.admin_identity_dto import AdminIdentityDTO
 
-# Allow-list of safe fields from ``UserDTO`` for audit snapshots. ``password``
-# (the bcrypt hash) is intentionally absent. New columns added to ``UserDTO``
-# default to *not* being audited until explicitly added here.
+# Allow-list of safe fields from ``AdminIdentityDTO`` for audit snapshots.
+# ``password`` (the bcrypt hash) is intentionally absent. New columns added to
+# ``AdminIdentityDTO`` default to *not* being audited until explicitly added
+# here. (Admin identity has no ``role`` column — membership in admin_identity
+# is the role; see ADR 049 / project-dna §17.)
 _USER_AUDIT_FIELDS: frozenset[str] = frozenset(
     {
         "id",
         "username",
         "full_name",
         "email",
-        "role",
         "permissions",
         "is_bootstrap_admin",
         "password_temporary",
@@ -29,8 +30,8 @@ _USER_AUDIT_FIELDS: frozenset[str] = frozenset(
 )
 
 
-def safe_user_snapshot(user: UserDTO | None) -> dict[str, Any] | None:
-    """Return a deny-by-default JSON-safe dict of ``UserDTO`` fields.
+def safe_user_snapshot(user: AdminIdentityDTO | None) -> dict[str, Any] | None:
+    """Return a deny-by-default JSON-safe dict of ``AdminIdentityDTO`` fields.
 
     ``None`` in → ``None`` out (e.g. an action with no before-state). Datetime
     fields are serialized to ISO strings via Pydantic's ``mode="json"`` so the

@@ -1,10 +1,10 @@
+from datetime import UTC, datetime
 from types import SimpleNamespace
 
 import pytest
 
 from src._apps.admin import bootstrap as admin_bootstrap
-from src.user.domain.dtos.user_dto import USER_ROLE_ADMIN
-from tests.factories.user_factory import make_user_dto
+from src.admin_identity.domain.dtos.admin_identity_dto import AdminIdentityDTO
 
 
 class FakeFastAPI:
@@ -15,26 +15,30 @@ class FakeFastAPI:
         self.handlers[event_type] = handler
 
 
-class FakeUserService:
+class FakeAdminIdentityService:
     def __init__(self) -> None:
         self.entity = None
 
     async def ensure_admin_user(self, entity):
         self.entity = entity
-        return make_user_dto(
+        now = datetime.now(UTC)
+        return AdminIdentityDTO(
             id=1,
             username=entity.username,
+            full_name=entity.full_name,
             email=entity.email,
-            role=USER_ROLE_ADMIN,
+            password="hashed",  # noqa: S106
+            created_at=now,
+            updated_at=now,
         )
 
 
 @pytest.mark.asyncio
 async def test_install_bootstrap_admin_seed_registers_startup_handler(monkeypatch):
-    service = FakeUserService()
+    service = FakeAdminIdentityService()
     app = FakeFastAPI()
     container = SimpleNamespace(
-        user_container=SimpleNamespace(user_service=lambda: service)
+        admin_identity_container=SimpleNamespace(admin_identity_service=lambda: service)
     )
     monkeypatch.setattr(
         admin_bootstrap,

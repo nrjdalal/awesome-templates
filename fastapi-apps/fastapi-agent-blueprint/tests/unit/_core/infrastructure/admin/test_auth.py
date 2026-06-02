@@ -3,11 +3,17 @@ from types import SimpleNamespace
 import pytest
 
 from src._core.infrastructure.admin import auth as admin_auth
-from src.auth.domain.dtos.auth_dto import AdminSessionDTO
-from src.auth.domain.exceptions.auth_exceptions import InvalidCredentialsException
-from src.user.domain.dtos.user_dto import USER_ROLE_ADMIN, USER_ROLE_USER
+from src.admin_identity.domain.dtos.admin_identity_dto import (
+    ADMIN_SESSION_ROLE,
+    AdminSessionDTO,
+)
+from src.admin_identity.domain.exceptions.admin_identity_exceptions import (
+    AdminInvalidCredentialsException,
+)
 
 _TEST_PAGE_KEY = "test_page"
+USER_ROLE_ADMIN = ADMIN_SESSION_ROLE
+USER_ROLE_USER = "user"
 
 
 class FakeUseCase:
@@ -76,7 +82,7 @@ async def test_authenticate_delegates_to_auth_use_case(admin_storage):
 async def test_authenticate_treats_invalid_input_as_invalid_credentials(admin_storage):
     provider = admin_auth.AdminAuthProvider(lambda: FakeUseCase())
 
-    with pytest.raises(InvalidCredentialsException):
+    with pytest.raises(AdminInvalidCredentialsException):
         await provider.authenticate("", "")
 
 
@@ -174,7 +180,7 @@ async def test_require_auth_redirects_when_session_refresh_is_denied(admin_stora
             "role": USER_ROLE_ADMIN,
         }
     )
-    use_case = FakeUseCase(exc=InvalidCredentialsException())
+    use_case = FakeUseCase(exc=AdminInvalidCredentialsException())
     admin_auth.configure_admin_auth_provider(
         admin_auth.AdminAuthProvider(lambda: use_case)
     )

@@ -32,20 +32,6 @@ class MockUserRepository:
     async def select_data_by_id(self, data_id: int) -> UserDTO:
         return self._users[data_id]
 
-    async def has_real_admin(self) -> bool:
-        return False
-
-    async def delete_data_by_username(self, username: str) -> bool:
-        return False
-
-    async def count_accounts_permission_holders(
-        self, exclude_user_id: int | None = None
-    ) -> int:
-        return 0
-
-    async def select_all_admins(self) -> list[UserDTO]:
-        return []
-
     async def insert_data(self, entity) -> UserDTO:  # type: ignore[override]
         raise NotImplementedError
 

@@ -116,6 +116,26 @@ The access token expires (see `expiresIn`, in seconds). Use
 without re-entering credentials. Refresh tokens are stored server-side and
 can be revoked individually via `logout`.
 
+#### Admin auth — a SEPARATE token realm (ADR 049)
+
+Admin/operator identity is a distinct realm from customer (`auth`) identity.
+Admin tokens are signed with a **different secret and audience**, so a customer
+`/v1/auth/*` token is rejected on admin-gated routes and vice versa.
+
+| Method | Path (spec) | Purpose |
+|--------|-------------|---------|
+| POST | `/v1/admin/login`   | Exchange admin username + password for **admin-realm** tokens |
+| POST | `/v1/admin/refresh` | Rotate the admin refresh token |
+| POST | `/v1/admin/logout`  | Revoke an admin refresh token |
+
+The response shape mirrors customer auth but the user object is keyed `admin`
+(`{ "accessToken", "refreshToken", "tokenType", "expiresIn", "admin": {...} }`).
+Admin-only API routes (e.g. `/v1/user`) require an **admin-realm** access token
+— present it the same way (`Authorization: Bearer <admin_access_token>`).
+A customer access token on those routes returns `401 INVALID_TOKEN`. Bootstrap
+and temporary-password admins must finish setup / change password in the NiceGUI
+dashboard before the token API will mint for them.
+
 ### 2.5 Error envelope
 
 Every error response — whether validation, business rule, or unhandled

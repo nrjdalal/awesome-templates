@@ -102,12 +102,19 @@ class TestMinimalInstall:
         """
         from src._apps.server.app import app
 
-        admin_paths = [
+        # The NiceGUI dashboard mounts under the bare ``/admin`` prefix. The
+        # admin_identity HTTP auth API (``/v1/admin/*``, ADR 049) is a plain
+        # server route present regardless of the nicegui extra, so it is
+        # excluded here — this assertion is only about the dashboard mount.
+        dashboard_paths = [
             str(route.path)  # type: ignore[attr-defined]
             for route in app.routes
-            if hasattr(route, "path") and "/admin" in str(route.path)  # type: ignore[attr-defined]
+            if hasattr(route, "path")  # type: ignore[attr-defined]
+            and str(route.path).startswith("/admin")  # type: ignore[attr-defined]
         ]
-        assert not admin_paths, f"Expected no /admin routes, found: {admin_paths}"
+        assert not dashboard_paths, (
+            f"Expected no NiceGUI /admin dashboard routes, found: {dashboard_paths}"
+        )
 
     def test_aws_infra_modules_import_without_aws_extra(self, clean_optional_env: None):
         """The 4 AWS-backed infra modules import cleanly without boto3/aioboto3.

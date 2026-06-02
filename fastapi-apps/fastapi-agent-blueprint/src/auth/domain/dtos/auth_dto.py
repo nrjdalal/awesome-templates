@@ -2,8 +2,6 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field
 
-from src.user.domain.dtos.user_dto import UserRole
-
 
 class AuthTokenConfig(BaseModel):
     secret_key: str
@@ -32,11 +30,3 @@ class RefreshTokenCreateDTO(BaseModel):
     jti: str
     expires_at: datetime
     revoked_at: datetime | None = None
-
-
-class AdminSessionDTO(BaseModel):
-    user_id: int
-    username: str
-    role: UserRole
-    password_temporary: bool = False
-    permissions: list[str] = Field(default_factory=list)

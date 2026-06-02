@@ -156,6 +156,33 @@ class Settings(BaseSettings):
     )
 
     # ----------------------------------------------------------------
+    # Admin Authentication (JWT) — separate token realm (ADR 049)
+    #
+    # The admin realm uses a DISTINCT signing secret / issuer / audience
+    # from the customer realm so that a leaked customer signing key cannot
+    # forge admin tokens and a customer token cannot be replayed against
+    # admin routes. The HS256 algorithm and leeway are shared mechanism
+    # params (reused from the customer JWT block).
+    # ----------------------------------------------------------------
+    admin_jwt_secret_key: str = Field(
+        default_factory=lambda: secrets.token_urlsafe(32),
+        validation_alias="ADMIN_JWT_SECRET_KEY",
+    )
+    admin_jwt_access_token_minutes: int = Field(
+        default=15, validation_alias="ADMIN_JWT_ACCESS_TOKEN_MINUTES", ge=1
+    )
+    admin_jwt_refresh_token_days: int = Field(
+        default=7, validation_alias="ADMIN_JWT_REFRESH_TOKEN_DAYS", ge=1
+    )
+    admin_jwt_issuer: str = Field(
+        default="fastapi-agent-blueprint-admin", validation_alias="ADMIN_JWT_ISSUER"
+    )
+    admin_jwt_audience: str = Field(
+        default="fastapi-agent-blueprint-admin",
+        validation_alias="ADMIN_JWT_AUDIENCE",
+    )
+
+    # ----------------------------------------------------------------
     # Database
     #
     # Defaults target the zero-config SQLite path used by `make quickstart`.
@@ -445,6 +472,12 @@ class Settings(BaseSettings):
                     f"in '{self.env}' environment (auto-generated value not allowed)"
                 )
 
+            if "admin_jwt_secret_key" not in self.model_fields_set:
+                errors.append(
+                    f"[admin_jwt_secret_key] ADMIN_JWT_SECRET_KEY must be explicitly "
+                    f"set in '{self.env}' environment (auto-generated value not allowed)"
+                )
+
             if (
                 self.admin_bootstrap_enabled
                 and self.admin_bootstrap_password == "admin"  # noqa: S105
@@ -479,6 +512,32 @@ class Settings(BaseSettings):
             errors.append("[jwt_secret_key] JWT_SECRET_KEY must be at least 32 bytes")
         if self.jwt_secret_key in _UNSAFE_JWT_SECRETS:
             errors.append("[jwt_secret_key] JWT_SECRET_KEY uses an unsafe placeholder")
+        if len(self.admin_jwt_secret_key.encode()) < 32:
+            errors.append(
+                "[admin_jwt_secret_key] ADMIN_JWT_SECRET_KEY must be at least 32 bytes"
+            )
+        if self.admin_jwt_secret_key in _UNSAFE_JWT_SECRETS:
+            errors.append(
+                "[admin_jwt_secret_key] ADMIN_JWT_SECRET_KEY uses an unsafe placeholder"
+            )
+        # Trust-boundary guards (ADR 049): the admin realm must not collapse
+        # into the customer realm, or a leaked customer key would forge admin
+        # tokens and customer tokens could be replayed on admin routes.
+        if self.admin_jwt_secret_key == self.jwt_secret_key:
+            errors.append(
+                "[admin_jwt_secret_key] ADMIN_JWT_SECRET_KEY must differ from "
+                "JWT_SECRET_KEY (separate admin token realm)"
+            )
+        if self.admin_jwt_audience == self.jwt_audience:
+            errors.append(
+                "[admin_jwt_audience] ADMIN_JWT_AUDIENCE must differ from "
+                "JWT_AUDIENCE (separate admin token realm)"
+            )
+        if self.admin_jwt_issuer == self.jwt_issuer:
+            errors.append(
+                "[admin_jwt_issuer] ADMIN_JWT_ISSUER must differ from "
+                "JWT_ISSUER (separate admin token realm)"
+            )
         if self.admin_bootstrap_enabled and not self.admin_bootstrap_password:
             errors.append(
                 "[admin_bootstrap_password] ADMIN_BOOTSTRAP_PASSWORD must be set "

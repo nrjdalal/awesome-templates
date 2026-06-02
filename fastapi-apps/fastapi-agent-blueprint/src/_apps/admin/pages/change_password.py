@@ -13,7 +13,9 @@ from src._core.infrastructure.admin.error_handler import (
     admin_error_boundary,
 )
 from src._core.infrastructure.admin.layout import admin_layout, button_loading
-from src.auth.domain.exceptions.auth_exceptions import InvalidCredentialsException
+from src.admin_identity.domain.exceptions.admin_identity_exceptions import (
+    AdminInvalidCredentialsException,
+)
 
 # page_configs is injected by bootstrap_admin() after discovery
 page_configs: list[BaseAdminPage] = []
@@ -61,11 +63,11 @@ async def change_password_page():
             async with button_loading(change_btn):
                 try:
                     await get_admin_account_use_case().change_password(
-                        user_id=session.user_id,
+                        admin_id=session.user_id,
                         current_password=current_pw.value,
                         new_password=new_pw.value,
                     )
-                except InvalidCredentialsException as exc:
+                except AdminInvalidCredentialsException as exc:
                     await get_audit_logger().log(
                         action=AdminAction.PASSWORD_CHANGE,
                         domain="auth",

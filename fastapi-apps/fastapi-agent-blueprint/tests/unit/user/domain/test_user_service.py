@@ -7,12 +7,7 @@ from pydantic import BaseModel
 from src._core.application.dtos.base_response import PaginationInfo
 from src._core.common.security import verify_password
 from src._core.domain.validation import ValidationFailed
-from src.user.domain.dtos.user_dto import (
-    USER_ROLE_ADMIN,
-    USER_ROLE_USER,
-    BootstrapAdminUserDTO,
-    UserDTO,
-)
+from src.user.domain.dtos.user_dto import UserDTO
 from src.user.domain.exceptions.user_exceptions import UserAlreadyExistsException
 from src.user.domain.services.user_service import UserService
 from src.user.interface.server.schemas.user_schema import UpdateUserRequest
@@ -108,38 +103,6 @@ class MockUserRepository:
     async def count_datas(self) -> int:
         return len(self._store)
 
-    async def has_real_admin(self) -> bool:
-        return any(
-            dto.role == USER_ROLE_ADMIN and not dto.is_bootstrap_admin
-            for dto in self._store.values()
-        )
-
-    async def delete_data_by_username(self, username: str) -> bool:
-        for data_id, dto in list(self._store.items()):
-            if dto.username == username:
-                del self._store[data_id]
-                return True
-        return False
-
-    async def count_accounts_permission_holders(
-        self, exclude_user_id: int | None = None
-    ) -> int:
-        return sum(
-            1
-            for data_id, dto in self._store.items()
-            if "accounts" in (dto.permissions or [])
-            and (exclude_user_id is None or data_id != exclude_user_id)
-        )
-
-    async def select_all_admins(self) -> list[UserDTO]:
-        return [dto for dto in self._store.values() if dto.role == USER_ROLE_ADMIN]
-
-    async def has_real_admin_exists(self) -> bool:
-        return any(
-            dto.role == USER_ROLE_ADMIN and not dto.is_bootstrap_admin
-            for dto in self._store.values()
-        )
-
 
 @pytest.fixture
 def user_service():
@@ -154,102 +117,7 @@ async def test_create_user(user_service):
     assert result.id == 1
     assert result.username == request.username
     assert result.email == request.email
-    assert result.role == "user"
     assert verify_password(request.password, result.password)
-
-
-@pytest.mark.asyncio
-async def test_ensure_admin_user_creates_bootstrap_user(user_service):
-    result = await user_service.ensure_admin_user(
-        BootstrapAdminUserDTO(
-            username="admin",
-            full_name="Admin User",
-            email="admin@example.com",
-            password="secret",
-        )
-    )
-
-    assert result is not None
-    assert result.username == "admin"
-    assert result.role == USER_ROLE_ADMIN
-    assert result.is_bootstrap_admin is True
-    assert verify_password("secret", result.password)
-
-
-@pytest.mark.asyncio
-async def test_ensure_admin_user_no_op_when_real_admin_exists(user_service):
-    # Seed a real (non-bootstrap) admin directly into the store.
-    real_admin = make_user_dto(
-        id=99,
-        username="realadmin",
-        email="real@example.com",
-        role=USER_ROLE_ADMIN,
-        is_bootstrap_admin=False,
-    )
-    user_service._user_repository._store[99] = real_admin
-
-    result = await user_service.ensure_admin_user(
-        BootstrapAdminUserDTO(
-            username="admin",
-            full_name="Admin User",
-            email="admin@example.com",
-            password="secret",
-        )
-    )
-
-    assert result is None  # no-op
-
-
-@pytest.mark.asyncio
-async def test_ensure_admin_user_anti_takeover_returns_none(user_service):
-    # A non-bootstrap user occupies the bootstrap username.
-    intruder = make_user_dto(
-        id=1,
-        username="admin",
-        email="admin@example.com",
-        role=USER_ROLE_USER,
-        is_bootstrap_admin=False,
-    )
-    user_service._user_repository._store[1] = intruder
-
-    result = await user_service.ensure_admin_user(
-        BootstrapAdminUserDTO(
-            username="admin",
-            full_name="Admin User",
-            email="admin@example.com",
-            password="secret",
-        )
-    )
-
-    assert result is None  # blocked — no promotion
-
-
-@pytest.mark.asyncio
-async def test_ensure_admin_user_refreshes_password_on_recovery(user_service):
-    # Bootstrap row already exists — simulates a recovery scenario.
-    repo = user_service._user_repository
-    bootstrap = make_user_dto(
-        id=1,
-        username="admin",
-        email="admin@example.com",
-        role=USER_ROLE_ADMIN,
-        is_bootstrap_admin=True,
-        password="old-hash",
-    )
-    repo._store[1] = bootstrap
-
-    result = await user_service.ensure_admin_user(
-        BootstrapAdminUserDTO(
-            username="admin",
-            full_name="Admin User",
-            email="admin@example.com",
-            password="new-secret",
-        )
-    )
-
-    assert result is not None
-    assert result.id == 1
-    assert verify_password("new-secret", result.password)
 
 
 @pytest.mark.asyncio

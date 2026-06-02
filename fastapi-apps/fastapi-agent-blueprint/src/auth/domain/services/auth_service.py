@@ -1,13 +1,17 @@
 from __future__ import annotations
 
-import hashlib
 import hmac
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from typing import Any
-from uuid import uuid4
 
-import jwt
-
+from src._core.common.jwt_codec import (
+    ACCESS_TOKEN_TYPE,
+    REFRESH_TOKEN_TYPE,
+    InvalidTokenError,
+    JwtCodecConfig,
+    JwtTokenCodec,
+    TokenExpiredError,
+)
 from src._core.common.security import verify_password
 from src._core.exceptions.base_exception import BaseCustomException
 from src.auth.domain.dtos.auth_dto import (
@@ -27,9 +31,6 @@ from src.auth.domain.protocols.refresh_token_repository_protocol import (
 from src.user.domain.dtos.user_dto import UserDTO
 from src.user.domain.protocols.user_repository_protocol import UserRepositoryProtocol
 
-ACCESS_TOKEN_TYPE = "access"  # noqa: S105
-REFRESH_TOKEN_TYPE = "refresh"  # noqa: S105
-
 
 class AuthService:
     def __init__(
@@ -41,6 +42,7 @@ class AuthService:
         self._refresh_token_repository = refresh_token_repository
         self._user_repository = user_repository
         self._token_config = token_config
+        self._codec = JwtTokenCodec(JwtCodecConfig(**token_config.model_dump()))
 
     async def verify_credentials(self, username: str, password: str) -> UserDTO:
         user = await self._user_repository.select_data_by_username(username)
@@ -125,47 +127,15 @@ class AuthService:
         return token_row
 
     def _encode_token(self, *, user: UserDTO, token_type: str) -> str:
-        now = datetime.now(UTC)
-        if token_type == ACCESS_TOKEN_TYPE:
-            expires_at = now + timedelta(
-                minutes=self._token_config.access_token_minutes
-            )
-        else:
-            expires_at = now + timedelta(days=self._token_config.refresh_token_days)
-        payload = {
-            "sub": str(user.id),
-            "jti": uuid4().hex,
-            "type": token_type,
-            "iat": now,
-            "exp": expires_at,
-            "iss": self._token_config.issuer,
-            "aud": self._token_config.audience,
-        }
-        return jwt.encode(
-            payload,
-            self._token_config.secret_key,
-            algorithm=self._token_config.algorithm,
-        )
+        return self._codec.encode(subject=str(user.id), token_type=token_type)
 
     def _decode_token(self, token: str, *, expected_type: str) -> dict[str, Any]:
         try:
-            payload = jwt.decode(
-                token,
-                self._token_config.secret_key,
-                algorithms=[self._token_config.algorithm],
-                audience=self._token_config.audience,
-                issuer=self._token_config.issuer,
-                leeway=self._token_config.leeway_seconds,
-                options={"require": ["sub", "jti", "type", "iat", "exp", "iss", "aud"]},
-            )
-        except jwt.ExpiredSignatureError as exc:
+            return self._codec.decode(token, expected_type=expected_type)
+        except TokenExpiredError as exc:
             raise TokenExpiredException() from exc
-        except jwt.PyJWTError as exc:
+        except InvalidTokenError as exc:
             raise InvalidTokenException() from exc
-
-        if payload.get("type") != expected_type:
-            raise InvalidTokenException()
-        return payload
 
     def _user_id_from_payload(self, payload: dict[str, Any]) -> int:
         try:
@@ -174,11 +144,7 @@ class AuthService:
             raise InvalidTokenException() from exc
 
     def _hash_token(self, token: str) -> str:
-        return hmac.new(
-            self._token_config.secret_key.encode(),
-            token.encode(),
-            hashlib.sha256,
-        ).hexdigest()
+        return self._codec.hash_token(token)
 
     def _as_utc(self, value: datetime) -> datetime:
         if value.tzinfo is None:

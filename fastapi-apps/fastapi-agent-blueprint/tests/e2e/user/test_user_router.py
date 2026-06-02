@@ -1,16 +1,14 @@
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
-from sqlalchemy import update
 
 from src._apps.server.app import app
 from src._apps.server.testing import (
-    override_current_user,
-    reset_current_user_override,
+    override_current_admin,
+    reset_current_admin_override,
 )
-from src.user.domain.dtos.user_dto import USER_ROLE_ADMIN, USER_ROLE_USER
-from src.user.infrastructure.database.models.user_model import UserModel
-from tests.factories.user_factory import make_user_dto
+from src.admin_identity.domain.dtos.admin_identity_dto import CreateAdminAccountDTO
+from tests.factories.admin_identity_factory import make_admin_identity_dto
 
 
 def _client() -> AsyncClient:
@@ -19,33 +17,32 @@ def _client() -> AsyncClient:
 
 @pytest_asyncio.fixture
 async def admin_override():
-    """Force ``get_current_user`` to return a non-bootstrap admin for the test.
+    """Force the admin-realm gate (``get_current_admin``) to return an admin.
 
-    The existing CUD behaviour tests are now admin-gated; this override lets
-    them keep asserting business logic without minting a real admin token. It
-    is always reset on teardown so it cannot leak into other tests.
+    The CUD behaviour tests are admin-gated; this override lets them keep
+    asserting business logic without minting a real admin-realm token. Always
+    reset on teardown so it cannot leak into other tests.
     """
-    override_current_user(app, make_user_dto(role=USER_ROLE_ADMIN))
+    override_current_admin(app, make_admin_identity_dto())
     try:
         yield
     finally:
-        reset_current_user_override(app)
+        reset_current_admin_override(app)
 
 
-async def _promote_to_admin(test_db, user_id: int) -> None:
-    async with test_db.session() as session:
-        await session.execute(
-            update(UserModel)
-            .where(UserModel.id == user_id)
-            .values(role=USER_ROLE_ADMIN)
-        )
-        await session.commit()
-
-
-async def _role_of(test_db, user_id: int) -> str:
-    async with test_db.session() as session:
-        model = await session.get(UserModel, user_id)
-        return model.role
+async def _seed_real_admin(username: str, password: str) -> None:
+    """Seed a non-bootstrap, non-temp admin via the admin_identity service."""
+    service = app.state.container.admin_identity_container.admin_identity_service()
+    created = await service.create_admin_account(
+        CreateAdminAccountDTO(
+            username=username,
+            full_name="Real Admin",
+            email=f"{username}@example.com",
+            permissions=["user"],
+        ),
+        temp_password="TempPass12345",  # noqa: S106  # gitleaks:allow
+    )
+    await service.change_admin_password(created.id, password)
 
 
 async def _register(client: AsyncClient, suffix: str) -> dict:
@@ -246,8 +243,11 @@ async def test_update_user_allows_own_email_and_rejects_another_users_email(
 
 
 @pytest.mark.asyncio
-async def test_user_cud_is_forbidden_for_non_admin():
-    """A real (role=user) token reaches require_admin and is rejected with 403."""
+async def test_user_cud_rejects_customer_realm_token():
+    """Trust boundary (ADR 049): a CUSTOMER-realm token is rejected on the
+    admin-gated /v1/user routes. It fails the admin verifier at the
+    signature/audience layer (different secret + audience), so it surfaces as
+    401 INVALID_TOKEN — it never reaches a role check."""
     user_payload = {
         "username": "rbacnew",
         "fullName": "RBAC New",
@@ -265,38 +265,29 @@ async def test_user_cud_is_forbidden_for_non_admin():
             "/v1/user/1", headers=headers, json={"fullName": "x"}
         )
         delete_one = await client.delete("/v1/user/1", headers=headers)
-
-    for response in (create, batch, update_one, delete_one):
-        assert response.status_code == 403, response.text
-        assert response.json()["errorCode"] == "FORBIDDEN"
-
-
-@pytest.mark.asyncio
-async def test_user_reads_are_forbidden_for_non_admin():
-    """User reads expose other users' PII, so they are admin-only too (#199)."""
-    async with _client() as client:
-        token_data = await _register(client, "rbacreader")
-        headers = _auth_headers(token_data)
-
         listing = await client.get("/v1/users", headers=headers)
-        single = await client.get("/v1/user/1", headers=headers)
-        by_ids = await client.get("/v1/user/by-ids?ids=1", headers=headers)
 
-    for response in (listing, single, by_ids):
-        assert response.status_code == 403, response.text
-        assert response.json()["errorCode"] == "FORBIDDEN"
+    for response in (create, batch, update_one, delete_one, listing):
+        assert response.status_code == 401, response.text
+        assert response.json()["errorCode"] == "INVALID_TOKEN"
 
 
 @pytest.mark.asyncio
-async def test_admin_can_create_user_with_real_token(test_db):
-    """A real token whose DB role is admin passes the gate (full auth chain)."""
+async def test_admin_can_create_user_with_real_admin_token():
+    """A real admin-realm token (via /v1/admin/login) passes the gate end-to-end."""
+    await _seed_real_admin("rbacadmin", "RealAdminPass123")
+
     async with _client() as client:
-        token_data = await _register(client, "rbacadmin")
-        await _promote_to_admin(test_db, token_data["user"]["id"])
+        login = await client.post(
+            "/v1/admin/login",
+            json={"username": "rbacadmin", "password": "RealAdminPass123"},
+        )
+        assert login.status_code == 200, login.text
+        admin_token = login.json()["data"]["accessToken"]
 
         response = await client.post(
             "/v1/user",
-            headers=_auth_headers(token_data),
+            headers={"Authorization": f"Bearer {admin_token}"},
             json={
                 "username": "rbacadmincreated",
                 "fullName": "RBAC Admin Created",
@@ -312,9 +303,7 @@ async def test_admin_can_create_user_with_real_token(test_db):
 @pytest.mark.asyncio
 async def test_bootstrap_admin_is_forbidden():
     """Bootstrap admins are setup-only and must not pass the API admin gate."""
-    override_current_user(
-        app, make_user_dto(role=USER_ROLE_ADMIN, is_bootstrap_admin=True)
-    )
+    override_current_admin(app, make_admin_identity_dto(is_bootstrap_admin=True))
     try:
         async with _client() as client:
             create = await client.post(
@@ -328,7 +317,7 @@ async def test_bootstrap_admin_is_forbidden():
             )
             read = await client.get("/v1/users")
     finally:
-        reset_current_user_override(app)
+        reset_current_admin_override(app)
 
     for response in (create, read):
         assert response.status_code == 403, response.text
@@ -336,8 +325,9 @@ async def test_bootstrap_admin_is_forbidden():
 
 
 @pytest.mark.asyncio
-async def test_update_user_ignores_role_escalation(admin_override, test_db):
-    """role/permissions in the PUT body are silently ignored (no self-escalation)."""
+async def test_update_user_ignores_unknown_fields(admin_override):
+    """Unknown fields in the PUT body (e.g. legacy role/permissions) are dropped
+    by the API config (extra='ignore'); the user response carries no such keys."""
     async with _client() as client:
         created = await client.post(
             "/v1/user",
@@ -360,4 +350,7 @@ async def test_update_user_ignores_role_escalation(admin_override, test_db):
 
     assert created.status_code == 200, created.text
     assert updated.status_code == 200, updated.text
-    assert await _role_of(test_db, user_id) == USER_ROLE_USER
+    body = updated.json()["data"]
+    assert body["fullName"] == "No Escalation Updated"
+    assert "role" not in body
+    assert "permissions" not in body

@@ -1,8 +1,6 @@
 from dependency_injector import containers, providers
 
 from src._core.config import settings
-from src._core.infrastructure.admin.permission_registry import AdminPermissionRegistry
-from src.auth.application.use_cases.admin_account_use_case import AdminAccountUseCase
 from src.auth.application.use_cases.auth_use_case import AuthUseCase
 from src.auth.domain.dtos.auth_dto import AuthTokenConfig
 from src.auth.domain.services.auth_service import AuthService
@@ -54,13 +52,4 @@ class AuthContainer(containers.DeclarativeContainer):
         auth_service=auth_service,
         user_service=user_service,
         token_config=token_config,
-    )
-
-    permission_registry = providers.Singleton(AdminPermissionRegistry)
-
-    admin_account_use_case = providers.Factory(
-        AdminAccountUseCase,
-        auth_service=auth_service,
-        user_service=user_service,
-        permission_registry=permission_registry,
     )
