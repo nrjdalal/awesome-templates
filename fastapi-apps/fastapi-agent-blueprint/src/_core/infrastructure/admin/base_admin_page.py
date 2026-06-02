@@ -11,6 +11,11 @@ from src._core.domain.value_objects.query_filter import QueryFilter
 from src._core.infrastructure.admin.audit import AdminAction, AuditResult
 from src._core.infrastructure.admin.audit.logger import get_audit_logger
 from src._core.infrastructure.admin.error_handler import AdminErrorHandler
+from src._core.infrastructure.admin.theme import (
+    EMPTY_DISPLAY,
+    AdminClasses,
+    AdminMetrics,
+)
 
 if TYPE_CHECKING:
     from src._core.application.dtos.base_response import PaginationInfo
@@ -118,6 +123,9 @@ class BaseAdminPage:
 
         self.render_list_header()
         self.render_search_bar(search)
+        if not dtos:
+            self.render_empty_state(search)
+            return
         self.render_list_summary(pagination)
         self.render_grid(dtos)
         self.render_pagination(pagination, search)
@@ -234,6 +242,17 @@ class BaseAdminPage:
             "w-80 q-mb-sm"
         )
 
+    def render_empty_state(self, search: str = "") -> None:
+        """Hook: render a friendly placeholder when the list has no records."""
+        with ui.column().classes(f"w-full {AdminClasses.EMPTY_STATE}"):
+            ui.icon("inbox").classes("text-h2")
+            message = (
+                f'No results for "{search}"'
+                if search
+                else f"No {self.display_name.lower()} records yet"
+            )
+            ui.label(message).classes("text-subtitle1")
+
     def render_list_summary(self, pagination: PaginationInfo) -> None:
         """Hook: render total/page summary above grid."""
         with ui.row().classes("items-center q-mb-sm"):
@@ -248,18 +267,15 @@ class BaseAdminPage:
         masked_fields = self.get_masked_field_names()
         row_data = self.build_row_data(dtos, masked_fields)
 
-        grid = (
-            ui.aggrid(
-                {
-                    "columnDefs": column_defs,
-                    "rowData": row_data,
-                    "rowSelection": {"mode": "singleRow"},
-                    "defaultColDef": {"resizable": True, "filter": True},
-                }
-            )
-            .classes("w-full")
-            .style("height: 600px")
-        )
+        grid = ui.aggrid(
+            {
+                "columnDefs": column_defs,
+                "rowData": row_data,
+                "rowSelection": {"mode": "singleRow"},
+                "rowHeight": AdminMetrics.GRID_ROW_HEIGHT,
+                "defaultColDef": {"resizable": True, "filter": True},
+            }
+        ).classes(f"w-full {AdminClasses.GRID}")
 
         grid.on(
             "cellClicked",
@@ -277,7 +293,9 @@ class BaseAdminPage:
                 params += f"&search={search}"
             return f"/admin/{self.domain_name}?{params}"
 
-        with ui.row().classes("items-center q-mt-md q-gutter-sm"):
+        with ui.row().classes(
+            f"items-center q-mt-md q-gutter-sm {AdminClasses.PAGINATION}"
+        ):
             ui.button(
                 "Previous",
                 on_click=lambda: ui.navigate.to(
@@ -309,18 +327,21 @@ class BaseAdminPage:
         with ui.card().classes("w-full"):
             for col in self.columns:
                 value = data.get(col.field_name, "")
+                is_empty = value is None or value == ""
                 if col.field_name in masked_fields:
-                    display_value = "****" if value else ""
+                    display_value = "****" if value else EMPTY_DISPLAY
+                elif is_empty:
+                    display_value = EMPTY_DISPLAY
                 elif hasattr(value, "isoformat"):
                     display_value = value.isoformat()
                 else:
-                    display_value = str(value) if value is not None else ""
+                    display_value = str(value)
 
                 with ui.row().classes("items-center q-py-xs"):
-                    ui.label(col.header_name).classes("text-weight-bold").style(
-                        "width: 160px"
-                    )
-                    ui.label(display_value)
+                    ui.label(col.header_name).classes(AdminClasses.FIELD_LABEL)
+                    value_label = ui.label(display_value)
+                    if is_empty:
+                        value_label.classes(AdminClasses.EMPTY_VALUE)
 
     # ── Data transformation helpers ──
 
@@ -334,7 +355,13 @@ class BaseAdminPage:
                 "sortable": col.sortable,
             }
             if col.width:
+                # Honor the explicit width exactly — no minWidth floor that would
+                # silently widen a deliberately narrow column (e.g. an 80px ID).
                 col_def["width"] = col.width
+            else:
+                # Width-less columns flex to fill, with a sane minimum.
+                col_def["flex"] = 1
+                col_def["minWidth"] = AdminMetrics.GRID_MIN_COL_WIDTH
             if col.masked:
                 col_def["valueFormatter"] = "value ? '****' : ''"
             column_defs.append(col_def)

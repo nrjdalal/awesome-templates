@@ -1,6 +1,6 @@
 import secrets
 import warnings
-from typing import Self
+from typing import Literal, Self
 
 from pydantic import AliasChoices, Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -86,6 +86,30 @@ class Settings(BaseSettings):
     admin_storage_secret: str = Field(
         default_factory=lambda: secrets.token_urlsafe(32),
         validation_alias="ADMIN_STORAGE_SECRET",
+    )
+    # Initial dark-mode policy for the NiceGUI admin shell (#193). Decides the
+    # first-paint theme passed to ``ui.run_with(dark=...)``:
+    #   None  -> follow the browser/OS ``prefers-color-scheme`` (default)
+    #   False -> always start light · True -> always start dark
+    # The in-header toggle overrides this per session via ``app.storage.user``.
+    admin_dark_mode_default: bool | None = Field(
+        default=None,
+        validation_alias="ADMIN_DARK_MODE_DEFAULT",
+    )
+    # Admin shell style preset (#193). Bundles color + shape/elevation tokens:
+    # "default" (classic blue), "linear" (minimal flat), "shadcn" (clean rounded),
+    # "supabase" (dark header + green). Drives the --q-*/--admin-* CSS variables;
+    # add a preset in admin/theme.py to rebrand.
+    admin_theme_palette: Literal["default", "linear", "shadcn", "supabase"] = Field(
+        default="default",
+        validation_alias="ADMIN_THEME_PALETTE",
+    )
+    # Brand name shown in the admin header + login card (#193). Rebrand per fork.
+    admin_brand_name: str = Field(
+        default="Admin Console",
+        validation_alias="ADMIN_BRAND_NAME",
+        min_length=1,
+        max_length=40,
     )
     admin_bootstrap_enabled: bool = Field(
         default=False,

@@ -32,6 +32,7 @@ from src._core.infrastructure.admin.base_admin_page import BaseAdminPage
 from src._core.infrastructure.admin.error_handler import (
     handle_uncaught_admin_exception,
 )
+from src._core.infrastructure.admin.theme import install_admin_theme_css
 from src._core.infrastructure.discovery import discover_domains
 from src.admin_identity.domain.dtos.admin_identity_dto import BootstrapAdminDTO
 
@@ -89,7 +90,17 @@ def bootstrap_admin(fastapi_app: FastAPI) -> None:
     for cfg in page_configs:
         permission_registry.register(cfg.domain_name)
 
-    ui.run_with(fastapi_app, storage_secret=settings.admin_storage_secret)
+    # Inject the shared admin theme CSS into every page head (#193). Self-guarded
+    # against duplicate injection on repeated bootstrap calls (test reloads).
+    install_admin_theme_css()
+
+    # ``dark`` sets the first-paint theme for every admin page; None follows the
+    # browser's prefers-color-scheme. The in-header toggle overrides per session.
+    ui.run_with(
+        fastapi_app,
+        storage_secret=settings.admin_storage_secret,
+        dark=settings.admin_dark_mode_default,
+    )
 
 
 def _install_bootstrap_admin_seed(fastapi_app: FastAPI, admin_container) -> None:

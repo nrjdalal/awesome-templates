@@ -14,6 +14,8 @@ import re
 
 from nicegui import ui
 
+from src._core.infrastructure.admin.theme import AdminClasses
+
 # Correlation ids are short hex/uuid-ish tokens; reject anything else before
 # echoing the query value back into the page (no reflected-content surprises).
 _RID_PATTERN = re.compile(r"^[A-Za-z0-9-]{1,64}$")
@@ -22,13 +24,15 @@ _RID_PATTERN = re.compile(r"^[A-Za-z0-9-]{1,64}$")
 @ui.page("/admin/error")
 def error_page(rid: str = "") -> None:
     with ui.card().classes("absolute-center w-96 items-center"):
-        ui.icon("error_outline").classes("text-h2 text-red-700")
+        ui.icon("error_outline").classes("text-h2 text-negative")
         ui.label("Something went wrong").classes("text-h5 q-mb-sm")
         ui.label(
             "An unexpected error occurred. Please contact your administrator."
         ).classes("text-body2 text-center q-mb-md")
         if rid and _RID_PATTERN.match(rid):
-            ui.label(f"Reference ID: {rid}").classes("text-caption text-grey-7 q-mb-md")
+            ui.label(f"Reference ID: {rid}").classes(
+                f"text-caption {AdminClasses.MUTED} q-mb-md"
+            )
         ui.button(
             "Return to dashboard",
             on_click=lambda: ui.navigate.to("/admin/"),

@@ -29,6 +29,7 @@ from src._core.infrastructure.admin.auth import require_auth
 from src._core.infrastructure.admin.base_admin_page import BaseAdminPage
 from src._core.infrastructure.admin.error_handler import admin_error_boundary
 from src._core.infrastructure.admin.layout import admin_layout, button_loading
+from src._core.infrastructure.admin.theme import AdminClasses
 
 # Injected by bootstrap_admin() after discovery (mirrors accounts.py).
 page_configs: list[BaseAdminPage] = []
@@ -76,7 +77,9 @@ async def audit_log_page() -> None:
         apply_btn = ui.button("Apply", on_click=lambda: _apply()).props("color=primary")
 
     grid_container = ui.column().classes("w-full")
-    pagination_container = ui.row().classes("q-gutter-sm items-center q-mt-sm")
+    pagination_container = ui.row().classes(
+        f"q-gutter-sm items-center q-mt-sm {AdminClasses.PAGINATION}"
+    )
 
     def _build_filter() -> AuditLogFilter:
         actions = tuple(AdminAction(a) for a in (action_select.value or []))
@@ -151,27 +154,23 @@ def _render_grid(
     show_detail_cb,
 ) -> None:
     row_data = [r.model_dump(mode="json") for r in rows]
-    grid = (
-        ui.aggrid(
-            {
-                "columnDefs": [
-                    {"headerName": "Time (UTC)", "field": "created_at", "width": 200},
-                    {"headerName": "User", "field": "admin_username", "width": 140},
-                    {"headerName": "Action", "field": "action", "width": 160},
-                    {"headerName": "Domain", "field": "domain", "width": 100},
-                    {"headerName": "Record", "field": "record_id", "width": 100},
-                    {"headerName": "Result", "field": "result", "width": 100},
-                    {"headerName": "Reason", "field": "failure_reason", "width": 180},
-                    {"headerName": "IP", "field": "ip_address", "width": 130},
-                ],
-                "rowData": row_data,
-                "defaultColDef": {"resizable": True, "sortable": True},
-                "rowSelection": "single",
-            }
-        )
-        .classes("w-full")
-        .style("height: 480px")
-    )
+    grid = ui.aggrid(
+        {
+            "columnDefs": [
+                {"headerName": "Time (UTC)", "field": "created_at", "width": 200},
+                {"headerName": "User", "field": "admin_username", "width": 140},
+                {"headerName": "Action", "field": "action", "width": 160},
+                {"headerName": "Domain", "field": "domain", "width": 100},
+                {"headerName": "Record", "field": "record_id", "width": 100},
+                {"headerName": "Result", "field": "result", "width": 100},
+                {"headerName": "Reason", "field": "failure_reason", "width": 180},
+                {"headerName": "IP", "field": "ip_address", "width": 130},
+            ],
+            "rowData": row_data,
+            "defaultColDef": {"resizable": True, "sortable": True},
+            "rowSelection": "single",
+        }
+    ).classes(f"w-full {AdminClasses.GRID}")
 
     async def _on_row_clicked(event) -> None:
         audit_id = event.args.get("data", {}).get("id")
@@ -202,7 +201,7 @@ def _open_detail_dialog(dto: AuditLogDTO) -> None:
         )
         created_iso = dto.created_at.isoformat() if dto.created_at else "—"
         ui.label(f"{dto.admin_username} · {created_iso}").classes(
-            "text-caption text-grey-7 q-mb-sm"
+            f"text-caption {AdminClasses.MUTED} q-mb-sm"
         )
         if dto.correlation_id:
             with ui.row().classes("items-center q-gutter-sm q-mb-sm"):

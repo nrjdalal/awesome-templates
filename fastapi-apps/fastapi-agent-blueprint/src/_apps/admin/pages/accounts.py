@@ -16,6 +16,7 @@ from src._core.infrastructure.admin.error_handler import (
     admin_error_boundary,
 )
 from src._core.infrastructure.admin.layout import admin_layout, button_loading
+from src._core.infrastructure.admin.theme import AdminClasses
 from src.admin_identity.domain.dtos.admin_identity_dto import (
     AdminIdentityDTO,
     CreateAdminAccountDTO,
@@ -139,14 +140,14 @@ def _render_admin_list(
                 with ui.column():
                     ui.label(admin.username).classes("text-weight-bold")
                     ui.label(admin.full_name).classes("text-caption")
-                    ui.label(admin.email).classes("text-caption text-grey-7")
+                    ui.label(admin.email).classes(f"text-caption {AdminClasses.MUTED}")
                     flags = []
                     if admin.is_bootstrap_admin:
                         flags.append("bootstrap")
                     if admin.password_temporary:
                         flags.append("temp-pw")
                     if flags:
-                        ui.label(", ".join(flags)).classes("text-caption text-orange")
+                        ui.label(", ".join(flags)).classes("text-caption text-warning")
                     perms_text = ", ".join(admin.permissions) or "(none)"
                     ui.label("Permissions: " + perms_text).classes("text-caption")
 

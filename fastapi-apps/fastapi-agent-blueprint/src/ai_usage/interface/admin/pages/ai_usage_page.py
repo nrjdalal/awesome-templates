@@ -9,6 +9,7 @@ from src._core.infrastructure.admin.error_handler import (
     admin_error_boundary,
 )
 from src._core.infrastructure.admin.layout import admin_layout
+from src._core.infrastructure.admin.theme import AdminClasses
 from src.ai_usage.interface.admin.configs.ai_usage_admin_config import (
     ai_usage_admin_page,
 )
@@ -67,7 +68,7 @@ async def ai_usage_summary_page() -> None:
             "rowData": rows,
             "defaultColDef": {"resizable": True, "sortable": True},
         }
-    ).classes("w-full").style("height: 420px")
+    ).classes(f"w-full {AdminClasses.GRID_COMPACT}")
 
 
 @ui.page("/admin/ai_usage/{record_id}")

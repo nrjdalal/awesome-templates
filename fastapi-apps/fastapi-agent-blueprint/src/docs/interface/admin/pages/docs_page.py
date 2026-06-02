@@ -9,6 +9,7 @@ from src._core.infrastructure.admin.error_handler import (
     admin_error_boundary,
 )
 from src._core.infrastructure.admin.layout import admin_layout, button_loading
+from src._core.infrastructure.admin.theme import AdminClasses
 from src.docs.interface.admin.configs.docs_admin_config import docs_admin_page
 
 # page_configs is injected by bootstrap_admin() after discovery
@@ -48,7 +49,7 @@ async def docs_query_page() -> None:
         .classes("w-40")
     )
 
-    answer_card = ui.card().classes("w-full q-mt-md").style("display: none")
+    answer_card = ui.card().classes(f"w-full q-mt-md {AdminClasses.HIDDEN}")
 
     async def _run_query() -> None:
         question = (question_input.value or "").strip()
@@ -66,10 +67,10 @@ async def docs_query_page() -> None:
                 return
 
         answer_card.clear()
-        answer_card.style("display: block")
+        answer_card.classes(remove=AdminClasses.HIDDEN)
         with answer_card:
             ui.label("Answer").classes("text-subtitle1 text-weight-bold")
-            ui.label(answer.answer).style("white-space: pre-wrap")
+            ui.label(answer.answer).classes(AdminClasses.PRE)
             ui.separator().classes("q-my-md")
             ui.label("Citations (" + str(retrieved_count) + " retrieved)").classes(
                 "text-subtitle1 text-weight-bold"

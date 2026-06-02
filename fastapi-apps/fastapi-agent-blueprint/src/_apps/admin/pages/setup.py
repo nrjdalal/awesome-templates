@@ -16,6 +16,7 @@ from src._core.infrastructure.admin.error_handler import (
     admin_error_boundary,
 )
 from src._core.infrastructure.admin.layout import button_loading
+from src._core.infrastructure.admin.theme import AdminClasses
 from src.admin_identity.domain.exceptions.admin_identity_exceptions import (
     AdminSetupForbiddenException,
 )
@@ -38,14 +39,16 @@ async def setup_page():
     with ui.card().classes("absolute-center w-96"):
         ui.label("Initial Admin Setup").classes("text-h5 q-mb-md")
         ui.label("Create the first administrator account.").classes(
-            "text-subtitle2 q-mb-md text-grey-7"
+            f"text-subtitle2 q-mb-md {AdminClasses.MUTED}"
         )
 
         username_input = ui.input("Username").classes("full-width")
         full_name_input = ui.input("Full Name").classes("full-width")
         email_input = ui.input("Email").classes("full-width")
 
-        result_card = ui.card().classes("w-full q-mt-md bg-green-1")
+        result_card = ui.card().classes(
+            f"w-full q-mt-md {AdminClasses.SUCCESS_SURFACE}"
+        )
         result_card.set_visibility(False)
 
         async def create_first_admin():
@@ -119,7 +122,7 @@ async def setup_page():
                 ui.label(f"Username: {new_admin.username}")
                 ui.separator().classes("q-my-sm")
                 ui.label("Temporary password (copy now — shown once):").classes(
-                    "text-caption text-grey-7"
+                    f"text-caption {AdminClasses.MUTED}"
                 )
                 ui.label(temp_password).classes(
                     "text-mono text-weight-bold text-body1 q-mt-xs"
@@ -132,7 +135,7 @@ async def setup_page():
                 ).props("flat size=sm color=primary").classes("q-mt-sm")
                 ui.separator().classes("q-my-sm")
                 ui.label("You will be redirected to login in 8 seconds.").classes(
-                    "text-caption text-grey-6"
+                    f"text-caption {AdminClasses.MUTED}"
                 )
                 ui.timer(8.0, lambda: ui.navigate.to("/admin/login"), once=True)
 

@@ -33,7 +33,7 @@ async def dashboard_page():
                 )
             ):
                 with ui.row().classes("items-center q-pa-sm"):
-                    ui.icon(pc.icon).classes("text-h4 text-blue-800")
+                    ui.icon(pc.icon).classes("text-h4 text-primary")
                     ui.label(pc.display_name).classes("text-h6")
 
         if "accounts" in permissions:
@@ -43,7 +43,7 @@ async def dashboard_page():
                 .on("click", lambda: ui.navigate.to("/admin/accounts"))
             ):
                 with ui.row().classes("items-center q-pa-sm"):
-                    ui.icon("manage_accounts").classes("text-h4 text-blue-800")
+                    ui.icon("manage_accounts").classes("text-h4 text-primary")
                     ui.label("Accounts").classes("text-h6")
 
         if "audit_log" in permissions:
@@ -53,5 +53,5 @@ async def dashboard_page():
                 .on("click", lambda: ui.navigate.to("/admin/audit-log"))
             ):
                 with ui.row().classes("items-center q-pa-sm"):
-                    ui.icon("fact_check").classes("text-h4 text-blue-800")
+                    ui.icon("fact_check").classes("text-h4 text-primary")
                     ui.label("Audit Log").classes("text-h6")
