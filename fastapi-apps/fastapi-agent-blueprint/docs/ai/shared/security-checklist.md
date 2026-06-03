@@ -65,14 +65,18 @@ Check router files and configuration files:
   - Grep: No `ui.notify(str(exc))` / `ui.notify(f"...{exc}...")` in `interface/admin/pages/` or
     `src/_apps/admin/pages/`; errors route through `AdminErrorHandler` (IC-195-1). The AST test
     `test_route_coverage.py::test_admin_pages_do_not_leak_raw_exception_to_ui` enforces this.
-- [ ] [Always][HIGH] Admin authentication delegates credential checks to the auth domain
-  - Grep: Verify `AdminAuthProvider` calls `AuthUseCase.admin_login()` and password verification stays in `AuthService.verify_credentials()`
+- [ ] [Always][HIGH] Admin authentication delegates credential checks to the `admin_identity` realm (#218 / ADR 049)
+  - Grep: Verify `AdminAuthProvider` calls `AdminAuthUseCase.admin_login()` and password verification stays in the `admin_identity` `AdminAuthService.verify_credentials()` (NOT the customer `AuthService` — admin and customer realms are separate since #218)
 - [ ] [Always][HIGH] Sensitive fields masked in admin grid
   - Grep: Fields containing `password`, `secret`, `token`, `key` in ColumnConfig use `masked=True`
 - [ ] [Always][MEDIUM] Admin bootstrap credentials are seed-only
   - Grep: `ADMIN_BOOTSTRAP_*` settings may create or promote the first admin user, but `ADMIN_ID` / `ADMIN_PASSWORD` must not be used as the login authority
 - [ ] [Always][MEDIUM] Admin session storage secret is non-default
   - Grep: `admin_storage_secret` loaded from environment settings (not hardcoded string)
+- [ ] [When applicable][MEDIUM] Admin session cookie is hardened in strict environments
+  - Detection condition: NiceGUI admin active (project-dna.md §8 "NiceGUI (BaseAdminPage)") AND `ENV` in {stg, prod}
+  - Grep: `ui.run_with(` in `src/_apps/admin/bootstrap.py` -> verify the Starlette session cookie is not left at framework defaults (`https_only=False`, `same_site="lax"`). Strict envs should serve the cookie with `https_only=True` and consider `same_site="strict"`.
+  - Reason: admin auth state lives in the `app.storage.user` session cookie; a non-`Secure` cookie can leak over plaintext transport and a lax `SameSite` widens cross-origin/CSRF exposure of the admin session
 - [ ] [Always][LOW] Admin pages do not directly import domain Services
   - Grep: No `from src.*.domain.services` in `interface/admin/pages/` files
 

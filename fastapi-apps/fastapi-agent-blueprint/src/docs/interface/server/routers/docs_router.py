@@ -24,8 +24,9 @@ router = APIRouter()
 # #197 Phase 1+2 — protect write ops + the LLM-invoking query.
 # RAG indirect injection's supply surface is `POST /docs/documents`, so it
 # must require authentication even though the model is invoked elsewhere.
-# GET endpoints intentionally left public; if PO wants full-gating, add
-# `dependencies=[Depends(get_current_user)]` to them as a one-line follow-up.
+# GET endpoints are also authenticated: `DocumentResponse` returns the full
+# raw `content`, so leaving reads public would let any unauthenticated caller
+# enumerate and exfiltrate every stored document (Broken Access Control).
 
 
 # ==========================================================================================
@@ -62,6 +63,7 @@ async def create_document(
     "/docs/documents",
     summary="List docs documents",
     response_model=SuccessResponse[list[DocumentResponse]],
+    dependencies=[Depends(get_current_user)],
 )
 @inject
 async def list_documents(
@@ -83,6 +85,7 @@ async def list_documents(
     summary="Get docs document by ID",
     response_model=SuccessResponse[DocumentResponse],
     response_model_exclude={"pagination"},
+    dependencies=[Depends(get_current_user)],
 )
 @inject
 async def get_document(

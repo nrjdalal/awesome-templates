@@ -587,7 +587,7 @@ class {Name}Container(containers.DeclarativeContainer):
 | dependency-injector | Active | DeclarativeContainer, @inject + Provide |
 | Object Storage (aioboto3) | Active | S3/MinIO switchable via STORAGE_TYPE, ObjectStorage + ObjectStorageClient (via `aws` extra) |
 | AWS DynamoDB (aioboto3) | Active | BaseDynamoRepository + DynamoDBClient (optional infra, via `aws` extra) |
-| NiceGUI (BaseAdminPage) | Active | Admin dashboard (AG Grid, auto-discovery, Template Method rendering) -- gated via `admin` extra (#104) and DB-backed admin auth (#154) |
+| NiceGUI (BaseAdminPage) | Active | Admin dashboard (AG Grid, auto-discovery, Template Method rendering) -- gated via `admin` extra (#104); admin login + page-level permissions backed by the `admin_identity` realm (#218 / ADR 049, supersedes the #154/#194 single-table model). See §17. |
 | alembic (migrations) | Active | DB migrations |
 | Password hashing (bcrypt) | Active | hash_password(), verify_password() in src._core.common.security |
 | AWS S3 Vectors (aioboto3) | Active | BaseS3VectorStore + S3VectorClient (optional infra, via `aws` extra) |

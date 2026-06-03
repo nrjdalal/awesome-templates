@@ -738,6 +738,19 @@ class Settings(BaseSettings):
                 f"'{self.env}' until tenant-aware API authentication exists"
             )
 
+        # CORS trust boundary: a wildcard origin combined with
+        # ``allow_credentials=True`` (see src/_apps/server/bootstrap.py) lets
+        # Starlette reflect ANY Origin with Access-Control-Allow-Credentials,
+        # so a malicious site could read credentialed responses (notably the
+        # cookie-backed NiceGUI admin session). Force an explicit allowlist in
+        # strict environments; dev/local/quickstart keep the convenient "*".
+        if env in STRICT_ENVS and "*" in self.allow_origins:
+            errors.append(
+                "[allow_origins] ALLOW_ORIGINS must not contain '*' in "
+                f"'{self.env}' (wildcard origin with allow_credentials=True is "
+                "unsafe). Set an explicit origin allowlist."
+            )
+
         if errors:
             bullet_list = "\n  - ".join(errors)
             raise ValueError(

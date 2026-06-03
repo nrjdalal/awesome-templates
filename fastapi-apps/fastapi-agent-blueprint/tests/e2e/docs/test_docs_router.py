@@ -42,8 +42,10 @@ async def _create_document(client: AsyncClient, title: str, content: str) -> dic
 
 @pytest.mark.asyncio
 async def test_docs_protected_routes_return_401_without_bearer():
-    """POST /docs/documents, DELETE /docs/documents/{id}, POST /docs/query
-    all require a Bearer header. GET endpoints stay public (intentional).
+    """Every /docs route requires a Bearer header. The GET reads are gated too
+    because ``DocumentResponse`` returns the full raw ``content`` — public reads
+    would let any unauthenticated caller enumerate and exfiltrate stored
+    documents (Broken Access Control).
     """
     reset_current_user_override(app)
     try:
@@ -57,10 +59,12 @@ async def test_docs_protected_routes_return_401_without_bearer():
                 "/v1/docs/query",
                 json={"question": "x", "topK": 1},
             )
+            list_docs = await client.get("/v1/docs/documents?pageSize=10")
+            get_doc = await client.get("/v1/docs/documents/1")
     finally:
         override_current_user(app, make_user_dto())
 
-    for resp in (create, delete, query):
+    for resp in (create, delete, query, list_docs, get_doc):
         assert resp.status_code == 401, resp.text
         assert resp.json()["errorCode"] == "UNAUTHORIZED"
 

@@ -31,6 +31,9 @@ def _make_safe_env(env_name: str = "prod") -> dict[str, str]:
         "AWS_SQS_ACCESS_KEY": "test-key",
         "AWS_SQS_SECRET_KEY": "test-secret",
         "AWS_SQS_URL": "https://sqs.ap-northeast-2.amazonaws.com/123/test",
+        # Strict envs reject the wildcard origin default, so a safe value is
+        # part of the baseline "safe" environment.
+        "ALLOW_ORIGINS": '["https://app.example.com"]',
     }
 
 
@@ -95,7 +98,8 @@ class TestStrictEnvRejectsUnsafeDefaults:
                 _create_settings()
             error_message = str(exc_info.value)
             # +1 vs pre-ADR-049: ADMIN_JWT_SECRET_KEY must be explicitly set in strict envs
-            assert "6 error(s)" in error_message
+            # +1 for the wildcard ALLOW_ORIGINS default rejected in strict envs
+            assert "7 error(s)" in error_message
 
     def test_admin_bootstrap_requires_password_when_enabled(self):
         env = {"ENV": "local", "ADMIN_BOOTSTRAP_ENABLED": "true", **_REQUIRED_VARS}
@@ -144,6 +148,25 @@ class TestStrictEnvRejectsUnsafeDefaults:
         with patch.dict(os.environ, safe_env, clear=True):
             with pytest.raises(ValidationError, match="AI_USAGE_PUBLIC_API_ENABLED"):
                 _create_settings()
+
+    @pytest.mark.parametrize("env_name", ["prod", "stg"])
+    @pytest.mark.parametrize("origins", ['["*"]', '["https://app.example.com", "*"]'])
+    def test_strict_env_rejects_wildcard_allow_origins(self, env_name, origins):
+        # Wildcard origin + allow_credentials=True (bootstrap) lets Starlette
+        # reflect any Origin with credentials — unsafe for the cookie-backed
+        # admin session. Strict envs must use an explicit allowlist.
+        safe_env = _make_safe_env(env_name)
+        safe_env["ALLOW_ORIGINS"] = origins
+        with patch.dict(os.environ, safe_env, clear=True):
+            with pytest.raises(ValidationError, match="allow_origins"):
+                _create_settings()
+
+    @pytest.mark.parametrize("env_name", ["local", "dev", "quickstart"])
+    def test_non_strict_env_allows_wildcard_allow_origins(self, env_name):
+        env = {"ENV": env_name, **_REQUIRED_VARS, "ALLOW_ORIGINS": '["*"]'}
+        with patch.dict(os.environ, env, clear=True):
+            s = _create_settings()
+            assert s.allow_origins == ["*"]
 
 
 class TestUnknownEnv:
