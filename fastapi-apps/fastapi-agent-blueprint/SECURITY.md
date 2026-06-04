@@ -10,9 +10,13 @@ Instead, please email the maintainers directly. We will respond within 48 hours 
 
 ## Supported Versions
 
-| Version | Supported |
-|---------|-----------|
-| 0.5.x   | Yes       |
+| Version  | Supported |
+|----------|-----------|
+| 0.7.x    | Yes       |
+| < 0.7.0  | No        |
+
+Pre-1.0: only the latest minor line receives security fixes. Upgrade to the
+newest `0.7.x` patch to pick them up.
 
 ## Disclosure Policy
 

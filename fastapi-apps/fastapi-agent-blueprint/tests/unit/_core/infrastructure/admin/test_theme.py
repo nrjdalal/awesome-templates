@@ -16,7 +16,7 @@ from src._core.infrastructure.admin.theme import (
     AdminMetrics,
     AdminVars,
     build_admin_css,
-    palette_accent,
+    palette_primary,
 )
 
 
@@ -40,17 +40,17 @@ def test_css_var_names_are_custom_properties():
     assert all(isinstance(v, str) and v.startswith("--") for v in values)
 
 
-def test_palette_accent_tracks_selected_preset():
+def test_palette_primary_tracks_selected_preset():
     """Chart fill resolves per-preset (so charts match ADMIN_THEME_PALETTE)."""
     # supabase is the most divergent preset (green, not indigo).
-    assert palette_accent("supabase") == "#3ecf8e"
-    assert palette_accent("default") == AdminColors.PRIMARY
+    assert palette_primary("supabase") == "#3ecf8e"
+    assert palette_primary("default") == AdminColors.PRIMARY
     # Every preset resolves to a hex color.
-    assert all(palette_accent(p).startswith("#") for p in PALETTES)
+    assert all(palette_primary(p).startswith("#") for p in PALETTES)
 
 
-def test_palette_accent_unknown_falls_back_to_default():
-    assert palette_accent("does-not-exist") == palette_accent(DEFAULT_PALETTE)
+def test_palette_primary_unknown_falls_back_to_default():
+    assert palette_primary("does-not-exist") == palette_primary(DEFAULT_PALETTE)
 
 
 def test_helper_class_names_are_admin_prefixed():

@@ -194,7 +194,7 @@ async def require_auth(*, page_key: str) -> AdminSessionDTO | None:
         return None
 
     if page_key not in session.permissions:
-        ui.navigate.to("/admin/dashboard")
+        ui.navigate.to("/admin/")
         return None
 
     return session
@@ -216,7 +216,7 @@ def get_admin_account_use_case() -> AdminAccountUseCase:
 async def require_auth_allowlisted() -> AdminSessionDTO | None:
     """Auth gate for pages that don't require a specific page permission.
 
-    Used by: /admin/dashboard, /admin/change-password.
+    Used by: /admin/ (dashboard), /admin/change-password.
     Redirects unauthenticated users to login.
     Does NOT check page-level permissions.
     """

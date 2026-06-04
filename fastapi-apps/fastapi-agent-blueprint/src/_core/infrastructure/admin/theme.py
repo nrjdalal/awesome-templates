@@ -4,7 +4,7 @@ Single source of truth for admin colors, **style tokens** (radius, shadow,
 border treatment), layout metrics, and the helper CSS classes + Quasar
 component overrides that every admin page inherits.
 
-Design (see plan #193 / Codex cross-review):
+Design (see plan #193):
 
 * The look is driven by CSS custom properties: ``--q-*`` (Quasar brand) and
   ``--admin-*`` (semantic + style) variables. The shell **chrome** (header +
@@ -406,12 +406,12 @@ body {
 """
 
 
-def palette_accent(palette: str = DEFAULT_PALETTE) -> str:
-    """Return the selected preset's primary/accent color.
+def palette_primary(palette: str = DEFAULT_PALETTE) -> str:
+    """Return the selected preset's primary brand color (``--q-primary``).
 
     Used by chart builders whose canvas lives outside the CSS-var cascade, so a
     palette-driven element (e.g. a bar fill) still tracks ``ADMIN_THEME_PALETTE``
-    instead of hardcoding the default-preset accent. Unknown names fall back to
+    instead of hardcoding the default-preset color. Unknown names fall back to
     :data:`DEFAULT_PALETTE`.
     """
     name = palette if palette in _PALETTES else DEFAULT_PALETTE

@@ -1,9 +1,9 @@
 """Dashboard read facade for the admin landing page.
 
 Isolates **all** data gathering for ``/admin/`` so the page file
-(``pages/dashboard.py``) stays a thin renderer (Codex cross-review: a core
-admin landing page must not embed cross-domain orchestration, dynamic service
-probing, or error isolation inline).
+(``pages/dashboard.py``) stays a thin renderer — a core admin landing page must
+not embed cross-domain orchestration, dynamic service probing, or error
+isolation inline.
 
 Design invariants:
 
@@ -79,9 +79,10 @@ async def _count_for(config: BaseAdminPage) -> DomainCount:
     count: int | None
     try:
         service = config._get_service()
-        # count_datas lives on BaseService but not on AdminCrudServiceProtocol;
-        # probe dynamically here so the shared protocol stays a minimal CRUD
-        # contract (Codex cross-review).
+        # count_datas lives on BaseService but not on AdminCrudServiceProtocol
+        # (that contract is scoped to what BaseAdminPage itself uses); probe it
+        # dynamically here so the shared CRUD protocol stays minimal and is not
+        # coupled to this dashboard-only need.
         count_datas = getattr(service, "count_datas", None)
         if count_datas is None:
             raise AttributeError("service does not implement count_datas")

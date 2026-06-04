@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from typing import TYPE_CHECKING
 
@@ -73,11 +73,14 @@ def admin_layout(
     # rather than hiding it, so navigation stays reachable while reclaiming
     # content width. On narrow viewports Quasar overlays the drawer and ``mini``
     # has no effect, so there we fall back to a plain show/hide toggle — without
-    # this, the menu button would do nothing on mobile (Codex cross-review).
-    # ``collapse_icon`` is the in-drawer chevron whose direction flips on toggle.
-    nav_state: dict[str, object] = {"mini": False, "collapse_icon": None}
+    # this, the menu button would do nothing on mobile.
+    nav_mini = False
+    # The in-drawer chevron, assigned once the collapse control renders below;
+    # its direction flips on each toggle.
+    collapse_icon: ui.icon | None = None
 
     async def _toggle_nav() -> None:
+        nonlocal nav_mini
         # run_javascript may raise TimeoutError (NiceGUI 3.9+) if the client is
         # slow/disconnected; fall back to the desktop mini toggle rather than
         # letting the event handler raise.
@@ -88,12 +91,12 @@ def admin_layout(
         if isinstance(width, (int, float)) and width < 1024:
             drawer.toggle()
             return
-        mini = not nav_state["mini"]
-        nav_state["mini"] = mini
-        drawer.props(add="mini") if mini else drawer.props(remove="mini")
-        icon = nav_state["collapse_icon"]
-        if isinstance(icon, ui.icon):
-            icon.props(f"name={'chevron_right' if mini else 'chevron_left'}")
+        nav_mini = not nav_mini
+        drawer.props(add="mini") if nav_mini else drawer.props(remove="mini")
+        if collapse_icon is not None:
+            collapse_icon.props(
+                f"name={'chevron_right' if nav_mini else 'chevron_left'}"
+            )
 
     with ui.header(elevated=True).classes(
         f"items-center justify-between {AdminClasses.HEADER}"
@@ -128,7 +131,7 @@ def admin_layout(
         # Collapse control at the TOP of the drawer (above the nav), set off by a
         # separator: prominent enough to notice, and the directional chevron +
         # divider keep it from reading as just another nav icon in the mini rail.
-        _render_collapse_control(on_click=_toggle_nav, icon_holder=nav_state)
+        collapse_icon = _render_collapse_control(on_click=_toggle_nav)
         ui.separator().classes("q-my-xs")
 
         _nav_item(
@@ -173,24 +176,23 @@ def _nav_section(title: str) -> None:
     ui.label(title).classes(f"{AdminClasses.NAV_SECTION} q-mt-md q-mb-xs q-ml-md")
 
 
-def _render_collapse_control(*, on_click, icon_holder: dict) -> None:
+def _render_collapse_control(*, on_click: Callable[[], Awaitable[None]]) -> ui.icon:
     """Render the 'Collapse' control (top of the drawer) that toggles the mini rail.
 
     Attached to the drawer (not the header) so the affordance sits on the panel
     it controls — far more discoverable than the detached header hamburger, and
     placed at the top (above a separator) so it is noticeable without being
     mistaken for a nav item. Built as a ``ui.item`` so Quasar hides the text
-    label in the mini rail, leaving just the chevron (whose direction flips on
-    toggle). The stored icon handle lets :func:`admin_layout`'s toggle flip it.
+    label in the mini rail, leaving just the chevron. Returns the chevron handle
+    so :func:`admin_layout`'s toggle can flip its direction.
     """
     item = ui.item(on_click=on_click).props('aria-label="Collapse sidebar"')
     with item:
         with ui.item_section().props("avatar"):
-            icon_holder["collapse_icon"] = ui.icon("chevron_left").classes(
-                AdminClasses.MUTED
-            )
+            icon = ui.icon("chevron_left").classes(AdminClasses.MUTED)
         with ui.item_section():
             ui.label("Collapse").classes(AdminClasses.MUTED)
+    return icon
 
 
 def _nav_item(*, label: str, icon: str, target: str, active: bool) -> None:
@@ -260,10 +262,6 @@ def _stored_dark_preference() -> bool | None:
 
 def _app_username() -> str | None:
     return app.storage.user.get("username")  # type: ignore[return-value]
-
-
-# Keep the old name as an alias so existing callers still work.
-app_username = _app_username
 
 
 async def _handle_logout() -> None:

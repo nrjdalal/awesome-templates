@@ -251,7 +251,9 @@ async def test_require_auth_redirects_to_dashboard_for_page_not_in_permissions(
 
     result = await admin_auth.require_auth(page_key=_TEST_PAGE_KEY)
     assert result is None
-    assert fake_navigate.target == "/admin/dashboard"
+    # Redirect lands on the dashboard landing, whose route is "/admin/"
+    # (there is no "/admin/dashboard" route).
+    assert fake_navigate.target == "/admin/"
 
 
 @pytest.mark.asyncio
