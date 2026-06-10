@@ -113,7 +113,7 @@ def admin_layout(
             ui.icon("smart_toy").classes("text-h5")
             ui.label(settings.admin_brand_name).classes("text-h6")
         with ui.row().classes("items-center q-gutter-xs"):
-            _render_dark_mode_toggle()
+            render_dark_mode_toggle()
             username = session.username if session else _app_username()
             if username:
                 with ui.button(username, icon="account_circle").props("flat"):
@@ -214,15 +214,17 @@ def _nav_item(*, label: str, icon: str, target: str, active: bool) -> None:
                 text.classes(AdminClasses.NAV_ACTIVE)
 
 
-def _render_dark_mode_toggle() -> None:
-    """Render the header light/dark toggle (#193).
+def render_dark_mode_toggle() -> None:
+    """Render the light/dark toggle (#193).
 
-    The ``ui.dark_mode`` handle is page-scoped, so it is created here on every
-    page that renders the shell. It is seeded from the operator's stored
-    preference, falling back to ``admin_dark_mode_default`` (which may be None =
-    follow the browser's prefers-color-scheme, matching ``ui.run_with(dark=)``).
-    Toggling flips Quasar's ``body--dark`` class live — no reload — and the new
-    value is persisted so it survives navigation.
+    Used by the shell header and by standalone pages (e.g. login) that want the
+    same toggle without the full layout. The ``ui.dark_mode`` handle is
+    page-scoped, so it is created here on every page that calls this. It is
+    seeded from the operator's stored preference, falling back to
+    ``admin_dark_mode_default`` (which may be None = follow the browser's
+    prefers-color-scheme, matching ``ui.run_with(dark=)``). Toggling flips
+    Quasar's ``body--dark`` class live — no reload — and the new value is
+    persisted so it survives navigation.
     """
     stored = _stored_dark_preference()
     dark = ui.dark_mode(value=stored)

@@ -16,11 +16,9 @@ from collections.abc import Sequence
 
 from nicegui import ui
 
-from src._core.config import settings
 from src._core.infrastructure.admin.theme import (
     AdminClasses,
     AdminColors,
-    palette_primary,
 )
 
 
@@ -29,10 +27,9 @@ def bar_chart(categories: Sequence[str], values: Sequence[float]) -> ui.echart:
 
     The container height comes from :data:`AdminClasses.CHART` (theme CSS), not
     an inline style, so it stays in the design-system token surface. The bar
-    fill tracks the active ``ADMIN_THEME_PALETTE`` primary color so the chart
-    matches the rest of the shell under any preset.
+    fill uses the brand primary so the chart matches the rest of the shell.
     """
-    bar_color = palette_primary(settings.admin_theme_palette)
+    bar_color = AdminColors.PRIMARY
     return ui.echart(
         {
             "textStyle": {"color": AdminColors.CHART_AXIS},
@@ -58,7 +55,7 @@ def bar_chart(categories: Sequence[str], values: Sequence[float]) -> ui.echart:
                     "barMaxWidth": 56,
                     "itemStyle": {
                         "color": bar_color,
-                        "borderRadius": [4, 4, 0, 0],
+                        "borderRadius": [8, 8, 0, 0],
                     },
                 }
             ],

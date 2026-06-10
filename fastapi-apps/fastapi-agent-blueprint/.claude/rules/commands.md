@@ -1,6 +1,6 @@
 # Suggested Commands
 
-> Last synced: 2026-06-02 via #193 (admin UI/UX + design system; added ADMIN_THEME_PALETTE / ADMIN_BRAND_NAME / ADMIN_DARK_MODE_DEFAULT env vars to the Admin Dashboard section; no new make targets).
+> Last synced: 2026-06-10 (admin theme collapsed to a single Toss-style theme — removed the `ADMIN_THEME_PALETTE` env var/setting from the Admin Dashboard section). Prior: 2026-06-02 via #193 (admin UI/UX + design system; added ADMIN_BRAND_NAME / ADMIN_DARK_MODE_DEFAULT env vars; no new make targets).
 > Purpose: Quick reference for Claude Code when executing shell commands.
 > Also referenced when running Skills.
 > Default Flow context: see [`AGENTS.md` § Default Coding Flow](../../AGENTS.md#default-coding-flow). The commands below are consulted by the `implement` and `verify` steps; this file is **not** a primary entry point in the Default Flow.
@@ -140,8 +140,8 @@ uv sync --extra admin   # install; → http://127.0.0.1:8001/admin
 # Seed admin: ADMIN_BOOTSTRAP_USERNAME/EMAIL/PASSWORD env vars (idempotent on boot, into admin_identity)
 # If not installed: server boots normally, emits admin_mount_skipped log
 
-# UI theming (#193): style preset + brand + initial dark mode
-ADMIN_THEME_PALETTE=shadcn uv run python run_server_local.py --env local  # default|linear|shadcn|supabase
-ADMIN_BRAND_NAME="Acme Admin" ...      # header/login brand text
-ADMIN_DARK_MODE_DEFAULT=true ...       # unset=follow OS; true/false to force
+# UI theming (#193): single Toss-style theme — rebrand by editing token dicts in
+# src/_core/infrastructure/admin/theme.py (no ADMIN_THEME_PALETTE setting).
+ADMIN_BRAND_NAME="Acme Admin" uv run python run_server_local.py --env local  # header/login brand text
+ADMIN_DARK_MODE_DEFAULT=true ...       # unset=follow OS; true/false to force initial light/dark
 ```

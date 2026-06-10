@@ -7,14 +7,13 @@ component overrides that every admin page inherits.
 Design (see plan #193):
 
 * The look is driven by CSS custom properties: ``--q-*`` (Quasar brand) and
-  ``--admin-*`` (semantic + style) variables. The shell **chrome** (header +
-  sidebar) is dark and constant; the **content** area is light and flips to
-  dark via Quasar's ``body--dark`` class — a single toggle, no reload, no
-  per-page ``ui.colors()`` call.
-* Multiple **style presets** (``default``, ``linear``, ``shadcn``,
-  ``supabase``) bundle a full token set, selected at boot via
-  ``ADMIN_THEME_PALETTE``. They share the dark-chrome + light-content structure
-  and differ mainly in accent color, radius and elevation.
+  ``--admin-*`` (semantic + style) variables, flipped between light and dark via
+  Quasar's ``body--dark`` class — a single toggle, no reload, no per-page
+  ``ui.colors()`` call.
+* There is **one theme** — a Toss Design System look (calm blue accent, TDS grey
+  scale, generous/pill radius, soft elevation, light-in-light-mode chrome). It is
+  defined directly as ``_ROOT_TOKENS`` (:root / light) + ``_DARK_TOKENS``
+  (``.body--dark`` overrides). To rebrand a fork, edit those token dicts.
 * The CSS is injected **once, app-wide** via ``ui.add_css(..., shared=True)`` so
   it reaches every page — including login / setup / error.
 
@@ -30,13 +29,14 @@ EMPTY_DISPLAY: Final = "—"
 
 
 class AdminColors:
-    """Default brand palette constants (referenced by the ``default`` preset)."""
+    """Brand/semantic palette constants (Toss Design System). Also used by chart
+    builders, whose canvas lives outside the ``--admin-*`` CSS-var cascade."""
 
-    PRIMARY: Final = "#5b5bd6"
+    PRIMARY: Final = "#3182f6"  # TDS blue
     SECONDARY: Final = "#64748b"
-    ACCENT: Final = "#6366f1"
-    POSITIVE: Final = "#16a34a"
-    NEGATIVE: Final = "#dc2626"
+    ACCENT: Final = "#3182f6"
+    POSITIVE: Final = "#15c47e"  # TDS green
+    NEGATIVE: Final = "#f04452"  # TDS red
     WARNING: Final = "#d97706"
     INFO: Final = "#0284c7"
     # Chart axis/grid neutrals — mid-tone so they read on both the light and
@@ -58,13 +58,16 @@ class AdminVars:
     Q_WARNING: Final = "--q-warning"
     Q_INFO: Final = "--q-info"
 
-    # Chrome (header + sidebar) — dark and constant across light/dark mode.
+    # Chrome (header + sidebar). Dark + constant for most presets; the ``toss``
+    # preset flips these light/dark (light sidebar in light mode) via its
+    # light/dark override blocks.
     HEADER_BG: Final = "--admin-header-bg"
     HEADER_TEXT: Final = "--admin-header-text"
     DRAWER_BG: Final = "--admin-drawer-bg"
     DRAWER_TEXT: Final = "--admin-drawer-text"
     NAV_ACTIVE: Final = "--admin-nav-active"
     NAV_ACTIVE_BG: Final = "--admin-nav-active-bg"
+    CHROME_BORDER: Final = "--admin-chrome-border"
 
     # Content surfaces — flip with dark mode.
     BG: Final = "--admin-bg"
@@ -77,6 +80,7 @@ class AdminVars:
 
     # Style tokens (shape/elevation).
     RADIUS: Final = "--admin-radius"
+    RADIUS_BUTTON: Final = "--admin-radius-button"
     SHADOW: Final = "--admin-shadow"
     CARD_BORDER: Final = "--admin-card-border"
 
@@ -86,6 +90,7 @@ class AdminVars:
     CHART_HEIGHT: Final = "--admin-chart-height"
     LABEL_COL_WIDTH: Final = "--admin-label-col-width"
     FONT: Final = "--admin-font"
+    LOGIN_GRADIENT: Final = "--admin-login-gradient"
 
 
 class AdminMetrics:
@@ -122,13 +127,12 @@ class AdminClasses:
     HIDDEN: Final = "admin-hidden"
 
 
-# ── Style presets (#193) ──
-#
-# "chrome": dark header/sidebar tokens + brand + shape — emitted in :root only
-#   (constant across light/dark mode; the sidebar stays dark either way).
-# "light"/"dark": content surfaces that flip with Quasar's body--dark.
-DEFAULT_PALETTE: Final = "default"
+# ── Single theme (Toss Design System) ──
+# Tokens are emitted directly: _ROOT_TOKENS (+ _LAYOUT_TOKENS) in :root / light,
+# _DARK_TOKENS as the .body--dark overrides. No preset selection — edit these
+# dicts to rebrand a fork.
 
+# Mode-constant :root tokens (layout metrics, typography, light login backdrop).
 _LAYOUT_TOKENS: Final = {
     AdminVars.GRID_HEIGHT: "calc(100vh - 240px)",
     AdminVars.GRID_HEIGHT_COMPACT: "calc(100vh - 360px)",
@@ -140,6 +144,8 @@ _LAYOUT_TOKENS: Final = {
         '"Wanted Sans Variable", -apple-system, BlinkMacSystemFont, '
         '"Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
     ),
+    # Soft pastel-blue login backdrop (light). The dark variant is in _DARK_TOKENS.
+    AdminVars.LOGIN_GRADIENT: "linear-gradient(160deg, #eaf2ff 0%, #cfe0fb 100%)",
 }
 
 # Wanted Sans webfont (open-sourced by Wanted, SIL OFL 1.1) — self-hosted from
@@ -156,120 +162,66 @@ _FONT_FACE_CSS: Final = """
 }
 """
 
-# Neutral charcoal dark surfaces (not blue-navy) so the content area is
-# cohesive with the neutral/charcoal chrome of the shadcn / supabase / linear
-# presets (the prior navy tones clashed). Deliberately lifted off pure black
-# (a near-OLED #09090b read as harsh) into a soft charcoal, with a three-step
-# elevation — page (darkest) < chrome (#18181b) < card — so cards separate
-# without relying on contrast alone.
-_CONTENT_DARK: Final = {
-    AdminVars.BG: "#131316",
-    AdminVars.SURFACE: "#1f1f24",
-    AdminVars.BORDER: "#323239",
-    AdminVars.TEXT_MUTED: "#a1a1aa",
-    AdminVars.SUCCESS_BG: "#16311f",
-    AdminVars.ROW_ALT: "#1a1a1f",
-    AdminVars.ROW_HOVER: "#27272e",
-}
-
-_CONTENT_LIGHT: Final = {
-    AdminVars.BG: "#f7f8fa",
+# Brand + shape + light chrome + light content — the :root token block.
+# (Merged with _LAYOUT_TOKENS in build_admin_css.) TDS grey scale: 50 #f9fafb ·
+# 100 #f2f4f6 · 200 #e5e8eb · 500 #8b95a1 · 700 #4e5968 · 800 #333d4b · 900 #191f28.
+_ROOT_TOKENS: Final = {
+    # Brand (Quasar --q-*).
+    AdminVars.Q_PRIMARY: AdminColors.PRIMARY,
+    AdminVars.Q_SECONDARY: AdminColors.SECONDARY,
+    AdminVars.Q_ACCENT: AdminColors.ACCENT,
+    AdminVars.Q_POSITIVE: AdminColors.POSITIVE,
+    AdminVars.Q_NEGATIVE: AdminColors.NEGATIVE,
+    AdminVars.Q_WARNING: AdminColors.WARNING,
+    AdminVars.Q_INFO: AdminColors.INFO,
+    # Shape / elevation.
+    AdminVars.RADIUS: "20px",  # very rounded cards/inputs/grid
+    AdminVars.RADIUS_BUTTON: "9999px",  # near-pill buttons (clamps to half-height)
+    AdminVars.SHADOW: (
+        "0 4px 14px rgba(49,130,246,0.06), 0 1px 3px rgba(15,23,42,0.06)"
+    ),
+    AdminVars.CARD_BORDER: "1px solid var(--admin-border)",
+    # Light chrome — Toss is white-dominant: white header/sidebar, dark text,
+    # blue active state, grey-200 hairline. Flips dark in _DARK_TOKENS.
+    AdminVars.HEADER_BG: "#ffffff",
+    AdminVars.HEADER_TEXT: "#333d4b",  # grey 800
+    AdminVars.DRAWER_BG: "#ffffff",
+    AdminVars.DRAWER_TEXT: "#4e5968",  # grey 700
+    AdminVars.NAV_ACTIVE: "#3182f6",
+    AdminVars.NAV_ACTIVE_BG: "rgba(49,130,246,0.10)",
+    AdminVars.CHROME_BORDER: "#e5e8eb",  # grey 200
+    # Light content (TDS grey scale).
+    AdminVars.BG: "#f2f4f6",  # grey 100 — grouped-page background
     AdminVars.SURFACE: "#ffffff",
-    AdminVars.BORDER: "#e5e7eb",
-    AdminVars.TEXT_MUTED: "#6b7280",
-    AdminVars.SUCCESS_BG: "#f0fdf4",
-    AdminVars.ROW_ALT: "#f8fafc",
-    AdminVars.ROW_HOVER: "#f1f5f9",
+    AdminVars.BORDER: "#e5e8eb",  # grey 200
+    AdminVars.TEXT_MUTED: "#8b95a1",  # grey 500 — secondary text
+    AdminVars.SUCCESS_BG: "#e8f8f0",  # tint of TDS green #15c47e
+    AdminVars.ROW_ALT: "#f9fafb",  # grey 50
+    AdminVars.ROW_HOVER: "#f2f4f6",  # grey 100
 }
 
-
-def _chrome(
-    *,
-    primary: str,
-    accent: str,
-    nav_active: str,
-    header_bg: str,
-    radius: str,
-    shadow: str,
-    card_border: str,
-    negative: str = AdminColors.NEGATIVE,
-) -> dict[str, str]:
-    """Build a preset's :root token block (dark chrome + brand + shape)."""
-    return {
-        AdminVars.Q_PRIMARY: primary,
-        AdminVars.Q_SECONDARY: AdminColors.SECONDARY,
-        AdminVars.Q_ACCENT: accent,
-        AdminVars.Q_POSITIVE: AdminColors.POSITIVE,
-        AdminVars.Q_NEGATIVE: negative,
-        AdminVars.Q_WARNING: AdminColors.WARNING,
-        AdminVars.Q_INFO: AdminColors.INFO,
-        AdminVars.HEADER_BG: header_bg,
-        AdminVars.HEADER_TEXT: "#e5e7eb",
-        AdminVars.DRAWER_BG: header_bg,
-        AdminVars.DRAWER_TEXT: "#cbd2e0",
-        AdminVars.NAV_ACTIVE: nav_active,
-        AdminVars.NAV_ACTIVE_BG: "rgba(255,255,255,0.10)",
-        AdminVars.RADIUS: radius,
-        AdminVars.SHADOW: shadow,
-        AdminVars.CARD_BORDER: card_border,
-    }
-
-
-_PALETTES: Final = {
-    # Indigo on navy chrome — the default modern look.
-    "default": {
-        "chrome": _chrome(
-            primary=AdminColors.PRIMARY,
-            accent=AdminColors.ACCENT,
-            nav_active="#a5b4fc",
-            header_bg="#1a1d2e",
-            radius="10px",
-            shadow="0 1px 3px rgba(0,0,0,0.08)",
-            card_border="1px solid var(--admin-border)",
-        ),
-    },
-    # Linear / Vercel — flat, border-based, indigo-violet.
-    "linear": {
-        "chrome": _chrome(
-            primary="#5e6ad2",
-            accent="#5e6ad2",
-            nav_active="#8b87ff",
-            header_bg="#0d0d0f",
-            radius="6px",
-            shadow="none",
-            card_border="1px solid var(--admin-border)",
-            negative="#eb5757",
-        ),
-    },
-    # shadcn / Notion — rounded, soft shadow, indigo accent.
-    "shadcn": {
-        "chrome": _chrome(
-            primary="#6366f1",
-            accent="#6366f1",
-            nav_active="#a5b4fc",
-            header_bg="#18181b",
-            radius="14px",
-            shadow="0 1px 3px 0 rgba(0,0,0,0.1), 0 1px 2px -1px rgba(0,0,0,0.1)",
-            card_border="1px solid var(--admin-border)",
-            negative="#ef4444",
-        ),
-    },
-    # Supabase / Stripe — green accent, charcoal chrome.
-    "supabase": {
-        "chrome": _chrome(
-            primary="#3ecf8e",
-            accent="#3ecf8e",
-            nav_active="#3ecf8e",
-            header_bg="#1c1c1c",
-            radius="8px",
-            shadow="0 1px 2px rgba(0,0,0,0.08)",
-            card_border="1px solid var(--admin-border)",
-            negative="#ef4444",
-        ),
-    },
+# .body--dark overrides. Shadows barely read on dark, so cards separate by an
+# elevation ladder (page #14161b < chrome #191f28 < card #262b35) + a black-based
+# shadow. Chrome is re-asserted here (else dark mode inherits the light chrome).
+_DARK_TOKENS: Final = {
+    AdminVars.BG: "#14161b",
+    AdminVars.SURFACE: "#262b35",
+    AdminVars.BORDER: "#3a4150",
+    AdminVars.SHADOW: "0 2px 8px rgba(0,0,0,0.45)",
+    AdminVars.TEXT_MUTED: "#8b95a1",  # grey 500
+    AdminVars.SUCCESS_BG: "#103a2a",
+    AdminVars.ROW_ALT: "#21252e",
+    AdminVars.ROW_HOVER: "#2f3540",
+    AdminVars.HEADER_BG: "#191f28",  # grey 900
+    AdminVars.HEADER_TEXT: "#e5e7eb",
+    AdminVars.DRAWER_BG: "#191f28",
+    AdminVars.DRAWER_TEXT: "#cbd2e0",
+    AdminVars.NAV_ACTIVE: "#6aa4f8",
+    AdminVars.NAV_ACTIVE_BG: "rgba(255,255,255,0.10)",
+    AdminVars.CHROME_BORDER: "rgba(255,255,255,0.06)",
+    # Dark login backdrop — soft deep blue→charcoal, mode-matched to the pastel.
+    AdminVars.LOGIN_GRADIENT: "linear-gradient(160deg, #222c40 0%, #161922 100%)",
 }
-
-PALETTES: Final = tuple(_PALETTES)
 
 
 _HELPER_CSS: Final = """
@@ -285,7 +237,7 @@ body {
   background-color: var(--admin-header-bg) !important;
   color: var(--admin-header-text) !important;
   box-shadow: none !important;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
+  border-bottom: 1px solid var(--admin-chrome-border);
 }
 .admin-header .q-btn,
 .admin-header .q-icon,
@@ -299,7 +251,7 @@ body {
 .admin-drawer {
   background-color: var(--admin-drawer-bg) !important;
   color: var(--admin-drawer-text) !important;
-  border-right: 1px solid rgba(255,255,255,0.06);
+  border-right: 1px solid var(--admin-chrome-border);
 }
 .admin-drawer .q-item,
 .admin-drawer .q-item__label,
@@ -358,6 +310,20 @@ body {
   --ag-row-hover-color: var(--admin-row-hover);
   --ag-border-radius: var(--admin-radius);
 }
+/* AG Grid v33 hides cells via `:where(.ag-delay-render) ... { visibility:hidden }`
+   until its first render completes, then drops `ag-delay-render`. In the NiceGUI
+   embed that class can get stuck (the grid initializes before its container is
+   laid out), leaving rows permanently invisible — data is in the DOM but the
+   grid looks empty. Force our admin grids' cells visible; the zero-specificity
+   `:where()` rule cannot win against this. */
+.admin-grid .ag-cell,
+.admin-grid .ag-row,
+.admin-grid .ag-header-cell,
+.admin-grid-compact .ag-cell,
+.admin-grid-compact .ag-row,
+.admin-grid-compact .ag-header-cell {
+  visibility: visible !important;
+}
 .admin-chart {
   width: 100%;
   height: var(--admin-chart-height);
@@ -373,7 +339,7 @@ body {
 }
 .admin-login-bg,
 .admin-login-bg .q-page-container {
-  background: linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%) !important;
+  background: var(--admin-login-gradient) !important;
 }
 .admin-login-card {
   width: 360px;
@@ -397,49 +363,76 @@ body {
   border: var(--admin-card-border) !important;
 }
 .q-btn {
-  border-radius: var(--admin-radius);
+  border-radius: var(--admin-radius-button);
 }
 .q-field--outlined .q-field__control,
 .q-field__control {
   border-radius: var(--admin-radius);
 }
+/* === Micro-interactions (palette-independent) ===
+   Toss-grade tactile feedback: clickable cards lift on hover, buttons squish on
+   press, nav/rows/inputs ease their state changes. Hover-lift is scoped to
+   `.cursor-pointer` cards (set by c.card(clickable_to=...)) so static content
+   cards never drift. Honors prefers-reduced-motion. */
+.q-card {
+  transition: box-shadow 160ms ease, transform 160ms ease, border-color 160ms ease;
+}
+.q-card.cursor-pointer:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(15,23,42,0.12);
+}
+.q-card.cursor-pointer:active {
+  transform: translateY(0);
+}
+.q-btn {
+  transition: transform 120ms ease, box-shadow 160ms ease, filter 160ms ease;
+}
+.q-btn:active {
+  transform: translateY(1px) scale(0.985);
+}
+.admin-drawer .q-item {
+  transition: background-color 140ms ease, color 140ms ease;
+}
+.admin-grid .ag-row,
+.admin-grid-compact .ag-row {
+  transition: background-color 120ms ease;
+}
+.q-field--outlined .q-field__control {
+  transition: border-color 140ms ease, box-shadow 140ms ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .q-card,
+  .q-card.cursor-pointer:hover,
+  .q-card.cursor-pointer:active,
+  .q-btn,
+  .q-btn:active,
+  .admin-drawer .q-item,
+  .admin-grid .ag-row,
+  .admin-grid-compact .ag-row,
+  .q-field--outlined .q-field__control {
+    transition: none !important;
+    transform: none !important;
+  }
+}
 """
-
-
-def palette_primary(palette: str = DEFAULT_PALETTE) -> str:
-    """Return the selected preset's primary brand color (``--q-primary``).
-
-    Used by chart builders whose canvas lives outside the CSS-var cascade, so a
-    palette-driven element (e.g. a bar fill) still tracks ``ADMIN_THEME_PALETTE``
-    instead of hardcoding the default-preset color. Unknown names fall back to
-    :data:`DEFAULT_PALETTE`.
-    """
-    name = palette if palette in _PALETTES else DEFAULT_PALETTE
-    return _PALETTES[name]["chrome"][AdminVars.Q_PRIMARY]
 
 
 def _emit_vars(mapping: dict[str, str]) -> str:
     return "\n".join(f"  {name}: {value};" for name, value in mapping.items())
 
 
-def build_admin_css(palette: str = DEFAULT_PALETTE) -> str:
+def build_admin_css() -> str:
     """Return the single CSS payload injected app-wide for the admin theme.
 
-    Pure string builder (no nicegui import). Emits ``:root`` (dark chrome +
-    brand + shape + light content) and ``.body--dark`` (content dark overrides)
-    blocks for the selected preset, then the palette-independent helper CSS.
-    Unknown palette names fall back to :data:`DEFAULT_PALETTE`.
+    Pure string builder (no nicegui import). Emits ``:root`` (brand + shape +
+    light chrome + light content + layout) and ``.body--dark`` (dark overrides),
+    then the helper CSS.
     """
-    name = palette if palette in _PALETTES else DEFAULT_PALETTE
-    root_vars = {
-        **_PALETTES[name]["chrome"],
-        **_CONTENT_LIGHT,
-        **_LAYOUT_TOKENS,
-    }
+    root_vars = {**_ROOT_TOKENS, **_LAYOUT_TOKENS}
     return (
-        _FONT_FACE_CSS + f"/* === Admin theme (#193) — palette: {name} === */\n"
+        _FONT_FACE_CSS + "/* === Admin theme (Toss Design System) === */\n"
         ":root {\n" + _emit_vars(root_vars) + "\n}\n"
-        ".body--dark {\n" + _emit_vars(_CONTENT_DARK) + "\n}\n" + _HELPER_CSS
+        ".body--dark {\n" + _emit_vars(_DARK_TOKENS) + "\n}\n" + _HELPER_CSS
     )
 
 
@@ -459,7 +452,5 @@ def install_admin_theme_css() -> None:
         return
     from nicegui import ui
 
-    from src._core.config import settings
-
-    ui.add_css(build_admin_css(settings.admin_theme_palette), shared=True)
+    ui.add_css(build_admin_css(), shared=True)
     _theme_css_installed = True

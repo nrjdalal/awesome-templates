@@ -7,7 +7,10 @@ from src._core.infrastructure.admin.auth import (
     AdminAuthProvider,
     get_admin_auth_provider,
 )
-from src._core.infrastructure.admin.layout import button_loading
+from src._core.infrastructure.admin.layout import (
+    button_loading,
+    render_dark_mode_toggle,
+)
 from src._core.infrastructure.admin.theme import AdminClasses
 from src.admin_identity.domain.exceptions.admin_identity_exceptions import (
     AdminCredentialDisabledException,
@@ -25,6 +28,12 @@ def login_page(request: Request):
 
     # Distinct dark background for the auth screen (page-scoped).
     ui.query("body").classes(AdminClasses.LOGIN_BG)
+
+    # Light/dark toggle (top-right) — login has no shell header, so render the
+    # shared toggle directly. It also establishes the page's dark-mode state, so
+    # the backdrop + card switch between the light/dark login variants.
+    with ui.row().classes("absolute-top-right q-pa-md"):
+        render_dark_mode_toggle()
 
     with ui.card().classes(
         f"absolute-center items-center q-pa-lg {AdminClasses.LOGIN_CARD}"

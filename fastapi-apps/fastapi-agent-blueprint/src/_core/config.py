@@ -1,6 +1,6 @@
 import secrets
 import warnings
-from typing import Literal, Self
+from typing import Self
 
 from pydantic import AliasChoices, Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -96,14 +96,8 @@ class Settings(BaseSettings):
         default=None,
         validation_alias="ADMIN_DARK_MODE_DEFAULT",
     )
-    # Admin shell style preset (#193). Bundles color + shape/elevation tokens:
-    # "default" (classic blue), "linear" (minimal flat), "shadcn" (clean rounded),
-    # "supabase" (dark header + green). Drives the --q-*/--admin-* CSS variables;
-    # add a preset in admin/theme.py to rebrand.
-    admin_theme_palette: Literal["default", "linear", "shadcn", "supabase"] = Field(
-        default="default",
-        validation_alias="ADMIN_THEME_PALETTE",
-    )
+    # (Admin shell uses a single Toss-style theme; edit token dicts in
+    # admin/theme.py to rebrand. No ADMIN_THEME_PALETTE setting.)
     # Brand name shown in the admin header + login card (#193). Rebrand per fork.
     admin_brand_name: str = Field(
         default="Admin Console",

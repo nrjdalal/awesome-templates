@@ -3,20 +3,19 @@
 These intentionally import nothing from nicegui — ``theme.py`` keeps its nicegui
 import lazy inside ``install_admin_theme_css`` — so they run under
 ``make check-core`` even when the ``admin`` extra is not installed.
+
+The admin shell uses a single Toss-style theme (no preset selection).
 """
 
 from __future__ import annotations
 
 from src._core.infrastructure.admin.theme import (
-    DEFAULT_PALETTE,
     EMPTY_DISPLAY,
-    PALETTES,
     AdminClasses,
     AdminColors,
     AdminMetrics,
     AdminVars,
     build_admin_css,
-    palette_primary,
 )
 
 
@@ -34,23 +33,15 @@ def test_brand_colors_are_hex():
     assert all(isinstance(v, str) and v.startswith("#") for v in values)
 
 
+def test_primary_is_tds_blue():
+    """Single-theme brand primary (also the chart bar fill) is the TDS blue."""
+    assert AdminColors.PRIMARY == "#3182f6"
+
+
 def test_css_var_names_are_custom_properties():
     values = _public_values(AdminVars)
     assert values
     assert all(isinstance(v, str) and v.startswith("--") for v in values)
-
-
-def test_palette_primary_tracks_selected_preset():
-    """Chart fill resolves per-preset (so charts match ADMIN_THEME_PALETTE)."""
-    # supabase is the most divergent preset (green, not indigo).
-    assert palette_primary("supabase") == "#3ecf8e"
-    assert palette_primary("default") == AdminColors.PRIMARY
-    # Every preset resolves to a hex color.
-    assert all(palette_primary(p).startswith("#") for p in PALETTES)
-
-
-def test_palette_primary_unknown_falls_back_to_default():
-    assert palette_primary("does-not-exist") == palette_primary(DEFAULT_PALETTE)
 
 
 def test_helper_class_names_are_admin_prefixed():
@@ -72,32 +63,36 @@ def test_css_defines_light_and_dark_blocks():
 
 
 def test_css_defines_every_token_in_both_themes():
-    """Chrome + brand live in :root (constant); content surfaces flip in dark."""
+    """Brand/shape live in :root; content + chrome surfaces flip into dark."""
     css = build_admin_css()
     root_block = css.split(".body--dark")[0]
     dark_block = css[css.index(".body--dark") :]
 
-    # Brand + dark-chrome tokens are :root-only (constant across light/dark).
-    for var in (
-        AdminVars.Q_PRIMARY,
-        AdminVars.Q_NEGATIVE,
-        AdminVars.HEADER_BG,
-        AdminVars.DRAWER_BG,
-        AdminVars.DRAWER_TEXT,
-        AdminVars.NAV_ACTIVE,
-    ):
+    # Brand is :root-only (constant across light/dark).
+    for var in (AdminVars.Q_PRIMARY, AdminVars.Q_NEGATIVE, AdminVars.RADIUS):
         assert var in root_block, f"{var} missing from :root"
 
-    # Content surfaces must be defined in BOTH light and dark so they flip.
+    # Content + chrome surfaces are defined in BOTH blocks so they flip.
     for var in (
         AdminVars.SURFACE,
         AdminVars.BORDER,
         AdminVars.TEXT_MUTED,
-        AdminVars.SUCCESS_BG,
         AdminVars.ROW_ALT,
+        AdminVars.HEADER_BG,
+        AdminVars.DRAWER_TEXT,
+        AdminVars.CHROME_BORDER,
     ):
         assert var in root_block, f"{var} missing from :root"
         assert var in dark_block, f"{var} missing from .body--dark"
+
+
+def test_chrome_flips_light_to_dark():
+    """Toss chrome is white in light mode and dark in dark mode (not constant)."""
+    css = build_admin_css()
+    root_block = css.split(".body--dark")[0]
+    dark_block = css[css.index(".body--dark") :]
+    assert f"{AdminVars.HEADER_BG}: #ffffff" in root_block  # light = white sidebar
+    assert f"{AdminVars.HEADER_BG}: #191f28" in dark_block  # dark = TDS grey 900
 
 
 def test_css_defines_helper_class_selectors():
@@ -127,38 +122,20 @@ def test_css_styles_alternating_grid_rows_via_theming_vars():
     assert "--ag-row-hover-color" in css
 
 
-def test_default_palette_is_known():
-    assert DEFAULT_PALETTE in PALETTES
-
-
-def test_each_palette_builds_valid_css_with_both_blocks():
-    for palette in PALETTES:
-        css = build_admin_css(palette)
-        assert ":root {" in css and ".body--dark {" in css
-        # Every semantic surface defined in both themes for every palette.
-        for var in (AdminVars.HEADER_BG, AdminVars.SURFACE, AdminVars.ROW_ALT):
-            assert css.count(var) >= 2, f"{var} not in both blocks for {palette}"
-
-
-def test_all_presets_present():
-    assert set(PALETTES) == {"default", "linear", "shadcn", "supabase"}
-
-
-def test_presets_are_visually_distinct():
-    """Every preset must render distinct CSS (so previewing them is meaningful)."""
-    rendered = {p: build_admin_css(p) for p in PALETTES}
-    assert len(set(rendered.values())) == len(PALETTES)
-
-
-def test_unknown_palette_falls_back_to_default():
-    assert build_admin_css("does-not-exist") == build_admin_css(DEFAULT_PALETTE)
+def test_css_forces_grid_cells_visible():
+    """AG Grid v33 can leave rows stuck `visibility:hidden` via `ag-delay-render`;
+    the theme forces admin grid cells visible (#234)."""
+    css = build_admin_css()
+    assert ".admin-grid .ag-cell" in css
+    assert "visibility: visible" in css
 
 
 def test_css_defines_style_tokens_and_component_overrides():
-    """Style presets drive shape/elevation tokens + Quasar component overrides."""
+    """The theme drives shape/elevation tokens + Quasar component overrides."""
     css = build_admin_css()
     for var in (
         AdminVars.RADIUS,
+        AdminVars.RADIUS_BUTTON,
         AdminVars.SHADOW,
         AdminVars.CARD_BORDER,
         AdminVars.BG,

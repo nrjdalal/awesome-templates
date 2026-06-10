@@ -1,4 +1,5 @@
 import argparse
+import os
 
 import uvicorn
 from dotenv import load_dotenv
@@ -10,11 +11,13 @@ def main():
     # ``log_config=None`` prevents uvicorn from installing its own
     # ``dictConfig`` at startup, which would clobber the structlog
     # ``ProcessorFormatter`` handlers configured in ``bootstrap_app`` (#9).
+    # ``PORT`` env override (default 8001) lets a second instance run alongside
+    # the primary dev server — e.g. to preview an alternate ADMIN_THEME_PALETTE.
     uvicorn.run(
         "src._apps.server.app:app",
         reload=True,
         host="127.0.0.1",
-        port=8001,
+        port=int(os.environ.get("PORT", "8001")),
         log_config=None,
     )
     # subprocess.run([
