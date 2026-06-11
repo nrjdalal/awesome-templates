@@ -1,3 +1,63 @@
+## v0.0.22
+
+[compare changes](https://github.com/nrjdalal/zerostarter/compare/v0.0.21...v0.0.22)
+
+### 🩹 Fixes
+
+- **web:** Wrap long OG image titles so they stay inside the frame ([#456](https://github.com/nrjdalal/zerostarter/pull/456))
+
+### ❤️ Contributors
+
+- Neeraj Dalal @nrjdalal
+
+## v0.0.21
+
+[compare changes](https://github.com/nrjdalal/zerostarter/compare/v0.0.20...v0.0.21)
+
+### 🩹 Fixes
+
+- **web:** Serve OG images from /og so social unfurlers can fetch them ([#454](https://github.com/nrjdalal/zerostarter/pull/454))
+
+### ❤️ Contributors
+
+- Neeraj Dalal @nrjdalal
+
+## v0.0.20
+
+[compare changes](https://github.com/nrjdalal/zerostarter/compare/v0.0.19...v0.0.20)
+
+### 🚀 Enhancements
+
+- **web:** Rewrite per-workspace MCP blog around a single chpwd hook ([#452](https://github.com/nrjdalal/zerostarter/pull/452))
+
+### ❤️ Contributors
+
+- Neeraj Dalal @nrjdalal
+
+## v0.0.19
+
+[compare changes](https://github.com/nrjdalal/zerostarter/compare/v0.0.18...v0.0.19)
+
+### 🚀 Enhancements
+
+- **web:** Add per-workspace MCP and git identity blog post ([#449](https://github.com/nrjdalal/zerostarter/pull/449))
+
+### ❤️ Contributors
+
+- Neeraj Dalal @nrjdalal
+
+## v0.0.18
+
+[compare changes](https://github.com/nrjdalal/zerostarter/compare/v0.0.17...v0.0.18)
+
+### 🩹 Fixes
+
+- **web:** Allow crawlers to fetch OG images under /api/og ([#447](https://github.com/nrjdalal/zerostarter/pull/447))
+
+### ❤️ Contributors
+
+- Neeraj Dalal @nrjdalal
+
 ## v0.0.17
 
 [compare changes](https://github.com/nrjdalal/zerostarter/compare/v0.0.16...v0.0.17)
