@@ -155,6 +155,7 @@ max-complexity = 20
 "**/workflows/*.py" = ["B006"]
 "tests/**/*.py" = ["S"]
 "*_test.py" = ["S"]
+"examples/**/tests/**/*.py" = ["S"]
 
 [tool.ruff.format]
 quote-style = "double"
