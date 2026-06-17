@@ -123,9 +123,13 @@ pytest tests/integration/ -v -k "dynamo"
 
 ## Broker
 ```bash
-BROKER_TYPE=inmemory python run_worker_local.py --env local   # default
+# A standalone worker requires a cross-process broker (RabbitMQ or SQS).
 BROKER_TYPE=rabbitmq RABBITMQ_URL=amqp://guest:guest@localhost:5672/ python run_worker_local.py --env local
 ```
+
+> `BROKER_TYPE=inmemory` (the dev/quickstart default) executes tasks **inline in the producer
+> process**; `InMemoryBroker.listen()` raises, so it cannot back a standalone
+> `run_worker_local.py`. Use RabbitMQ or SQS to run a separate worker process.
 
 ## Storage
 ```bash

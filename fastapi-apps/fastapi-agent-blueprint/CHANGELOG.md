@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-06-17
+
+This release simplifies admin theming down to a single Toss-style theme — a
+breaking change that removes the multi-preset machinery — lands two new
+contributor examples, and clears a batch of trust-signal fixes around the
+worker/broker docs and fork-PR CI.
+
+> Spans every change merged since v0.7.2 (2026-06-04).
+
+### Added
+
+- **`blog` example** (`examples/blog/`) — two domains wired through Protocol-based cross-domain DIP, the canonical pattern for one domain depending on another ([#237](https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/237))
+- **`webhook_receiver` example** (`examples/webhook_receiver/`) — a fast HTTP accept that enqueues a background Taskiq task to process the payload asynchronously, then a status-polling read ([#240](https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/240))
+
+### Changed
+
+- **BREAKING — single Toss-style admin theme.** The multi-preset theming system is removed: the `ADMIN_THEME_PALETTE` setting/env var, the `_PALETTES` registry, the `palette_primary` helper, and the `default`/`linear`/`shadcn`/`supabase` presets are gone. The admin look is now two token dicts (`_ROOT_TOKENS` / `_DARK_TOKENS`) in `src/_core/infrastructure/admin/theme.py` — rebrand by editing those dicts. Ships the Toss Design System grey palette + blue/green/red semantics, a light-mode chrome flip, 20px/pill rounding, a dark-mode elevation ladder, a per-mode login backdrop + dark-mode toggle, and global micro-interactions ([#235](https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/235))
+- `make worker` and `make dev` now pass `--env local` — both previously invoked their launchers without the required `--env` and exited immediately ([#243](https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/243))
+- `run_server_local.py` honors a `PORT` env override (default `8001`), so a second instance can run alongside the primary dev server ([#235](https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/235))
+- The `Governor Footer Lint` CI comment steps are now best-effort (`continue-on-error`), so a fork PR's read-only `GITHUB_TOKEN` can no longer turn an otherwise-passing check red ([#243](https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/243))
+
+### Fixed
+
+- **AG Grid empty admin list rendered blank** — a stuck `ag-delay-render` on the grid root left rows permanently `visibility:hidden` in the NiceGUI embed (data present but invisible); `_HELPER_CSS` now forces `.admin-grid` cells visible ([#234](https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/234))
+- **InMemory broker documented as a standalone-worker default** — `commands.md` and `canonical-demo.md` told readers to run a standalone worker on `BROKER_TYPE=inmemory`, which crash-loops (`InMemoryBroker.listen()` raises). The docs now explain InMemory runs tasks inline in the producer and point to the RabbitMQ/SQS recipe, and a new fast-fail guard (`src/_apps/worker/guards.py`) exits `run_worker_local.py` with an actionable message instead of crash-looping ([#241](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/241), [#243](https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/243))
+- `TaskiqManager.send_task` now logs `SendTaskError` via structlog before re-raising ([#243](https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/243))
+- Examples catalog refreshed (`todo` / `blog` marked landed) and the now-vestigial `examples/**/tests/**` ruff ignore removed ([#242](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/242))
+
+### Docs
+
+- Worker-environment args and InMemory broker limits clarified across the example READMEs and the external-broker recipe ([#96](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/96))
+
+### Upgrading
+
+No database migration. One breaking change to act on when upgrading a derived codebase:
+
+- **`ADMIN_THEME_PALETTE` is removed.** Drop the variable if you set it — the admin now ships a single Toss-style theme. To rebrand, edit the `_ROOT_TOKENS` / `_DARK_TOKENS` dicts in `src/_core/infrastructure/admin/theme.py`; `ADMIN_BRAND_NAME` and `ADMIN_DARK_MODE_DEFAULT` still apply.
+
 ## [0.7.2] - 2026-06-04
 
 An admin code-cleanup patch on top of 0.7.1.
@@ -277,7 +315,8 @@ Quality Gate review contract, `/plan-feature` Approach Options stage,
 - ADR documentation (001-013)
 - CONTRIBUTING guide and issue templates
 
-[Unreleased]: https://github.com/Mr-DooSun/fastapi-agent-blueprint/compare/v0.7.2...HEAD
+[Unreleased]: https://github.com/Mr-DooSun/fastapi-agent-blueprint/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/Mr-DooSun/fastapi-agent-blueprint/compare/v0.7.2...v0.8.0
 [0.7.2]: https://github.com/Mr-DooSun/fastapi-agent-blueprint/compare/v0.7.1...v0.7.2
 [0.7.1]: https://github.com/Mr-DooSun/fastapi-agent-blueprint/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/Mr-DooSun/fastapi-agent-blueprint/compare/v0.6.0...v0.7.0

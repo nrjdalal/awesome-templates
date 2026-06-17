@@ -1,6 +1,9 @@
 from typing import Any
 
+import structlog
 from taskiq import AsyncBroker, SendTaskError
+
+_logger = structlog.stdlib.get_logger(__name__)
 
 
 class TaskiqManager:
@@ -16,6 +19,6 @@ class TaskiqManager:
         try:
             task = await self._broker.kick(task_name, *(args or []), **(kwargs or {}))
             return task
-        except SendTaskError as e:
-            # TODO: add logging
-            raise e
+        except SendTaskError:
+            _logger.exception("taskiq_send_failed", task_name=task_name)
+            raise

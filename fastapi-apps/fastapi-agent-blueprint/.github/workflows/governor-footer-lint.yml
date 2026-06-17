@@ -61,8 +61,13 @@ jobs:
             echo '```'
           } > lint_comment.md
 
+      # Fork PRs receive a read-only GITHUB_TOKEN, so posting/deleting a PR
+      # comment fails with "Resource not accessible by integration". Keep the
+      # comment steps best-effort (continue-on-error) so they never turn an
+      # otherwise-passing check red — the real gate is the "Fail job" step below.
       - name: Update sticky comment on failure
         if: steps.lint.outputs.exit_code != '0'
+        continue-on-error: true
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           header: governor-footer-lint
@@ -70,6 +75,7 @@ jobs:
 
       - name: Clear sticky comment on pass
         if: steps.lint.outputs.exit_code == '0'
+        continue-on-error: true
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           header: governor-footer-lint

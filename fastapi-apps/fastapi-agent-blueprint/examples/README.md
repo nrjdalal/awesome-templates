@@ -91,9 +91,9 @@ Populated incrementally as contributors land the good-first-issues:
 
 | Example | Pattern it teaches | Status |
 |---|---|---|
-| `todo/` | Minimal CRUD domain (zero infra) | 🟡 tracked issue |
+| `todo/` | Minimal CRUD domain (zero infra) | ✅ [#112](https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/112) |
 | `url-shortener/` | CRUD + Taskiq worker cleanup task | 🟡 tracked issue |
-| `blog/` | Two domains + Protocol-based cross-domain DIP | 🟡 tracked issue |
+| `blog/` | Two domains + Protocol-based cross-domain DIP | ✅ [#237](https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/237) |
 | `webhook_receiver/` | Worker task driven by a broker message | ✅ [#240](https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/240) |
 | `simple-chatbot/` | Minimal PydanticAI Agent — no RAG | 🟡 tracked issue |
 

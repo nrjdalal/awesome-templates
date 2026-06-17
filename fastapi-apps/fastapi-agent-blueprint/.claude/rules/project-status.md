@@ -1,11 +1,11 @@
 # Project Status
 
-> Last synced: 2026-06-10 — `toss` admin theme preset (#235) + AG Grid empty-list render fix (#234) on branch `feat/admin-toss-theme` (unreleased)
+> Last synced: 2026-06-17 — **v0.8.0 released**: single Toss admin theme (#235; breaking — `ADMIN_THEME_PALETTE` removed) + AG Grid render fix (#234), `blog/` (#237) + `webhook_receiver/` (#240) examples, and T0 trust-signal fixes (#241/#242/#243).
 
 ## Current Version Context
-- Latest release: v0.7.2 (2026-06-04)
+- Latest release: v0.8.0 (2026-06-17)
 - Active domains: auth (customer JWT access/refresh token API, #4), user (reference domain — pure customer identity after #218; admin fields removed), admin_identity (admin/operator identity + separate JWT realm, #218/ADR 049), classification (prototype), docs (RAG consumer example, #80), ai_usage (usage ledger, #75)
-- Contributor examples: `examples/todo/` (minimal CRUD, mirrors `src/user/` layout — see [`examples/README.md`](../../examples/README.md))
+- Contributor examples: `examples/todo/` (minimal CRUD, mirrors `src/user/` layout), `examples/blog/` (Protocol-based cross-domain DIP, #237), `examples/webhook_receiver/` (background worker task, #240) — see [`examples/README.md`](../../examples/README.md)
 - Infrastructure: RDB (PostgreSQL/MySQL/SQLite), DynamoDB, Storage (S3/MinIO), S3 Vectors, InMemory Vectors (quickstart), Embedding (PydanticAI + StubEmbedder fallback), LLM (PydanticAI Agent + TestModel stub fallback via `build_stub_llm_model`), RagPipeline (+ StubAnswerAgent), Broker (SQS/RabbitMQ/InMemory), Structured logging (structlog + asgi-correlation-id), JWT auth (HS256 v1). All non-DB infras optional via `providers.Selector` + lazy factories (ADR 042). `nicegui` in `admin` extra, `boto3`/`aioboto3` in `aws` extra (#104). Admin identity is a separate bounded context with its own credential store + JWT realm (distinct secret/issuer/audience); NiceGUI admin login + page-level permissions backed by `admin_identity` (#218/ADR 049, supersedes the #154/#194 single-table model).
 
 ## Recent Major Changes (since v0.6.0)

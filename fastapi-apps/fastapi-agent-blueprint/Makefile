@@ -46,11 +46,11 @@ dev:
 	docker compose -f docker-compose.local.yml up -d postgres && \
 	sleep 2 && \
 	uv run alembic upgrade head && \
-	uv run python run_server_local.py
+	uv run python run_server_local.py --env local
 
-## Start worker locally
+## Start worker locally (cross-process broker required — set BROKER_TYPE=rabbitmq|sqs)
 worker:
-	uv run python run_worker_local.py
+	uv run python run_worker_local.py --env local
 
 ## Start Taskiq scheduler locally — separate process from the worker; enqueues
 ## @broker.task schedule labels. Skip in deployments that prefer external cron.

@@ -90,24 +90,24 @@ Open `http://127.0.0.1:8001/admin` in a browser.
 
 ## Step 5 — Background worker
 
-In a third terminal:
+The quickstart runs on the **InMemory broker** (`BROKER_TYPE=inmemory`), which executes Taskiq
+tasks **synchronously inline inside the API server process** — there is no separate worker to
+start (`InMemoryBroker.listen()` raises, so it cannot back a standalone `make worker`). The
+`docs` domain dispatches a background ingestion task when a document exceeds the inline
+threshold (20,000 characters); in quickstart mode that work runs in-process, so the upload in
+Step 3 already exercised it.
+
+To watch a **standalone worker** pull jobs across process boundaries, switch to a cross-process
+broker. Start RabbitMQ, set `BROKER_TYPE=rabbitmq` + `RABBITMQ_URL` in your env file, then run
+the server and worker in the same environment (the
+[`examples/webhook_receiver/` README](../examples/webhook_receiver/README.md) walks through the
+full recipe):
 
 ```bash
-make worker
-```
-
-Expected: worker connects to the InMemory broker and subscribes to task queues:
-
-```text
-INFO  event="worker_start" broker="inmemory"
-INFO  event="worker_ready" queues=["fastapi-agent-blueprint.user.test", "fastapi-agent-blueprint.docs.ingest"]
-```
-
-The `docs` domain dispatches a background ingestion task when a document is too large for inline processing (threshold: 20,000 characters). Upload a large document while the worker is running and you will see:
-
-```text
-INFO  event="task_received" task_name="fastapi-agent-blueprint.docs.ingest" document_id=1
-INFO  event="task_completed" task_name="fastapi-agent-blueprint.docs.ingest" duration_ms=45
+docker run -d --name rabbitmq -p 5672:5672 -p 15672:15672 rabbitmq:3-management
+# _env/quickstart.env → BROKER_TYPE=rabbitmq, RABBITMQ_URL=amqp://guest:guest@localhost:5672/
+uv run python run_server_local.py --env quickstart   # terminal 1
+uv run python run_worker_local.py --env quickstart    # terminal 2 — the standalone worker
 ```
 
 The `user` domain registers a `user.test` task as a reference example — see [`src/user/interface/worker/tasks/user_test_task.py`](../src/user/interface/worker/tasks/user_test_task.py). Replace it with domain-specific background work (email dispatch, async enrichment, scheduled jobs) following the same Taskiq pattern.

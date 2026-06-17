@@ -179,6 +179,7 @@ quickstart.db
 
 # Claude Code per-user local overrides
 .claude/settings.local.json
+.claude/launch.json
 
 # Per-session governor state (exception-token markers, etc.) — Phase 2 #121
 .claude/state/
