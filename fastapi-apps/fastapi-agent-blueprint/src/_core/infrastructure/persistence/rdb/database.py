@@ -9,6 +9,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
+from src._core.exceptions.base_exception import BaseCustomException
 from src._core.infrastructure.persistence.rdb.config import DatabaseConfig
 from src._core.infrastructure.persistence.rdb.exceptions import DatabaseException
 
@@ -186,6 +187,15 @@ class Database:
         try:
             session = self.async_session_factory()
             yield session
+        except BaseCustomException:
+            # Domain/infra exceptions raised inside the session block — e.g. a
+            # 404 not-found from a repository, or an already-typed
+            # ``DatabaseException`` — are meant for the API layer. Roll back any
+            # pending writes but let them propagate unchanged instead of masking
+            # them as a generic 500 ``DB_INTERNAL_ERROR`` (#245).
+            if session:
+                await session.rollback()
+            raise
         except IntegrityError:
             if session:
                 await session.rollback()

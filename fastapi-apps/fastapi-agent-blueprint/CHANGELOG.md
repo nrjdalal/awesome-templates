@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-06-18
+
+A small patch on top of 0.8.0: a core not-found correctness fix plus a new
+contributor example.
+
+### Added
+
+- **`url_shortener` example** (`examples/url_shortener/`) — a CRUD `link` domain plus a Taskiq `cleanup_expired_links_task` that shares one `LinkService` with the HTTP router, mirroring the `examples/todo/` layout and the `src/user` worker pattern. The README documents the InMemory single-process enqueue recipe — bootstrap `UrlShortenerContainer` on the shared `CoreContainer` and `wire()` the task module before `.kiq()`, since the InMemory broker runs the task inline in the caller ([#239](https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/239), closes [#94](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/94))
+
+### Fixed
+
+- **Not-found returned `500` instead of `404` on every RDB read** — `Database.session()` re-wrapped *every* in-block exception, including the domain `BaseCustomException` a repository raises on a missing row, as `DatabaseException(500, DB_INTERNAL_ERROR)` (and in dev leaked the internal message into `errorDetails.original_error`). `session()` now re-raises `BaseCustomException` untouched ahead of the catch-all, so a read on a missing row returns `404`; only genuine driver errors become a 500. Adds session-level regression tests and tightens the docs e2e assertion from `(404, 500)` to `404` ([#246](https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/246), closes [#245](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/245))
+
+### Upgrading
+
+No database migration. One behavior change to act on when upgrading a derived codebase:
+
+- **RDB reads on a missing row now return `404`, not `500`.** Any derived client or test relying on the previous (incorrect) `500 DB_INTERNAL_ERROR` for not-found should expect `404` with the domain `BaseCustomException` message instead.
+
 ## [0.8.0] - 2026-06-17
 
 This release simplifies admin theming down to a single Toss-style theme — a
@@ -315,7 +334,8 @@ Quality Gate review contract, `/plan-feature` Approach Options stage,
 - ADR documentation (001-013)
 - CONTRIBUTING guide and issue templates
 
-[Unreleased]: https://github.com/Mr-DooSun/fastapi-agent-blueprint/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/Mr-DooSun/fastapi-agent-blueprint/compare/v0.8.1...HEAD
+[0.8.1]: https://github.com/Mr-DooSun/fastapi-agent-blueprint/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/Mr-DooSun/fastapi-agent-blueprint/compare/v0.7.2...v0.8.0
 [0.7.2]: https://github.com/Mr-DooSun/fastapi-agent-blueprint/compare/v0.7.1...v0.7.2
 [0.7.1]: https://github.com/Mr-DooSun/fastapi-agent-blueprint/compare/v0.7.0...v0.7.1

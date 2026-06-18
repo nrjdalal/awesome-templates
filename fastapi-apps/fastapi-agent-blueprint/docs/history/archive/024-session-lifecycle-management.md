@@ -101,6 +101,12 @@ async def insert_data(self, entity: BaseModel) -> ReturnDTO:
 **Implication for cross-method transactions:**
 When multiple repository methods need to run in a single transaction, the UseCase layer (ADR 011) is the designated coordination point. This is one of the criteria for introducing a UseCase — "cross-transaction boundaries" as stated in AGENTS.md.
 
+## Post-decision Correction (#246, 2026-06-18)
+
+The `except Exception` branch in the pseudo-code above originally caught **every** in-block exception — including a domain `BaseCustomException` (e.g. the 404 a repository raises on a missing row) — and re-wrapped it as `DatabaseException(500, DB_INTERNAL_ERROR)`. Because repositories raise not-found *inside* the session block, this silently turned every RDB "get by id → missing row" into a 500 (and leaked the internal message into `errorDetails.original_error` in dev).
+
+`Database.session()` now catches `BaseCustomException` first and re-raises it untouched (rolling back any pending write); only genuine driver errors fall through to the 500 wrapper. The session **lifecycle** decision in this ADR is unchanged — this only corrects exception *propagation* so typed domain errors reach the handlers in [ADR 017](../017-exception-handling-strategy.md). See `src/_core/infrastructure/persistence/rdb/database.py` and `tests/unit/_core/infrastructure/persistence/rdb/test_database_session.py`.
+
 ## Rationale
 
 | Decision | Reason |

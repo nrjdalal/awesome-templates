@@ -80,6 +80,10 @@ Each handler is a standalone async function in `_core/exceptions/exception_handl
 
 All handlers return a consistent `ErrorResponse` format (defined in ADR 003).
 
+### Precondition: in-session exception propagation (#246)
+
+For `custom_exception_handler` to actually receive a domain `BaseCustomException`, that exception must survive the trip up from wherever it is raised. Repositories raise not-found (and other typed errors) *inside* an `async with self.database.session()` block (ADR 024). `Database.session()` therefore must let a `BaseCustomException` propagate untouched and only wrap genuine driver errors as `DatabaseException(500)`. Until #246 the session context manager re-wrapped *every* in-block exception as a 500, so a repository's 404 never reached `custom_exception_handler` — it surfaced as `DB_INTERNAL_ERROR`. The fix and its rationale live in ADR 024's post-decision correction; the topology described here only holds because of it.
+
 The generic handler uses `settings.is_dev` to control trace exposure:
 - **Development**: includes full stack trace in `error_details.trace`
 - **Production**: returns only "Internal server error" with no internal details

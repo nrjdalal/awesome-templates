@@ -112,15 +112,12 @@ async def test_delete_document():
 
         fetch_resp = await client.get(f"/v1/docs/documents/{document_id}")
 
-    # NOTE: Ideally this would be 404, but the core ``Database.session``
-    # context manager wraps any in-session exception (including the
-    # 404 ``BaseCustomException`` raised by ``select_data_by_id``) into
-    # a 500 ``DB_INTERNAL_ERROR``. Pre-existing behaviour across all
-    # domains — tracked outside the RAG refactor scope.
-    assert fetch_resp.status_code in (404, 500), fetch_resp.text
-    if fetch_resp.status_code == 500:
-        body = fetch_resp.json()
-        assert "not found" in body["errorDetails"]["original_error"].lower()
+    # Deleted document → 404 not-found. The core ``Database.session`` context
+    # manager now lets a domain ``BaseCustomException`` (the 404 raised by
+    # ``select_data_by_id``) propagate instead of masking it as a 500 (#245).
+    assert fetch_resp.status_code == 404, fetch_resp.text
+    body = fetch_resp.json()
+    assert "not found" in body["message"].lower()
 
 
 @pytest.mark.asyncio
