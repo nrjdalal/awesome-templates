@@ -7,14 +7,15 @@ import { eq } from "drizzle-orm"
 import { Hono } from "hono"
 import { setCookie } from "hono/cookie"
 
+import { jsonError } from "@/lib/error"
+
 const AGENT_EMAIL = "agent@zerostarter.dev"
 const AGENT_NAME = "AgentZero"
 
 export const agentsRouter = new Hono()
   .use(async (c, next) => (isLocal(env.NODE_ENV) ? next() : c.notFound()))
   .post("/sign-in-as", async (c) => {
-    const fail = (message: string) =>
-      c.json({ error: { code: "AGENTS_LOGIN_FAILED", message } }, 500)
+    const fail = (message: string) => jsonError(c, 500, "AGENTS_LOGIN_FAILED", message)
 
     const origin = c.req.header("origin")
     if (!origin) return fail("missing Origin header")
@@ -46,8 +47,8 @@ export const agentsRouter = new Hono()
       }
     }
 
-    // The local-only agent is an internal account, so grant it console access.
-    await db.update(userTable).set({ console: "admin" }).where(eq(userTable.id, user.id))
+    // The local-only agent is an internal account, so grant it the admin role (console access).
+    await db.update(userTable).set({ role: "admin" }).where(eq(userTable.id, user.id))
 
     const session = await ctx.internalAdapter.createSession(user.id)
     const signed = `${session.token}.${await makeSignature(session.token, ctx.secret)}`
