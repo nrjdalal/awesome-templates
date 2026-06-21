@@ -1,5 +1,6 @@
 "use client"
 
+import { site } from "@packages/config/site"
 import {
   RiArrowRightUpLine,
   RiDiscordFill,
@@ -14,27 +15,25 @@ import { useEffect, useState } from "react"
 
 import { Access } from "@/components/access"
 import { ModeToggle } from "@/components/mode-toggle"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { authClient } from "@/lib/auth/client"
-import { config } from "@/lib/config"
 import { cn } from "@/lib/utils"
 
 const socialLinks = [
   {
-    href: "https://x.com/nrjdalal",
+    href: site.social.x,
     icon: RiTwitterXFill,
     label: "X",
   },
   {
-    href: "https://discord.gg/38FeAUmHSZ",
+    href: site.social.discord,
     icon: RiDiscordFill,
     label: "Discord",
   },
   {
-    href: "https://github.com/nrjdalal/zerostarter",
+    href: site.social.github,
     icon: RiGithubFill,
     label: "GitHub",
   },
@@ -90,10 +89,7 @@ export function Navbar() {
     <header className="bg-sidebar fixed top-0 left-0 z-50 w-full border-b">
       <div className="flex min-h-14 items-center justify-between pr-5 pl-3.5">
         <Link href="/" className="flex items-center gap-2 font-bold">
-          {config.app.name}
-          <Badge variant="secondary" className="text-xs">
-            RC
-          </Badge>
+          {site.name}
         </Link>
         <div className="flex items-center gap-2.5">
           {/* Desktop Navigation */}
@@ -177,10 +173,7 @@ export function Navbar() {
                     />
                   }
                 >
-                  {config.app.name}
-                  <Badge variant="secondary" className="text-xs">
-                    RC
-                  </Badge>
+                  {site.name}
                 </SheetTitle>
               </SheetHeader>
               <nav className="ml-4 flex flex-col gap-5">
@@ -222,12 +215,10 @@ export function Navbar() {
                   size="sm"
                   className="mt-2 w-fit"
                   onClick={() => setIsOpen(false)}
-                  render={
-                    <a href={config.social.github} target="_blank" rel="noopener noreferrer" />
-                  }
+                  render={<a href={site.social.github} target="_blank" rel="noopener noreferrer" />}
                 >
                   <RiGithubFill className="size-4" />
-                  Get ZeroStarter
+                  Get {site.name}
                 </Button>
               </nav>
               {/* Mobile Social Links */}

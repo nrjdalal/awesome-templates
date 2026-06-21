@@ -1,3 +1,4 @@
+import { site } from "@packages/config/site"
 import {
   RiArrowRightLine,
   RiBookOpenLine,
@@ -15,6 +16,8 @@ import {
   RiShieldLine,
   RiSparklingLine,
   RiFlashlightLine,
+  RiShieldKeyholeLine,
+  RiSpeedLine,
 } from "@remixicon/react"
 import Image from "next/image"
 import Link from "next/link"
@@ -29,7 +32,6 @@ import {
 } from "@/components/ui/accordion"
 import { Button } from "@/components/ui/button"
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { config } from "@/lib/config"
 
 type Tech = {
   name: string
@@ -184,7 +186,7 @@ const res = await apiClient.health.$get()
 const { data } = await res.json()`
 
   const bashCode = `# Clone the template
-bunx gitpick ${config.social.github}/tree/main
+bunx gitpick ${site.social.github}/tree/main
 cd zerostarter
 
 # Install dependencies
@@ -244,14 +246,14 @@ bun dev`
               </span>
             </h1>
             <p className="text-muted-foreground mb-8 text-lg sm:text-xl lg:text-2xl">
-              {config.app.description} Deploy with one click and start building features on day one.
+              {site.description} Deploy with one click and start building features on day one.
             </p>
             <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
               <Button
                 role="link"
                 size="lg"
                 className="group h-12 px-8 text-base"
-                render={<a href={config.social.github} target="_blank" rel="noopener noreferrer" />}
+                render={<a href={site.social.github} target="_blank" rel="noopener noreferrer" />}
               >
                 <RiGithubFill className="size-5" />
                 Get ZeroStarter
@@ -268,7 +270,7 @@ bun dev`
               </Button>
             </div>
             <p className="text-muted-foreground mt-6 text-sm">
-              ⭐ Star us on GitHub • 100+ developers trust ZeroStarter
+              ⭐ Star us on GitHub • Open source & MIT licensed
             </p>
             <div className="mt-4 flex justify-center">
               <ApiStatus />
@@ -361,8 +363,32 @@ bun dev`
                 </div>
                 <CardTitle>Authentication</CardTitle>
                 <CardDescription>
-                  Better Auth integration with GitHub OAuth, email/password, magic links, and more.
-                  Add providers in minutes.
+                  Better Auth with GitHub & Google OAuth, organizations, teams, and role-based
+                  access. Add providers in minutes.
+                </CardDescription>
+              </CardHeader>
+            </Card>
+            <Card className="hover:border-primary/50 border-2 transition-colors">
+              <CardHeader>
+                <div className="bg-primary/10 mb-2 flex size-12 items-center justify-center rounded-lg">
+                  <RiGroupLine className="text-primary size-6" />
+                </div>
+                <CardTitle>Organizations & Teams</CardTitle>
+                <CardDescription>
+                  Multi-tenant out of the box with Better Auth: organizations, teams, member roles,
+                  and invitations, plus an org switcher in the dashboard.
+                </CardDescription>
+              </CardHeader>
+            </Card>
+            <Card className="hover:border-primary/50 border-2 transition-colors">
+              <CardHeader>
+                <div className="bg-primary/10 mb-2 flex size-12 items-center justify-center rounded-lg">
+                  <RiShieldKeyholeLine className="text-primary size-6" />
+                </div>
+                <CardTitle>Admin Console & Roles</CardTitle>
+                <CardDescription>
+                  Role-based admin area at /console, gated by user role via the Better Auth admin
+                  plugin. Ships with internal docs and runbooks.
                 </CardDescription>
               </CardHeader>
             </Card>
@@ -381,12 +407,12 @@ bun dev`
             <Card className="hover:border-primary/50 border-2 transition-colors">
               <CardHeader>
                 <div className="bg-primary/10 mb-2 flex size-12 items-center justify-center rounded-lg">
-                  <RiFlashlightLine className="text-primary size-6" />
+                  <RiSpeedLine className="text-primary size-6" />
                 </div>
-                <CardTitle>High Performance</CardTitle>
+                <CardTitle>Rate-Limited API</CardTitle>
                 <CardDescription>
-                  Built on Bun runtime and Turborepo for lightning-fast development and builds.
-                  Optimized for production.
+                  Built-in API rate limiting per IP, user, or API key, with sensible defaults and
+                  full configuration via environment variables.
                 </CardDescription>
               </CardHeader>
             </Card>
@@ -417,24 +443,12 @@ bun dev`
             <Card className="hover:border-primary/50 border-2 transition-colors">
               <CardHeader>
                 <div className="bg-primary/10 mb-2 flex size-12 items-center justify-center rounded-lg">
-                  <RiRocketLine className="text-primary size-6" />
+                  <RiFlashlightLine className="text-primary size-6" />
                 </div>
-                <CardTitle>One-Click Deployment</CardTitle>
+                <CardTitle>High Performance</CardTitle>
                 <CardDescription>
-                  Docker and Vercel configurations included. Deploy to production in minutes, not
-                  days. Pre-configured CI/CD.
-                </CardDescription>
-              </CardHeader>
-            </Card>
-            <Card className="hover:border-primary/50 border-2 transition-colors">
-              <CardHeader>
-                <div className="bg-primary/10 mb-2 flex size-12 items-center justify-center rounded-lg">
-                  <RiBookOpenLine className="text-primary size-6" />
-                </div>
-                <CardTitle>Documentation & llms.txt</CardTitle>
-                <CardDescription>
-                  Fumadocs with auto-generated llms.txt endpoint. Full-text search and structured
-                  content for AI assistants.
+                  Built on Bun runtime and Turborepo for lightning-fast development and builds.
+                  Optimized for production.
                 </CardDescription>
               </CardHeader>
             </Card>
@@ -471,6 +485,30 @@ bun dev`
                 <CardDescription>
                   Meta tags, social media images, sitemaps, robots.txt, and more. SEO optimized out
                   of the box.
+                </CardDescription>
+              </CardHeader>
+            </Card>
+            <Card className="hover:border-primary/50 border-2 transition-colors">
+              <CardHeader>
+                <div className="bg-primary/10 mb-2 flex size-12 items-center justify-center rounded-lg">
+                  <RiBookOpenLine className="text-primary size-6" />
+                </div>
+                <CardTitle>Documentation & llms.txt</CardTitle>
+                <CardDescription>
+                  Fumadocs with auto-generated llms.txt endpoint. Full-text search and structured
+                  content for AI assistants.
+                </CardDescription>
+              </CardHeader>
+            </Card>
+            <Card className="hover:border-primary/50 border-2 transition-colors">
+              <CardHeader>
+                <div className="bg-primary/10 mb-2 flex size-12 items-center justify-center rounded-lg">
+                  <RiRocketLine className="text-primary size-6" />
+                </div>
+                <CardTitle>One-Click Deployment</CardTitle>
+                <CardDescription>
+                  Docker and Vercel configurations included. Deploy to production in minutes, not
+                  days. Pre-configured CI/CD.
                 </CardDescription>
               </CardHeader>
             </Card>
@@ -559,8 +597,8 @@ bun dev`
                 <div>
                   <h3 className="mb-2 text-lg font-semibold">Enterprise-Grade Auth</h3>
                   <p className="text-muted-foreground text-sm">
-                    Better Auth integration with GitHub, Google, and more — fully configured and
-                    ready to extend. Secure by default.
+                    Better Auth with GitHub & Google OAuth, organizations, teams, and role-based
+                    access. Fully configured and ready to extend.
                   </p>
                 </div>
               </div>
@@ -603,73 +641,6 @@ bun dev`
                 colorScheme: "light dark",
               }}
             />
-          </div>
-        </div>
-      </section>
-
-      {/* Testimonials Section */}
-      <section aria-label="Testimonials" className="bg-muted/30 border-b py-24">
-        <div className="container mx-auto max-w-6xl px-5">
-          <div className="mb-16 text-center">
-            <h2 className="mb-4 text-3xl font-bold tracking-tight sm:text-4xl">
-              Loved by developers worldwide
-            </h2>
-            <p className="text-muted-foreground mx-auto max-w-2xl text-lg">
-              See why developers are choosing ZeroStarter to accelerate their product launches.
-            </p>
-          </div>
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            <Card>
-              <CardHeader className="flex h-full flex-col justify-between">
-                <CardDescription className="mb-4 text-base">
-                  "ZeroStarter sped up my development process significantly. The type-safe API
-                  client alone saved me hours of debugging. Highly recommended!"
-                </CardDescription>
-                <div className="flex items-center gap-3">
-                  <div className="bg-primary/10 flex size-10 items-center justify-center rounded-full">
-                    <RiGroupLine className="text-primary size-5" />
-                  </div>
-                  <div>
-                    <div className="font-semibold">Developer</div>
-                    <div className="text-muted-foreground text-sm">Software Engineer</div>
-                  </div>
-                </div>
-              </CardHeader>
-            </Card>
-            <Card>
-              <CardHeader className="flex h-full flex-col justify-between">
-                <CardDescription className="mb-4 text-base">
-                  "The monorepo architecture is clean and well-organized. Everything just works out
-                  of the box. Best starter kit I've used!"
-                </CardDescription>
-                <div className="flex items-center gap-3">
-                  <div className="bg-primary/10 flex size-10 items-center justify-center rounded-full">
-                    <RiGroupLine className="text-primary size-5" />
-                  </div>
-                  <div>
-                    <div className="font-semibold">Builder</div>
-                    <div className="text-muted-foreground text-sm">Full Stack Developer</div>
-                  </div>
-                </div>
-              </CardHeader>
-            </Card>
-            <Card>
-              <CardHeader className="flex h-full flex-col justify-between">
-                <CardDescription className="mb-4 text-base">
-                  "Production-ready from day one. The documentation is excellent and the codebase is
-                  maintainable. Exactly what I needed!"
-                </CardDescription>
-                <div className="flex items-center gap-3">
-                  <div className="bg-primary/10 flex size-10 items-center justify-center rounded-full">
-                    <RiGroupLine className="text-primary size-5" />
-                  </div>
-                  <div>
-                    <div className="font-semibold">Creator</div>
-                    <div className="text-muted-foreground text-sm">Indie Hacker</div>
-                  </div>
-                </div>
-              </CardHeader>
-            </Card>
           </div>
         </div>
       </section>
@@ -749,9 +720,9 @@ bun dev`
                 Is it production-ready?
               </AccordionTrigger>
               <AccordionContent className="text-muted-foreground">
-                Yes! ZeroStarter is currently in Release Candidate (RC) status. All implemented
-                features are stable and production-ready. We're actively adding new features and
-                integrations day-by-day. The codebase follows best practices and is battle-tested.
+                Yes! All implemented features are stable and production-ready. We're actively adding
+                new features and integrations day-by-day. The codebase follows best practices and is
+                battle-tested.
               </AccordionContent>
             </AccordionItem>
             <AccordionItem value="item-4">
@@ -787,15 +758,15 @@ bun dev`
             Ready to Build Your SaaS?
           </h2>
           <p className="text-muted-foreground mb-8 text-lg">
-            Start building your next project with {config.app.name} today. Skip the complex setups
-            and start building features on day one.
+            Start building your next project with {site.name} today. Skip the complex setups and
+            start building features on day one.
           </p>
           <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Button
               role="link"
               size="lg"
               className="group h-12 px-8 text-base"
-              render={<a href={config.social.github} target="_blank" rel="noopener noreferrer" />}
+              render={<a href={site.social.github} target="_blank" rel="noopener noreferrer" />}
             >
               <RiGithubFill className="size-5" />
               Get ZeroStarter
@@ -816,7 +787,7 @@ bun dev`
             <span>
               Made with love by{" "}
               <a
-                href="https://twitter.com/nrjdalal"
+                href={site.social.x}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="hover:text-foreground font-medium transition-colors"

@@ -1,3 +1,67 @@
+## v0.0.36
+
+[compare changes](https://github.com/nrjdalal/zerostarter/compare/v0.0.35...v0.0.36)
+
+### 📖 Documentation
+
+- Rewrite the documentation from a thorough code audit ([#499](https://github.com/nrjdalal/zerostarter/pull/499))
+
+### 🏡 Chore
+
+- Prune dead code surfaced by the audit ([#498](https://github.com/nrjdalal/zerostarter/pull/498))
+
+### ❤️ Contributors
+
+- Neeraj Dalal @nrjdalal
+
+## v0.0.35
+
+[compare changes](https://github.com/nrjdalal/zerostarter/compare/v0.0.34...v0.0.35)
+
+### 📖 Documentation
+
+- Rewrite the README and reorder the landing features ([#495](https://github.com/nrjdalal/zerostarter/pull/495))
+
+### ❤️ Contributors
+
+- Neeraj Dalal @nrjdalal
+
+## v0.0.34
+
+[compare changes](https://github.com/nrjdalal/zerostarter/compare/v0.0.33...v0.0.34)
+
+### 🚀 Enhancements
+
+- **web:** Refresh the marketing landing and drop the RC status ([#493](https://github.com/nrjdalal/zerostarter/pull/493))
+
+### ❤️ Contributors
+
+- Neeraj Dalal @nrjdalal
+
+## v0.0.33
+
+[compare changes](https://github.com/nrjdalal/zerostarter/compare/v0.0.32...v0.0.33)
+
+### 💅 Refactors
+
+- **config:** Centralize brand identity in @packages/config/site ([#491](https://github.com/nrjdalal/zerostarter/pull/491))
+
+### ❤️ Contributors
+
+- Neeraj Dalal @nrjdalal
+
+## v0.0.32
+
+[compare changes](https://github.com/nrjdalal/zerostarter/compare/v0.0.31...v0.0.32)
+
+### 🚀 Enhancements
+
+- **auth:** Console roles via the better-auth admin plugin ([#489](https://github.com/nrjdalal/zerostarter/pull/489))
+
+### ❤️ Contributors
+
+- Neeraj Dalal @nrjdalal
+
 ## v0.0.31
 
 [compare changes](https://github.com/nrjdalal/zerostarter/compare/v0.0.30...v0.0.31)

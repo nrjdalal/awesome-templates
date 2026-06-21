@@ -1,3 +1,4 @@
+import { site } from "@packages/config/site"
 import { cookies } from "next/headers"
 import Link from "next/link"
 
@@ -12,7 +13,6 @@ import {
   SidebarRail,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
-import { config } from "@/lib/config"
 
 // Shared collapsible sidebar shell used by the dashboard and console layouts. Owns the sidebar chrome (provider, header brand, footer, rail) and the persisted open state; callers supply the badge, nav, and footer.
 export async function SidebarShell({
@@ -23,7 +23,7 @@ export async function SidebarShell({
   footer,
   children,
 }: {
-  badge: string
+  badge?: string
   homeHref?: string
   header?: React.ReactNode
   nav?: React.ReactNode
@@ -43,10 +43,12 @@ export async function SidebarShell({
               href={homeHref}
               className="flex items-center gap-2 px-1.5 py-2 font-bold group-data-[collapsible=icon]:hidden"
             >
-              {config.app.name}
-              <Badge variant="secondary" className="text-xs">
-                {badge}
-              </Badge>
+              {site.name}
+              {badge && (
+                <Badge variant="secondary" className="text-xs">
+                  {badge}
+                </Badge>
+              )}
             </Link>{" "}
             <SidebarTrigger variant="secondary" className="bg-sidebar cursor-pointer border" />
           </div>
