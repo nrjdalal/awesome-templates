@@ -1,3 +1,63 @@
+## v0.0.41
+
+[compare changes](https://github.com/nrjdalal/zerostarter/compare/v0.0.40...v0.0.41)
+
+### 🏡 Chore
+
+- Drop sample incident-response runbook, make console docs index generic ([#512](https://github.com/nrjdalal/zerostarter/pull/512))
+
+### ❤️ Contributors
+
+- Neeraj Dalal @nrjdalal
+
+## v0.0.40
+
+[compare changes](https://github.com/nrjdalal/zerostarter/compare/v0.0.39...v0.0.40)
+
+### 🩹 Fixes
+
+- Derive build-graph root label from root package.json name ([#510](https://github.com/nrjdalal/zerostarter/pull/510))
+
+### ❤️ Contributors
+
+- Neeraj Dalal @nrjdalal
+
+## v0.0.39
+
+[compare changes](https://github.com/nrjdalal/zerostarter/compare/v0.0.38...v0.0.39)
+
+### 🩹 Fixes
+
+- Stop hardcoding nrjdalal/zerostarter so forks aren't mispinned ([#508](https://github.com/nrjdalal/zerostarter/pull/508))
+
+### ❤️ Contributors
+
+- Neeraj Dalal @nrjdalal
+
+## v0.0.38
+
+[compare changes](https://github.com/nrjdalal/zerostarter/compare/v0.0.37...v0.0.38)
+
+### 🏡 Chore
+
+- **version:** Reset all non-root workspace versions to 0.0.0 ([#506](https://github.com/nrjdalal/zerostarter/pull/506))
+
+### ❤️ Contributors
+
+- Neeraj Dalal @nrjdalal
+
+## v0.0.37
+
+[compare changes](https://github.com/nrjdalal/zerostarter/compare/v0.0.36...v0.0.37)
+
+### 📖 Documentation
+
+- Order the intro to match the nav and drop the private console link ([#501](https://github.com/nrjdalal/zerostarter/pull/501))
+
+### ❤️ Contributors
+
+- Neeraj Dalal @nrjdalal
+
 ## v0.0.36
 
 [compare changes](https://github.com/nrjdalal/zerostarter/compare/v0.0.35...v0.0.36)
