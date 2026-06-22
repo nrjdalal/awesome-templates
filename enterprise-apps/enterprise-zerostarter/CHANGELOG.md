@@ -1,3 +1,71 @@
+## v0.0.46
+
+[compare changes](https://github.com/nrjdalal/zerostarter/compare/v0.0.45...v0.0.46)
+
+### 🚀 Enhancements
+
+- **waitlist:** Public signup + /waitlist page; fresh forks land there ([#523](https://github.com/nrjdalal/zerostarter/pull/523))
+
+### ❤️ Contributors
+
+- Neeraj Dalal @nrjdalal
+
+## v0.0.45
+
+[compare changes](https://github.com/nrjdalal/zerostarter/compare/v0.0.44...v0.0.45)
+
+### 🩹 Fixes
+
+- **deps:** Restore ts-morph used by .github/scripts/shadcn-customize.ts ([#521](https://github.com/nrjdalal/zerostarter/pull/521))
+
+### ❤️ Contributors
+
+- Neeraj Dalal @nrjdalal
+
+## v0.0.44
+
+[compare changes](https://github.com/nrjdalal/zerostarter/compare/v0.0.43...v0.0.44)
+
+### 🩹 Fixes
+
+- **db:** Keep squashed baseline at the original 0000 timestamp ([#519](https://github.com/nrjdalal/zerostarter/pull/519))
+
+### ❤️ Contributors
+
+- Neeraj Dalal @nrjdalal
+
+## v0.0.43
+
+[compare changes](https://github.com/nrjdalal/zerostarter/compare/v0.0.42...v0.0.43)
+
+### 🚀 Enhancements
+
+- **cli:** Install on init, timezone-safe blog dates, trim scaffold + drop dead deps ([#516](https://github.com/nrjdalal/zerostarter/pull/516))
+
+### 🏡 Chore
+
+- **db:** Squash migrations into a single baseline ([#517](https://github.com/nrjdalal/zerostarter/pull/517))
+
+### ❤️ Contributors
+
+- Neeraj Dalal @nrjdalal
+
+## v0.0.42
+
+[compare changes](https://github.com/nrjdalal/zerostarter/compare/v0.0.41...v0.0.42)
+
+### 🚀 Enhancements
+
+- **cli:** Zerostarter init, convert the starter into a clean product ([#505](https://github.com/nrjdalal/zerostarter/pull/505))
+
+### 🏡 Chore
+
+- Remove legacy .github/reviews reports ([8b25428](https://github.com/nrjdalal/zerostarter/commit/8b25428))
+
+### ❤️ Contributors
+
+- Neeraj Dalal @nrjdalal
+
 ## v0.0.41
 
 [compare changes](https://github.com/nrjdalal/zerostarter/compare/v0.0.40...v0.0.41)

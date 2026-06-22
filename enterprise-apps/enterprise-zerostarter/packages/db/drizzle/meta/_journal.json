@@ -12,29 +12,8 @@
     {
       "idx": 1,
       "version": "7",
-      "when": 1769758907420,
-      "tag": "0001_better_auth_organization",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1781548008799,
-      "tag": "0002_perfect_young_avengers",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1781966655376,
-      "tag": "0003_add_admin_plugin_fields",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1781966675180,
-      "tag": "0004_drop_legacy_console_field",
+      "when": 1782038910452,
+      "tag": "0001_waitlist",
       "breakpoints": true
     }
   ]
