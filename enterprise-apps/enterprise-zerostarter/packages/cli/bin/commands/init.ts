@@ -3,7 +3,8 @@ import { basename, join, resolve } from "node:path"
 import { parseArgs } from "node:util"
 
 import { convertRepo } from "@/convert"
-import { bunInstall, fetchZerostarter, gitCommitAll, gitInit } from "@/git"
+import { dockerRunning, hasPostgresUrl, provisionDatabase, seedEnv } from "@/db"
+import { bunInstall, fetchZerostarter, gitBranch, gitCommitAll, gitInit } from "@/git"
 import { exists } from "@/io"
 
 import { green, isInteractive, orange, promptConfirm, promptText, yellow } from "./_prompt"
@@ -19,6 +20,7 @@ latest ZeroStarter is fetched into it first.
 
 Options:
   -y, --yes      Skip prompts; fail instead of prompting when input is needed
+      --db       Provision a local Postgres (pglaunch) and migrate; needs Docker
       --dry-run  Print the plan without writing anything
   -h, --help     Display help`
 
@@ -32,6 +34,7 @@ export const init = async (argv: string[]) => {
     allowPositionals: true,
     args: argv,
     options: {
+      db: { type: "boolean" },
       "dry-run": { type: "boolean" },
       help: { short: "h", type: "boolean" },
       yes: { short: "y", type: "boolean" },
@@ -93,6 +96,8 @@ export const init = async (argv: string[]) => {
   if (!exists(join(target, ".git"))) {
     gitInit(target)
     gitCommitAll(target, "chore: scaffold from zerostarter")
+    // Seed `main` at the scaffold commit so canary leads it by the re-baseline; the first push then opens a canary->main release PR (a fork's Actions token cannot create main itself).
+    gitBranch(target, "main")
   }
 
   console.log("Removing starter content and rebranding ...")
@@ -103,6 +108,37 @@ export const init = async (argv: string[]) => {
 
   gitCommitAll(target, `chore: re-baseline as ${name}`)
 
+  console.log("Setting up .env (copied from .env.example, with a generated BETTER_AUTH_SECRET) ...")
+  seedEnv(target)
+
+  let dbReady = false
+  const dockerUp = dockerRunning()
+  const dbConfigured = hasPostgresUrl(target)
+  let wantDb = false
+  if (dbConfigured) {
+    if (values.db) console.log(yellow("  --db ignored: POSTGRES_URL is already set in .env."))
+  } else if (values.db) {
+    wantDb = dockerUp
+    if (!dockerUp) console.log(yellow("  --db ignored: Docker is not running."))
+  } else if (interactive && dockerUp) {
+    wantDb = await promptConfirm(
+      "Docker detected. Provision a local database and run migrations now?",
+      true,
+    )
+  }
+  if (wantDb) {
+    try {
+      console.log("Provisioning a local database with pglaunch and migrating ...")
+      provisionDatabase(target)
+      dbReady = true
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      console.log(
+        yellow(`  Skipped database setup (${msg}); set it up later with pglaunch + db:migrate.`),
+      )
+    }
+  }
+
   const tips: [string, string][] = [
     ["packages/config/src/site.ts", "your brand: name, tagline, links"],
     ["web/next/content", "your docs and blog"],
@@ -112,8 +148,15 @@ export const init = async (argv: string[]) => {
   console.log(`\n${green("✓")} ${name} is ready.\n`)
   console.log("Next steps:")
   if (target !== process.cwd()) console.log(`  ${orange(`cd ${dir}`)}`)
-  console.log(`  ${orange("cp .env.example .env")}  # add your secrets`)
-  console.log(`  ${orange("bun dev")}`)
+  if (!dbReady) {
+    console.log(`  ${orange("bunx pglaunch -k")}  # start Postgres, set POSTGRES_URL in .env`)
+    console.log(`  ${orange("bun run db:migrate")}`)
+  }
+  console.log(`  ${orange("bun run dev")}`)
+  console.log(
+    "\nWhen you push to GitHub, push both branches together (main must exist when canary is pushed):",
+  )
+  console.log(`  ${orange("git push origin canary main")}`)
   console.log("\nMake it yours:")
   for (const [path, desc] of tips) console.log(`  ${path.padEnd(29)} ${desc}`)
 }
