@@ -1,3 +1,29 @@
+## v0.0.48
+
+[compare changes](https://github.com/nrjdalal/zerostarter/compare/v0.0.47...v0.0.48)
+
+### 🚀 Enhancements
+
+- **auth:** Make GitHub and Google OAuth optional; UI shows only configured providers ([#530](https://github.com/nrjdalal/zerostarter/pull/530))
+- **auth:** Gate the magic-link email field on the plugin being enabled ([#532](https://github.com/nrjdalal/zerostarter/pull/532))
+- { data, error } API response shape (unwrap client + OpenAPI error docs) ([#535](https://github.com/nrjdalal/zerostarter/pull/535))
+
+### ❤️ Contributors
+
+- Neeraj Dalal @nrjdalal
+
+## v0.0.47
+
+[compare changes](https://github.com/nrjdalal/zerostarter/compare/v0.0.46...v0.0.47)
+
+### 🚀 Enhancements
+
+- **cli:** Polish init output, inscope colors, VHS demo; bump to 0.0.8 ([#529](https://github.com/nrjdalal/zerostarter/pull/529))
+
+### ❤️ Contributors
+
+- Neeraj Dalal @nrjdalal
+
 ## v0.0.46
 
 [compare changes](https://github.com/nrjdalal/zerostarter/compare/v0.0.45...v0.0.46)
