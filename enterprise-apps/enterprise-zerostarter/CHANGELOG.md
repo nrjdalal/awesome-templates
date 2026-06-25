@@ -1,3 +1,55 @@
+## v0.0.59
+
+[compare changes](https://github.com/nrjdalal/zerostarter/compare/v0.0.58...v0.0.59)
+
+### 🏡 Chore
+
+- Cleanup batch — zod error param, audit pre-push, CI concurrency ([#560](https://github.com/nrjdalal/zerostarter/pull/560))
+
+### ❤️ Contributors
+
+- Neeraj Dalal @nrjdalal
+
+## v0.0.58
+
+[compare changes](https://github.com/nrjdalal/zerostarter/compare/v0.0.57...v0.0.58)
+
+### 🚀 Enhancements
+
+- **web:** Console/dashboard sidebar navigation + rename dev agent to LocalAgent ([#557](https://github.com/nrjdalal/zerostarter/pull/557))
+
+### ❤️ Contributors
+
+- Neeraj Dalal @nrjdalal
+
+## v0.0.57
+
+[compare changes](https://github.com/nrjdalal/zerostarter/compare/v0.0.56...v0.0.57)
+
+### 🩹 Fixes
+
+- **api:** JsonError code/message win over extra; sync error model docs ([#556](https://github.com/nrjdalal/zerostarter/pull/556))
+
+### 💅 Refactors
+
+- **api:** Contained error handling + typed ErrorCode union end-to-end ([#553](https://github.com/nrjdalal/zerostarter/pull/553))
+
+### ❤️ Contributors
+
+- Neeraj Dalal @nrjdalal
+
+## v0.0.56
+
+[compare changes](https://github.com/nrjdalal/zerostarter/compare/v0.0.55...v0.0.56)
+
+### 🚀 Enhancements
+
+- **web:** Restyle waitlist success message, stack form on mobile ([#549](https://github.com/nrjdalal/zerostarter/pull/549))
+
+### ❤️ Contributors
+
+- Neeraj Dalal @nrjdalal
+
 ## v0.0.55
 
 [compare changes](https://github.com/nrjdalal/zerostarter/compare/v0.0.54...v0.0.55)

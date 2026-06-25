@@ -15,26 +15,26 @@ import { Input } from "@/components/ui/input"
 import { apiClient, unwrap } from "@/lib/api/client"
 
 const formSchema = z.object({
-  email: z.email({ message: "Please enter a valid email address." }).max(254),
+  email: z.email({ error: "Please enter a valid email address." }).max(254),
   // honeypot: unconstrained so it never blocks submission; the server silently drops bots
   subject: z.string(),
 })
 
 function WaitlistCount() {
   // the API returns a display-ready count (floored and rounded server-side)
-  const { data: count } = useQuery({
+  const { data } = useQuery({
     queryKey: ["waitlist-count"],
     queryFn: async () => {
       const { data, error } = await unwrap(apiClient.waitlist.$get())
       if (error) return null
-      return data.count
+      return data
     },
   })
 
   // fixed-height slot so the count appearing never shifts the layout
   return (
     <div className="mt-10 flex h-7 items-center justify-center">
-      {typeof count === "number" && count > 0 && (
+      {data && data.count > 0 && (
         <div className="animate-in fade-in flex items-center gap-3 duration-500">
           <AvatarGroup>
             <Avatar className="size-7">
@@ -47,7 +47,9 @@ function WaitlistCount() {
               <AvatarFallback className="bg-chart-4 text-xs text-white">C</AvatarFallback>
             </Avatar>
           </AvatarGroup>
-          <span className="text-muted-foreground text-sm">{count}+ people on the waitlist</span>
+          <span className="text-muted-foreground text-sm">
+            {data.count}+ people on the waitlist
+          </span>
         </div>
       )}
     </div>

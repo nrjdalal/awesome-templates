@@ -167,11 +167,15 @@ The practice is **type safety across the network boundary**. Whether you infer t
 { "error": { "code": "NOT_FOUND", "message": "Not Found" } }
 ```
 
-**Global error handler** standardizes error responses:
+**Routes `throw`** — an `ApiError` for domain codes, or a Hono `HTTPException` for standard ones — and a single global handler turns every thrown error into the envelope:
 
 ```ts
 // api/hono/src/lib/error.ts (wired into app.onError)
 export const errorHandler = (err: Error, c: Context) => {
+  // Domain errors carry their own code/extra; check before HTTPException since ApiError extends it.
+  if (err instanceof ApiError) {
+    return jsonError(c, err.status, err.code, err.message, err.extra)
+  }
   if (err instanceof z.ZodError) {
     return jsonError(c, 400, "VALIDATION_ERROR", "Invalid request payload", { issues: err.issues })
   }
@@ -463,16 +467,12 @@ But your team might prefer ticket references, emoji conventions, or freeform mes
 
 ### How ZeroStarter approaches this
 
-[Lefthook](https://github.com/evilmartians/lefthook) runs checks before every commit:
+[Lefthook](https://github.com/evilmartians/lefthook) runs checks before commits and pushes:
 
 ```yaml
 pre-commit:
   piped: true # Run in sequence, stop on first failure
   commands:
-    audit:
-      run: bun audit --audit-level high
-      only:
-        - ref: canary # full advisory audit on canary
     lint-staged:
       run: bunx lint-staged --verbose
       stage_fixed: true # Auto-stage formatted files
@@ -483,6 +483,13 @@ commit-msg:
   commands:
     commitlint:
       run: bunx commitlint --edit {1}
+
+pre-push:
+  commands:
+    audit:
+      run: bun audit --audit-level high
+      only:
+        - ref: canary # full advisory audit on canary (network-dependent, off the commit path)
 ```
 
 **IDE configuration** is shared via `.vscode/settings.json`:
@@ -862,7 +869,7 @@ The practice is **optimized developer experience**. Fast feedback. Clear errors.
 └── dev/             # run and verify the dev stack
 ```
 
-**Agent-friendly local sign-in.** A `Login (agents)` action signs in as a fixed `AgentZero` user via `/api/agents/sign-in-as` (local-only and trusted-origin gated), so an agent can exercise authenticated routes without a real OAuth dance.
+**Agent-friendly local sign-in.** A `Login (agents)` action signs in as a fixed `LocalAgent` user via `/api/agents/sign-in-as` (local-only and trusted-origin gated), so an agent can exercise authenticated routes without a real OAuth dance.
 
 **llms.txt** auto-generates documentation optimized for AI:
 
