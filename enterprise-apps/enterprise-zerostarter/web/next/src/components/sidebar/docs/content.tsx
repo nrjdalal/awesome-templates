@@ -29,8 +29,7 @@ export function SidebarDocsContent({ groups }: { groups: NavGroup[] }) {
   const pathname = usePathname()
   const { isMobile, setOpenMobile } = useSidebar()
 
-  const isActive = (url: string): boolean =>
-    pathname === url || pathname === url + "/" || (pathname?.startsWith(url + "/") ?? false)
+  const isActive = (url: string): boolean => pathname === url || pathname === url + "/"
   const close = () => {
     if (isMobile) setOpenMobile(false)
   }
@@ -130,8 +129,8 @@ function NavTreeGroup({
       render={<Item />}
     >
       <CollapsibleTrigger render={<Trigger {...(sub ? {} : { tooltip: group.label })} />}>
-        <RiArrowRightSLine className="transition-transform duration-200 group-data-[state=open]:rotate-90" />
         <span>{group.label}</span>
+        <RiArrowRightSLine className="ml-auto transition-transform duration-200 group-data-[open]:rotate-90" />
       </CollapsibleTrigger>
       <CollapsibleContent>
         <SidebarMenuSub className="mr-0 gap-y-0.5 pr-0 pl-2">
