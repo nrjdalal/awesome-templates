@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.2] - 2026-06-27
+
+A small patch on top of 0.8.1: the first real-LLM-calling contributor example,
+plus a docs note distinguishing example production surfaces. No `src/` runtime
+change.
+
+### Added
+
+- **`simple_chatbot` example** (`examples/simple_chatbot/`) — the first example that calls a real external LLM. A stateless PydanticAI `Agent` with an `output_type=ChatReply` structured output, prompt/reply records persisted via `ChatMessageDTO` (each retrievable by ID — the example itself is stateless, with no conversation memory fed back to the agent), and `tokens_used` surfaced for educational visibility. Mirrors the `src/classification` Protocol + Adapter + Selector + Stub wiring, so it degrades to a deterministic `StubChatbot` when no LLM provider is configured. Deliberately minimal — no endpoint auth and runtime guardrails deferred to [#250](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/250); production caveats (auth + rate limiting + cost/budget controls, and a pointer to `guardrails.py`) are documented in the example README ([#249](https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/249), closes [#97](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/97))
+
+### Docs
+
+- **Examples index distinguishes DB-only from real-LLM-calling examples** — a "Production surface" callout plus a `Surface` column in `examples/README.md`, so a reader sees the cost/abuse surface (auth + per-user rate/budget caps + runtime guardrails) before copying an LLM-calling example ([#253](https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/253), closes [#252](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/252))
+
 ## [0.8.1] - 2026-06-18
 
 A small patch on top of 0.8.0: a core not-found correctness fix plus a new
@@ -334,7 +348,8 @@ Quality Gate review contract, `/plan-feature` Approach Options stage,
 - ADR documentation (001-013)
 - CONTRIBUTING guide and issue templates
 
-[Unreleased]: https://github.com/Mr-DooSun/fastapi-agent-blueprint/compare/v0.8.1...HEAD
+[Unreleased]: https://github.com/Mr-DooSun/fastapi-agent-blueprint/compare/v0.8.2...HEAD
+[0.8.2]: https://github.com/Mr-DooSun/fastapi-agent-blueprint/compare/v0.8.1...v0.8.2
 [0.8.1]: https://github.com/Mr-DooSun/fastapi-agent-blueprint/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/Mr-DooSun/fastapi-agent-blueprint/compare/v0.7.2...v0.8.0
 [0.7.2]: https://github.com/Mr-DooSun/fastapi-agent-blueprint/compare/v0.7.1...v0.7.2

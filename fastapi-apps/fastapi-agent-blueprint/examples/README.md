@@ -85,17 +85,24 @@ Architectural rules in [`AGENTS.md`](../AGENTS.md) apply to examples
 just like production domains — no `Domain → Infrastructure` imports,
 no Model objects leaving the Repository, no Mapper classes.
 
+> ⚠️ **Production surface**
+>
+> DB-only examples are safe to copy as-is for local evaluation.
+> LLM-calling examples call a real external provider and introduce a
+> cost/abuse surface. Before exposing one externally, add auth,
+> per-user rate/budget caps, and runtime guardrails.
+
 ## Available examples
 
 Populated incrementally as contributors land the good-first-issues:
 
-| Example | Pattern it teaches | Status |
-|---|---|---|
-| `todo/` | Minimal CRUD domain (zero infra) | ✅ [#112](https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/112) |
-| `url_shortener/` | CRUD + Taskiq worker cleanup task | ✅ [#239](https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/239) |
-| `blog/` | Two domains + Protocol-based cross-domain DIP | ✅ [#237](https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/237) |
-| `webhook_receiver/` | Worker task driven by a broker message | ✅ [#240](https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/240) |
-| `simple-chatbot/` | Minimal PydanticAI Agent — no RAG | 🟡 tracked issue |
+| Example | Pattern it teaches | Surface | Status |
+|---|---|---|---|
+| `todo/` | Minimal CRUD domain (zero infra) | DB-only | ✅ [#112](https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/112) |
+| `url_shortener/` | CRUD + Taskiq worker cleanup task | DB-only | ✅ [#239](https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/239) |
+| `blog/` | Two domains + Protocol-based cross-domain DIP | DB-only | ✅ [#237](https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/237) |
+| `webhook_receiver/` | Worker task driven by a broker message | DB-only | ✅ [#240](https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/240) |
+| `simple_chatbot/` | Minimal PydanticAI Agent — no RAG | LLM-calling | ✅ [#249](https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/249) |
 
 Finished examples move from 🟡 to ✅ with a link to the PR that landed
 them. If an example you want is not on the list, open a
