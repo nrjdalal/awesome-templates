@@ -1,3 +1,78 @@
+## v0.0.70
+
+[compare changes](https://github.com/nrjdalal/zerostarter/compare/v0.0.69...v0.0.70)
+
+### 🏡 Chore
+
+- Delete completed audit docs ([#592](https://github.com/nrjdalal/zerostarter/pull/592))
+- Consolidate contact email to admin@nrjdalal.com ([#576](https://github.com/nrjdalal/zerostarter/pull/576))
+
+### ❤️ Contributors
+
+- Neeraj Dalal @nrjdalal
+
+## v0.0.69
+
+[compare changes](https://github.com/nrjdalal/zerostarter/compare/v0.0.68...v0.0.69)
+
+### 🚀 Enhancements
+
+- **web:** Wire the console landing with DashboardShell + DashboardHeader ([#590](https://github.com/nrjdalal/zerostarter/pull/590))
+
+### ❤️ Contributors
+
+- Neeraj Dalal @nrjdalal
+
+## v0.0.68
+
+[compare changes](https://github.com/nrjdalal/zerostarter/compare/v0.0.67...v0.0.68)
+
+### 🚀 Enhancements
+
+- **web:** Add DashboardShell + DashboardHeader page wrappers ([#589](https://github.com/nrjdalal/zerostarter/pull/589))
+
+### 🩹 Fixes
+
+- **web:** Log the swallowed active-org restore error (a11y L3; L4 verified) ([#587](https://github.com/nrjdalal/zerostarter/pull/587))
+
+### ❤️ Contributors
+
+- Neeraj Dalal @nrjdalal
+
+## v0.0.67
+
+[compare changes](https://github.com/nrjdalal/zerostarter/compare/v0.0.66...v0.0.67)
+
+### 🚀 Enhancements
+
+- **web:** Route boundaries + standardize viewport idiom (svh top-level, flex-1 nested) ([#583](https://github.com/nrjdalal/zerostarter/pull/583))
+
+### 💅 Refactors
+
+- **web:** Group route boundary helpers into components/route/ ([#585](https://github.com/nrjdalal/zerostarter/pull/585))
+- **web:** Marketing polish (responsive hero + body copy, unified heading weight) ([#586](https://github.com/nrjdalal/zerostarter/pull/586))
+
+### ❤️ Contributors
+
+- Neeraj Dalal @nrjdalal
+
+## v0.0.66
+
+[compare changes](https://github.com/nrjdalal/zerostarter/compare/v0.0.65...v0.0.66)
+
+### 🩹 Fixes
+
+- **web:** Clean up UI consistency from the audit ([#577](https://github.com/nrjdalal/zerostarter/pull/577))
+
+### 💅 Refactors
+
+- **web:** Cursor-pointer pass and DESIGN.md conventions ([#580](https://github.com/nrjdalal/zerostarter/pull/580))
+- Adopt Empty for the blog empty-state and consolidate the design skill ([#582](https://github.com/nrjdalal/zerostarter/pull/582))
+
+### ❤️ Contributors
+
+- Neeraj Dalal @nrjdalal
+
 ## v0.0.65
 
 [compare changes](https://github.com/nrjdalal/zerostarter/compare/v0.0.64...v0.0.65)

@@ -144,15 +144,15 @@ const sections: {
 
 const buttonClass =
   "bg-secondary hover:bg-secondary/80 flex items-center gap-2 rounded-md px-4 py-2 text-sm transition-colors"
-const headingClass = `${caveat.className} text-muted-foreground text-3xl font-semibold tracking-wide`
+const headingClass = `${caveat.className} text-muted-foreground text-3xl font-bold tracking-wide`
 const linkClass = "border-border hover:border-ring border-b transition-colors"
 
 export default function Page() {
   return (
-    <main className="bg-background text-foreground min-h-dvh space-y-16 py-24 text-lg">
+    <main className="bg-background text-foreground min-h-svh space-y-16 py-24 text-lg">
       {/* hook */}
       <div className="container mx-auto max-w-3xl space-y-8 px-4 md:px-6">
-        <h1 className={cn(caveat.className, "text-3xl font-semibold tracking-wide")}>nrjdalal</h1>
+        <h1 className={cn(caveat.className, "text-3xl font-bold tracking-wide")}>nrjdalal</h1>
 
         <div className="space-y-4">
           <p>
@@ -219,9 +219,9 @@ export default function Page() {
             <RiLinkedinFill className="size-4" />
             LinkedIn
           </a>
-          <a href="mailto:nrjdalal.dev@gmail.com" className={buttonClass}>
+          <a href="mailto:admin@nrjdalal.com" className={buttonClass}>
             <RiMailLine className="size-4" />
-            nrjdalal.dev@gmail.com
+            admin@nrjdalal.com
           </a>
           <Link href="/resume" className={buttonClass}>
             <RiFileTextLine className="size-4" />
@@ -343,8 +343,8 @@ export default function Page() {
             <RiTwitterXFill className="-mt-1 inline size-5" />
           </a>{" "}
           or send an email to{" "}
-          <a href="mailto:nrjdalal.dev@gmail.com" className={linkClass}>
-            nrjdalal.dev@gmail.com
+          <a href="mailto:admin@nrjdalal.com" className={linkClass}>
+            admin@nrjdalal.com
           </a>
           .
         </p>
