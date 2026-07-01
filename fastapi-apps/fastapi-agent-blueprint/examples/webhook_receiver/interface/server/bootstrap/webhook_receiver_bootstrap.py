@@ -1,17 +1,20 @@
 from fastapi import FastAPI
 
-from examples.webhook_receiver.infrastructure.di.webhook_receiver_container import (
+from ....infrastructure.di.webhook_receiver_container import (
     WebhookReceiverContainer,
 )
-from examples.webhook_receiver.interface.server.routers import webhook_event_router
+from ...worker.tasks import webhook_event_task
+from ..routers import webhook_event_router
 
 
 def create_webhook_receiver_container(
     webhook_receiver_container: WebhookReceiverContainer,
 ) -> None:
-    webhook_receiver_container.wire(
-        packages=["examples.webhook_receiver.interface.server.routers"]
-    )
+    # Wire the router AND the worker task module. Under the quickstart
+    # InMemoryBroker, ``.kiq()`` runs the task inline in THIS (server) process,
+    # so the task's ``Provide[...]`` markers must be wired here too — not only in
+    # the worker bootstrap (which handles the cross-process RabbitMQ/SQS case).
+    webhook_receiver_container.wire(modules=[webhook_event_router, webhook_event_task])
 
 
 def setup_webhook_receiver_routes(app: FastAPI) -> None:

@@ -1,3 +1,5 @@
+"""Unit tests for the simple chatbot example."""
+
 import pytest
 import pytest_asyncio
 

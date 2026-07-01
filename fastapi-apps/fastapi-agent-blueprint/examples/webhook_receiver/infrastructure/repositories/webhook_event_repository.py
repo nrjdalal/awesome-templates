@@ -1,9 +1,10 @@
-from examples.webhook_receiver.domain.dtos.webhook_event_dto import WebhookEventDTO
-from examples.webhook_receiver.infrastructure.database.models.webhook_event_model import (
-    WebhookEventModel,
-)
 from src._core.infrastructure.persistence.rdb.base_repository import BaseRepository
 from src._core.infrastructure.persistence.rdb.database import Database
+
+from ...domain.dtos.webhook_event_dto import WebhookEventDTO
+from ..database.models.webhook_event_model import (
+    WebhookEventModel,
+)
 
 
 class WebhookEventRepository(BaseRepository[WebhookEventDTO]):

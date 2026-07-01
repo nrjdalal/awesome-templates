@@ -1,7 +1,7 @@
 from dependency_injector import containers, providers
 
-from examples.todo.domain.services.todo_service import TodoService
-from examples.todo.infrastructure.repositories.todo_repository import TodoRepository
+from ...domain.services.todo_service import TodoService
+from ..repositories.todo_repository import TodoRepository
 
 
 class TodoContainer(containers.DeclarativeContainer):

@@ -2,12 +2,12 @@
 
 from fastapi import FastAPI
 
-from examples.todo.infrastructure.di.todo_container import TodoContainer
-from examples.todo.interface.server.routers import todo_router
+from ....infrastructure.di.todo_container import TodoContainer
+from ..routers import todo_router
 
 
 def create_todo_container(todo_container: TodoContainer) -> None:
-    todo_container.wire(packages=["examples.todo.interface.server.routers"])
+    todo_container.wire(modules=[todo_router])
 
 
 def setup_todo_routes(app: FastAPI) -> None:

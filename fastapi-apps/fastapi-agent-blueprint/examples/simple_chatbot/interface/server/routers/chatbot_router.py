@@ -3,16 +3,17 @@ from typing import Annotated
 from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, Path
 
-from examples.simple_chatbot.domain.services.chatbot_service import ChatService
-from examples.simple_chatbot.infrastructure.di.simple_chatbot_container import (
+from src._core.application.dtos.base_response import SuccessResponse
+
+from ....domain.services.chatbot_service import ChatService
+from ....infrastructure.di.simple_chatbot_container import (
     SimpleChatbotContainer,
 )
-from examples.simple_chatbot.interface.server.schemas.chatbot_schema import (
+from ..schemas.chatbot_schema import (
     ChatHistoryResponse,
     ChatRequest,
     ChatResponse,
 )
-from src._core.application.dtos.base_response import SuccessResponse
 
 router = APIRouter()
 

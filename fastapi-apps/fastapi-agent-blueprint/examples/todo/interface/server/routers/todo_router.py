@@ -1,14 +1,15 @@
 from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, Query
 
-from examples.todo.domain.services.todo_service import TodoService
-from examples.todo.infrastructure.di.todo_container import TodoContainer
-from examples.todo.interface.server.schemas.todo_schema import (
+from src._core.application.dtos.base_response import SuccessResponse
+
+from ....domain.services.todo_service import TodoService
+from ....infrastructure.di.todo_container import TodoContainer
+from ..schemas.todo_schema import (
     CreateTodoRequest,
     TodoResponse,
     UpdateTodoRequest,
 )
-from src._core.application.dtos.base_response import SuccessResponse
 
 router = APIRouter()
 

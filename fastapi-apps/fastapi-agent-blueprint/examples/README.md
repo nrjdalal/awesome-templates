@@ -103,6 +103,8 @@ Populated incrementally as contributors land the good-first-issues:
 | `blog/` | Two domains + Protocol-based cross-domain DIP | DB-only | ✅ [#237](https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/237) |
 | `webhook_receiver/` | Worker task driven by a broker message | DB-only | ✅ [#240](https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/240) |
 | `simple_chatbot/` | Minimal PydanticAI Agent — no RAG | LLM-calling | ✅ [#249](https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/249) |
+| `chatbot_with_guardrails/` | Runtime LLM guardrails around a PydanticAI Agent | LLM-calling | ✅ [#256](https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/256) |
+| `chatbot_with_memory/` | Multi-turn chatbot with session memory and history replay | LLM-calling | ✅ [#255](https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/255) |
 
 Finished examples move from 🟡 to ✅ with a link to the PR that landed
 them. If an example you want is not on the list, open a

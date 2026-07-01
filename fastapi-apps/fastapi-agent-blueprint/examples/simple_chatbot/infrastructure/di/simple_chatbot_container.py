@@ -1,14 +1,15 @@
 from dependency_injector import containers, providers
 
-from examples.simple_chatbot.domain.services.chatbot_service import ChatService
-from examples.simple_chatbot.infrastructure.chatbot.pydantic_ai_chatbot import (
+from src._core.config import settings
+
+from ...domain.services.chatbot_service import ChatService
+from ..chatbot.pydantic_ai_chatbot import (
     PydanticAIChatbot,
 )
-from examples.simple_chatbot.infrastructure.chatbot.stub_chatbot import StubChatbot
-from examples.simple_chatbot.infrastructure.repositories.chatbot_repository import (
+from ..chatbot.stub_chatbot import StubChatbot
+from ..repositories.chatbot_repository import (
     ChatbotRepository,
 )
-from src._core.config import settings
 
 
 def _chatbot_selector() -> str:

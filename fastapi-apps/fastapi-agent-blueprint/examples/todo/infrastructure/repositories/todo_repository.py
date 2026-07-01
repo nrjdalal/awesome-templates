@@ -1,7 +1,8 @@
-from examples.todo.domain.dtos.todo_dto import TodoDTO
-from examples.todo.infrastructure.database.models.todo_model import TodoModel
 from src._core.infrastructure.persistence.rdb.base_repository import BaseRepository
 from src._core.infrastructure.persistence.rdb.database import Database
+
+from ...domain.dtos.todo_dto import TodoDTO
+from ..database.models.todo_model import TodoModel
 
 
 class TodoRepository(BaseRepository[TodoDTO]):

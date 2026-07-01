@@ -1,7 +1,7 @@
-from examples.webhook_receiver.infrastructure.di.webhook_receiver_container import (
+from ....infrastructure.di.webhook_receiver_container import (
     WebhookReceiverContainer,
 )
-from examples.webhook_receiver.interface.worker.tasks import webhook_event_task
+from ..tasks import webhook_event_task
 
 
 def create_webhook_receiver_container(

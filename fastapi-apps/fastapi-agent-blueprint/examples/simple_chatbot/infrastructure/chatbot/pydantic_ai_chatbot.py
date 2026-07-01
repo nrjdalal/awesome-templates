@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Final, LiteralString
 
-from examples.simple_chatbot.domain.dtos.chatbot_dto import ChatReply
+from ...domain.dtos.chatbot_dto import ChatReply
 
 _INSTRUCTIONS: Final[LiteralString] = "You are a helpful assistant."
 

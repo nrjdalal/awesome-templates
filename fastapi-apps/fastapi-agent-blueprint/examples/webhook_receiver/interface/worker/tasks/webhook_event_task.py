@@ -4,20 +4,21 @@ from datetime import UTC, datetime
 import structlog
 from dependency_injector.wiring import Provide, inject
 
-from examples.webhook_receiver.domain.services.webhook_event_service import (
+from src._apps.worker.broker import broker
+
+from ....domain.services.webhook_event_service import (
     WebhookEventService,
 )
-from examples.webhook_receiver.infrastructure.di.webhook_receiver_container import (
+from ....infrastructure.di.webhook_receiver_container import (
     WebhookReceiverContainer,
 )
-from examples.webhook_receiver.interface.server.schemas.webhook_event_schema import (
+from ...server.schemas.webhook_event_schema import (
     UpdateWebhookEventRequest,
 )
-from examples.webhook_receiver.interface.worker.payloads.webhook_event_payload import (
+from ..payloads.webhook_event_payload import (
     WEBHOOK_EVENT_TASK_NAME,
     WebhookEventPayload,
 )
-from src._apps.worker.broker import broker
 
 _logger = structlog.stdlib.get_logger(__name__)
 

@@ -1,9 +1,9 @@
 from dependency_injector import containers, providers
 
-from examples.webhook_receiver.domain.services.webhook_event_service import (
+from ...domain.services.webhook_event_service import (
     WebhookEventService,
 )
-from examples.webhook_receiver.infrastructure.repositories.webhook_event_repository import (
+from ..repositories.webhook_event_repository import (
     WebhookEventRepository,
 )
 

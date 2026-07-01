@@ -1,12 +1,13 @@
-from examples.webhook_receiver.domain.dtos.webhook_event_dto import WebhookEventDTO
-from examples.webhook_receiver.domain.protocols.webhook_event_repository_protocol import (
-    WebhookEventRepositoryProtocol,
-)
-from examples.webhook_receiver.interface.server.schemas.webhook_event_schema import (
+from src._core.domain.services.base_service import BaseService
+
+from ...interface.server.schemas.webhook_event_schema import (
     CreateWebhookRequest,
     UpdateWebhookEventRequest,
 )
-from src._core.domain.services.base_service import BaseService
+from ..dtos.webhook_event_dto import WebhookEventDTO
+from ..protocols.webhook_event_repository_protocol import (
+    WebhookEventRepositoryProtocol,
+)
 
 
 class WebhookEventService(

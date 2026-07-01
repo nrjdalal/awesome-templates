@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Protocol, runtime_checkable
 
-from examples.simple_chatbot.domain.dtos.chatbot_dto import ChatReply
+from ..dtos.chatbot_dto import ChatReply
 
 
 @runtime_checkable

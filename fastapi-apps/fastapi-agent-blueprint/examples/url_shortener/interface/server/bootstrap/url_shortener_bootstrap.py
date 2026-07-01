@@ -9,9 +9,7 @@ from ..routers import link_router
 def create_url_shortener_container(
     url_shortener_container: UrlShortenerContainer,
 ) -> None:
-    url_shortener_container.wire(
-        packages=["src.url_shortener.interface.server.routers"]
-    )
+    url_shortener_container.wire(modules=[link_router])
 
 
 def setup_url_shortener_routes(app: FastAPI) -> None:
