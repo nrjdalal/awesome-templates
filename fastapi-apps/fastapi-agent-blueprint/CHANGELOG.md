@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.3] - 2026-07-02
+
+A small patch on top of 0.8.2: two new LLM-calling contributor examples, plus a
+repo-wide fix so an example actually runs when copied into `src/`. No `src/`
+runtime change.
+
+### Added
+
+- **`chatbot_with_memory` example** (`examples/chatbot_with_memory/`) — a multi-turn chatbot that persists each turn and replays prior turns from session history into a PydanticAI `Agent` via structured `message_history`, so the model sees the conversation so far. Mirrors the `src/classification` Protocol + Adapter + Selector + Stub wiring, degrading to a deterministic `StubChatbotMemory` when no LLM provider is configured ([#255](https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/255), closes [#251](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/251))
+- **`chatbot_with_guardrails` example** (`examples/chatbot_with_guardrails/`) — a chatbot that wires the shared runtime guardrails (`src/_core/infrastructure/llm/guardrails.py`) around a PydanticAI `Agent`: a prompt-injection input guard blocks with `400 PROMPT_INJECTION_DETECTED`, reusing the existing guardrail exceptions and telemetry with a `guardrails_enabled` kill-switch honored on both the real and stub paths ([#256](https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/256), closes [#250](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/250))
+
+### Fixed
+
+- **Examples now run when copied into `src/`** — single-domain examples referenced their own containers via absolute `from examples.<name>...` imports and wired by string package path, so `cp -r examples/<name> src/<name>` left each router's `Provide[...]` markers pointing at the `examples.*` class objects while auto-discovery instantiated the `src.*` ones — every copied example returned `500` at request time. Intra-example imports are now package-relative and bootstraps `wire(modules=[...])` the imported module object, so `todo`, `url_shortener`, `webhook_receiver`, `simple_chatbot`, `chatbot_with_memory`, and `chatbot_with_guardrails` all boot and serve correctly after copy-in (verified end-to-end via `make quickstart`). The two-domain `blog` example is a separate cross-domain case, tracked as a follow-up ([#261](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/261)) ([#262](https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/262))
+
+### Docs
+
+- **`examples/README.md` flags that `blog/` does not yet run via copy-into-`src/`** — the two-domain cross-domain example still uses absolute intra-example imports (fix tracked in [#261](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/261)), so its catalog row now carries a note instead of implying it copies in and runs like the single-domain examples
+
 ## [0.8.2] - 2026-06-27
 
 A small patch on top of 0.8.1: the first real-LLM-calling contributor example,
@@ -348,7 +367,8 @@ Quality Gate review contract, `/plan-feature` Approach Options stage,
 - ADR documentation (001-013)
 - CONTRIBUTING guide and issue templates
 
-[Unreleased]: https://github.com/Mr-DooSun/fastapi-agent-blueprint/compare/v0.8.2...HEAD
+[Unreleased]: https://github.com/Mr-DooSun/fastapi-agent-blueprint/compare/v0.8.3...HEAD
+[0.8.3]: https://github.com/Mr-DooSun/fastapi-agent-blueprint/compare/v0.8.2...v0.8.3
 [0.8.2]: https://github.com/Mr-DooSun/fastapi-agent-blueprint/compare/v0.8.1...v0.8.2
 [0.8.1]: https://github.com/Mr-DooSun/fastapi-agent-blueprint/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/Mr-DooSun/fastapi-agent-blueprint/compare/v0.7.2...v0.8.0

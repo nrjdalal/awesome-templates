@@ -80,6 +80,26 @@ except Exception:
 
 [ -z "$CHANGED" ] && exit 0
 
+WORKFLOW_OUT=$(printf '%s\n' "$CHANGED" \
+    | PYTHONPATH="${SHARED_DIR}" sh "$PY_LAUNCHER" -c '
+import sys
+changed = [line.strip() for line in sys.stdin.read().splitlines() if line.strip()]
+governor_changing = False
+try:
+    from governor import is_governor_changing, is_log_only_backfill, parse_trigger_globs
+    globs = parse_trigger_globs()
+    governor_changing = bool(changed) and not is_log_only_backfill(changed) and is_governor_changing(changed, globs)
+except Exception:
+    governor_changing = False
+try:
+    from work_ledger import build_workflow_advisory_segments
+    segments = build_workflow_advisory_segments(changed_files=changed, governor_changing=governor_changing)
+    if segments:
+        print("\n\n".join(segments))
+except Exception:
+    pass
+' 2>/dev/null || true)
+
 # Delegate classification to governor.sync_advisory via Python shim (F-1 SOT).
 # HC-5.5 fail-open: if the shim is unavailable, fall back to inline grep patterns.
 FOUNDATION=""
@@ -122,6 +142,11 @@ fi
 if [ -n "$COMPLETION_OUT" ]; then
     echo ""
     echo "$COMPLETION_OUT"
+fi
+
+if [ -n "$WORKFLOW_OUT" ]; then
+    echo ""
+    echo "$WORKFLOW_OUT"
 fi
 
 exit 0

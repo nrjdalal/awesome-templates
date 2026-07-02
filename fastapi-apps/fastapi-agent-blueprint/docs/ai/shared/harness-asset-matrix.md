@@ -1,6 +1,6 @@
 # Harness Asset Inventory Matrix
 
-> Last synced: 2026-06-02 (#193: added `admin-design-system.md` Tier 1 row + counts). Prior: 2026-05-06 (PR-B.2 stale-terminology sweep: LOC corrections + ADR-047 fossil fixes)
+> Last synced: 2026-06-29 (#257: added native `execute-plan` Tier 2 row + counts). Prior: 2026-06-02 (#193: added `admin-design-system.md` Tier 1 row + counts)
 > Source of truth: this is a **living inventory**. Update when assets are added, renamed, or removed. `/sync-guidelines` validates that this file matches the actual filesystem.
 > Sibling docs: [ADR 045](../../history/045-hybrid-harness-target-architecture.md) · [target-operating-model.md](target-operating-model.md) · [migration-strategy.md](migration-strategy.md)
 
@@ -229,7 +229,7 @@ rather than primary entry points (`Overlay`).
 
 ### `architecture-review-checklist.md`
 
-- **Current role**: 107-line architecture-audit checklist. Surface for `/review-architecture`.
+- **Current role**: 117-line architecture-audit checklist (10 categories; §10 Examples Copy-Flow added by #260). Surface for `/review-architecture`.
 - **Why it exists**: Standardise the questions a domain or full-repo review must answer.
 - **Replacement feasibility**: None.
 - **Final location**: unchanged.
@@ -384,7 +384,7 @@ rather than primary entry points (`Overlay`).
 
 ## Tier 2 — Skills (3-Layer Hybrid C)
 
-Fourteen skills, each existing in three layers (`docs/ai/shared/skills/{name}.md` shared procedure + `.claude/skills/{name}/SKILL.md` wrapper + `.agents/skills/{name}/SKILL.md` wrapper). The bucket is assigned per skill (all three layers share the bucket); the matrix records the skill once.
+Fifteen skills, each existing in three layers (`docs/ai/shared/skills/{name}.md` shared procedure + `.claude/skills/{name}/SKILL.md` wrapper + `.agents/skills/{name}/SKILL.md` wrapper). The bucket is assigned per skill (all three layers share the bucket); the matrix records the skill once.
 
 Bucket guideline:
 - Skills that scaffold or audit *project-specific architecture* (3-tier hybrid, optional infra DI, ADR 040/042/043 patterns) → **Keep**.
@@ -403,6 +403,7 @@ Bucket guideline:
 | `security-review` | Keep | Low | High |
 | `sync-guidelines` | Keep | Low | High |
 | `plan-feature` | Overlay | Low | High |
+| `execute-plan` | Overlay | Low | High |
 | `review-pr` | Overlay | Low | High |
 | `fix-bug` | Overlay | Low | Medium |
 | `onboard` | Overlay | Low | Low |
@@ -505,7 +506,17 @@ Bucket guideline:
 - **Bucket: Overlay**. Skill body unchanged in essence; the entry-point shifts from "user invokes /plan-feature" to "Default Flow routes through it".
 - **Final location**: unchanged.
 - **Phase 1 edit**: Default Flow Position section + recursion guard ("do not invoke /plan-feature recursively from within /plan-feature").
-- **Notes**: First skill where the philosophy port is most visible.
+- **Notes**: First skill where the philosophy port is most visible. Issue #257 extends the output contract with an Execution Packet consumed by `execute-plan`.
+
+### `execute-plan` (Overlay)
+
+- **Current role**: Native execution workflow for approved Execution Packets, routing complex / architecture-changing / governor-changing / multi-task work through task-by-task implementation, verification, review, and ledger updates.
+- **Why it exists**: Absorbs the useful superpowers-style execution discipline into the local harness without adopting an external superpowers dependency.
+- **Replacement feasibility**: Partial. The procedure is generic process discipline, but it depends on local skills, work-ledger state, Governor Footer policy, and project-specific review gates.
+- **Bucket: Overlay**. Default Flow routes complex work through it after `plan-feature`; single-skill and trivial work continue through the existing lighter flow.
+- **Final location**: new Hybrid C skill triple.
+- **Issue #257 edit**: Adds shared procedure + Claude / Codex wrappers; records workflow state through `work_ledger.update_workflow_state`.
+- **Notes**: Enforcement starts advisory-first; future hardening PRs may promote only high-confidence missing-plan / missing-review / pending-verification conditions to hard gates or CI checks.
 
 ### `review-pr` (Overlay)
 
@@ -747,16 +758,16 @@ Six rule files (5 Claude + 1 Codex). All `Keep` except `commands.md` which becom
 | Bucket | Count | Share | Notes |
 |---|---|---|---|
 | Keep | 53 | ~79% | Project-specific architecture / safety / reference value (incl. admin-design-system.md #193 + 4 design + 3 self-coherence-recovery process-governor artefacts + 2 Phase 2 #121 hooks + Phase 5 #124 shared governor package now extended by ADR 047 PR B-F with `sync_cosmetic.py`; ADR 047 PR B-F also added `tools/check_governor_footer.py` + `.github/workflows/governor-footer-lint.yml` in place of the removed `tools/check_g_closure.py`) |
-| Overlay | 13 | ~20% | Process discipline now routed by Default Flow (Phase 3 #122 adds 3 verify-first; Phase 4 #123 adds 2 completion-gate hooks; Phase 5 #124 reduces those hooks to thin shims without changing buckets) |
+| Overlay | 14 | ~21% | Process discipline now routed by Default Flow (issue #257 adds `execute-plan`; Phase 3 #122 adds 3 verify-first; Phase 4 #123 adds 2 completion-gate hooks; Phase 5 #124 reduces those hooks to thin shims without changing buckets) |
 | Replace | 0 | 0% | None in initial inventory; reserved for future passes |
 | Drop | 1 | ~1% | `tools/check_g_closure.py` retired by ADR 047 PR B-F (Guard G enforcement target moved to PR-description Governor Footer; `tools/check_governor_footer.py` is the replacement and is counted under `Keep`). |
-| **Total** | **67** | 100% | |
+| **Total** | **68** | 100% | |
 
-Counting note: `Tier 0=9` (8 + ADR 045 + `.github/pull_request_template.md`), `Tier 1=21` (13 reference incl. `admin-design-system.md` + 3 design living docs + `governor-review-log/` directory + `governor-paths.md` + `.agents/shared/governor/` package + `tools/check_g_closure.py` historical-Drop + `tools/check_governor_footer.py` + `docs/history/047-governor-review-provenance-consolidation.md`), `Tier 2=14` (skill rows; each row covers all 3 wrapper layers), `Tier 3=18` (Phase 4 #123 added `.claude/hooks/completion_gate.py` + `.codex/hooks/completion_gate.py`; Phase 3 = 16, Phase 2 = 13, Phase 1 = 10; Phase 5 #124 converts 6 of these to thin shims without changing the count), `Tier 4=6` — sum 68. The 67 figure above excludes `.claude/settings.local.json` from the active-share count because it is `.gitignore`d. The bucket-share percentages use 67 as the denominator.
+Counting note: `Tier 0=9` (8 + ADR 045 + `.github/pull_request_template.md`), `Tier 1=21` (13 reference incl. `admin-design-system.md` + 3 design living docs + `governor-review-log/` directory + `governor-paths.md` + `.agents/shared/governor/` package + `tools/check_g_closure.py` historical-Drop + `tools/check_governor_footer.py` + `docs/history/047-governor-review-provenance-consolidation.md`), `Tier 2=15` (skill rows; each row covers all 3 wrapper layers), `Tier 3=18` (Phase 4 #123 added `.claude/hooks/completion_gate.py` + `.codex/hooks/completion_gate.py`; Phase 3 = 16, Phase 2 = 13, Phase 1 = 10; Phase 5 #124 converts 6 of these to thin shims without changing the count), `Tier 4=6` — sum 69. The 68 figure above excludes `.claude/settings.local.json` from the active-share count because it is `.gitignore`d. The bucket-share percentages use 68 as the denominator.
 
 This distribution matches the "Mostly Local with Philosophy Overlay" model declared in [ADR 045 §D4](../../history/045-hybrid-harness-target-architecture.md). The `Replace` and `Drop` columns are both empty: no asset's content is being rewritten, and self-verification during cross-link work showed that the only `Drop` candidate identified during the first triage was actually an active component (a sh-wrapper `.py` pair).
 
-If a future `Replace` candidate emerges, the threshold is: Keep+Overlay would otherwise force the asset into structural inconsistency with the Default Flow. None of the current 65 active assets meet that.
+If a future `Replace` candidate emerges, the threshold is: Keep+Overlay would otherwise force the asset into structural inconsistency with the Default Flow. None of the current 68 active assets meet that.
 
 ## Verification
 
@@ -795,3 +806,4 @@ The following self-checks must pass before this matrix is treated as authoritati
 - 2026-05-02 — ADR 047 PR B-F (#159): `tools/check_g_closure.py` retired (Drop); `tools/check_governor_footer.py` + `.github/workflows/governor-footer-lint.yml` added; `docs/history/047-governor-review-provenance-consolidation.md` added to Tier 1; `.agents/shared/governor/sync_cosmetic.py` added to Phase 5 package. `governor-review-log/` relocated to `docs/history/archive/governor-review-log/` (PR #161). Bucket-share ~79% Keep / ~20% Overlay / ~1% Drop.
 - 2026-05-06 — PR-B.2: LOC corrections (project-dna.md 906→976, scaffolding-layers.md 295→299, ai-infrastructure-overview.md 117→162, drift-checklist.md 189→220, test-files.md 27→33); governor-paths.md Notes updated to reference Governor Footer model (ADR 047, `governor-review-log/` per-PR obligation retired); stop-sync-reminder.sh Notes updated past-tense for Phase 4 + IC-11 Option A; stop-sync-reminder.py role description refreshed for AGENT_LOCALE 5-responsibility orchestrator (#133).
 - 2026-06-02 — #193: added `docs/ai/shared/admin-design-system.md` (Tier 1, Keep) — the admin design-system guide (tokens + component builders + conventions) backing the `/add-admin-page` skill. Total 66 → 67 (Keep 52 → 53); Tier 1 20 → 21. Bucket-share remains ~79% Keep / ~20% Overlay.
+- 2026-06-29 — #257: added the `execute-plan` skill triple (Tier 2, Overlay) — native execution workflow consuming plan-feature Execution Packets; work-ledger schema v2 (workflow stage / tasks / review) + advisory-only Stop/SessionStart workflow signals. Total 67 → 68 (Tier 2 14 → 15; Overlay 13 → 14). Bucket-share ~79% Keep / ~21% Overlay.

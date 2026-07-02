@@ -157,18 +157,51 @@ def build_segments(changed: list[str] | None = None) -> list[str]:
             if seg:
                 segments.append(seg)
 
+    # (4) Native workflow advisory — fail-open and advisory-only.
+    with contextlib.suppress(Exception):
+        from work_ledger import build_workflow_advisory_segments  # noqa: PLC0415
+
+        governor_changing = False
+        with contextlib.suppress(Exception):
+            from governor import (  # noqa: PLC0415
+                is_governor_changing,
+                is_log_only_backfill,
+                parse_trigger_globs,
+            )
+
+            globs = parse_trigger_globs()
+            governor_changing = (
+                bool(changed)
+                and not is_log_only_backfill(changed)
+                and is_governor_changing(changed, globs)
+            )
+
+        segments.extend(
+            build_workflow_advisory_segments(
+                changed_files=changed,
+                governor_changing=governor_changing,
+            )
+        )
+
     return segments
 
 
 def main() -> int:
     """Stop hook orchestrator.
 
-    Calls ``build_segments`` for responsibilities (1)-(3), then executes
-    side-effect responsibilities (4) marker consumption and (5) stale
-    verify-log cleanup. Each side effect is wrapped in its own suppress
-    block so a partial failure cannot mask the others or the segments
+    Refreshes the work-ledger verification snapshot, calls ``build_segments``
+    for advisory responsibilities, then executes marker consumption and stale
+    verify-log cleanup side effects. Each side effect is wrapped in its own
+    suppress block so a partial failure cannot mask the others or the segments
     output. Stop hook does NOT read stdin (informational fail-open).
     """
+    # Work-ledger: refresh verification snapshot before composing native
+    # workflow advisories so first-stop output is not stale.
+    with contextlib.suppress(Exception):
+        from work_ledger import update_verification_from_git  # noqa: PLC0415
+
+        update_verification_from_git()
+
     segments = build_segments()
 
     # (4) Phase 2 marker consumption + (5) stale verify-log cleanup.
@@ -179,12 +212,6 @@ def main() -> int:
             completion_gate.consume_phase2_markers(completion_gate.STATE_DIR)
         with contextlib.suppress(Exception):
             completion_gate.cleanup_stale_verify_logs(completion_gate.STATE_DIR)
-
-    # (6) Work-ledger: refresh verification snapshot (fail-open).
-    with contextlib.suppress(Exception):
-        from work_ledger import update_verification_from_git  # noqa: PLC0415
-
-        update_verification_from_git()
 
     if segments:
         print(json.dumps({"systemMessage": "\n\n".join(segments)}))

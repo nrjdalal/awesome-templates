@@ -33,6 +33,25 @@ The domains aren't fully independently deployable — `post` needs
 `author`'s domain types — but the infrastructure boundary stays clean
 and the consumer can be tested against a mock implementing the protocol.
 
+## Import Layout (copy-flow)
+
+Each domain uses **package-relative imports** for its own modules, so the
+package works from any parent — `examples/blog/` in this repo, `src/` after
+the copy.
+
+The two cross-domain references (`post` → `author`) are **absolute
+`src.author.*` imports** — the same pattern `src/auth` uses for `src/user`.
+They resolve only in the copied layout (`cp -r examples/blog/author/
+src/author/`); while the example sits under `examples/`, editors show them as
+unresolved. This is deliberate: pulling the author classes in through an
+`examples.blog.author.*` path after the copy would map a second `AuthorModel`
+onto the same `author` table and crash the boot
+(`Table 'author' is already defined`).
+
+`tests/unit/blog/conftest.py` builds the copied layout in a temp directory
+(extending `src.__path__`) so the unit tests import the exact modules the
+copied app runs.
+
 ## Endpoints
 
 ### Author
@@ -73,7 +92,8 @@ curl -X POST http://localhost:8001/v1/post \
   -H "Content-Type: application/json" \
   -d '{"author_id": 1, "title": "Hello World", "body": "First post!"}'
 
-# 5. Get the post — response includes author_display_name
+# 5. Get the post — response data includes "authorDisplayName": "Alice"
+#    (API responses use camelCase keys)
 curl http://localhost:8001/v1/post/1
 
 # 6. Run tests

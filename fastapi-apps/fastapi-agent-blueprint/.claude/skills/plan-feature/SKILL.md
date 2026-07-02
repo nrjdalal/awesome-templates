@@ -29,12 +29,17 @@ Description: $ARGUMENTS
 3. Architecture Impact Analysis — layer, domain, DTO, cross-domain (Phase 2)
 4. Security Checkpoint — 6-item assessment matrix (Phase 3)
 5. Task Breakdown — skill mapping, supervision levels, execution order (Phase 4)
-6. Work-ledger update — after task breakdown is confirmed, record goal/scope/plan to
+6. Execution Packet — include Goal, Scope, Success Criteria, Selected Approach,
+   Architecture Impact, Task List, Verification Gates, and Review Gates.
+7. Work-ledger update — after task breakdown is confirmed, record goal/scope/plan to
    `.agents/state/current-work.json` via:
    ```python
-   from work_ledger import update_goal_scope_plan
+   from work_ledger import update_goal_scope_plan, update_workflow_state
    update_goal_scope_plan(goal="<one-line goal>", scope="<domains/files>", plan="<task list>", updated_by="skill:plan-feature")
+   update_workflow_state(stage="planned", plan_ref="<issue, PR, or plan file>", tasks=[{"id": "1", "title": "<task>", "status": "pending"}], updated_by="skill:plan-feature")
    ```
 
 Read `docs/ai/shared/skills/plan-feature.md` for detailed steps and output format.
 Also refer to `docs/ai/shared/planning-checklists.md` for question bank and templates.
+For complex, architecture-changing, governor-changing, or multi-task work, hand
+the approved Execution Packet to `/execute-plan`.

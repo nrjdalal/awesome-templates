@@ -2,16 +2,16 @@ from datetime import UTC, datetime
 from unittest.mock import AsyncMock
 
 import pytest
-
-from examples.blog.author.domain.dtos.author_dto import AuthorDTO
-from examples.blog.author.domain.protocols.author_repository_protocol import (
+from src.author.domain.dtos.author_dto import AuthorDTO
+from src.author.domain.protocols.author_repository_protocol import (
     AuthorRepositoryProtocol,
 )
-from examples.blog.post.domain.protocols.post_repository_protocol import (
+from src.post.domain.protocols.post_repository_protocol import (
     PostRepositoryProtocol,
 )
-from examples.blog.post.domain.services.post_service import PostService
-from examples.blog.post.interface.server.schemas.post_schema import CreatePostRequest
+from src.post.domain.services.post_service import PostService
+from src.post.interface.server.schemas.post_schema import CreatePostRequest
+
 from src._core.domain.validation import ValidationFailed
 
 

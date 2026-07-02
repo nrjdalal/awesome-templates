@@ -66,10 +66,13 @@ categories apply differently:
 
 All other categories (layer dependency, conversion, DI, bootstrap,
 naming) apply identically to examples and production domains.
+**§10 Examples Copy-Flow Compliance** applies *only* in the examples
+profile — production `src/` domains are never copied, so absolute
+`src.*` imports are correct there.
 
 ## Category Coverage
 
-Inspect the 9 architecture checklist categories defined in
+Inspect the 10 architecture checklist categories defined in
 `docs/ai/shared/architecture-review-checklist.md`.
 
 1. Layer Dependency Rules
@@ -81,6 +84,7 @@ Inspect the 9 architecture checklist categories defined in
 7. Admin Page Compliance
 8. Bootstrap Wiring
 9. DynamoDB Domain Compliance
+10. Examples Copy-Flow Compliance (applies only to `examples/` targets)
 
 ## Phase 0: Resolve Scope and Load Rule Sources
 

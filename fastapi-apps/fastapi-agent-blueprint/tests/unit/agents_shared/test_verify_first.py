@@ -346,3 +346,38 @@ def test_codex_post_tool_format_null_tool_input_fail_open() -> None:
         env={**__import__("os").environ, "CODEX_THREAD_ID": "pytest-r1.2"},
     )
     assert result.returncode == 0
+
+
+def test_codex_post_tool_format_marks_work_ledger_verified(tmp_path) -> None:
+    """A successful verify-class Bash command should update the native ledger.
+
+    This keeps the native workflow advisory from reporting stale
+    verification-pending state after pytest / make test has actually run.
+    """
+    codex_post_tool = REPO_ROOT / ".codex" / "hooks" / "post-tool-format.py"
+    payload = {
+        "tool_name": "Bash",
+        "tool_input": {"command": "pytest tests/unit/agents_shared -q"},
+        "tool_response": {"exit_code": 0},
+    }
+
+    result = subprocess.run(  # noqa: S603
+        [sys.executable, str(codex_post_tool)],
+        input=json.dumps(payload),
+        capture_output=True,
+        text=True,
+        check=False,
+        env={
+            **__import__("os").environ,
+            "CODEX_THREAD_ID": "pytest-ledger",
+            "HARNESS_STATE_ROOT": str(tmp_path),
+        },
+    )
+
+    assert result.returncode == 0, result.stderr
+    ledger_path = tmp_path / ".agents" / "state" / "current-work.json"
+    ledger = json.loads(ledger_path.read_text(encoding="utf-8"))
+    assert ledger["verification"]["status"] == "passed"
+    assert (
+        ledger["verification"]["last_command"] == "pytest tests/unit/agents_shared -q"
+    )

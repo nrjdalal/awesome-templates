@@ -22,9 +22,9 @@ except Exception:
     pass
 " 2>/dev/null) || SUMMARY=""
 
-if [ -n "\$SUMMARY" ]; then
+if [ -n "$SUMMARY" ]; then
     echo ""
-    echo "\$SUMMARY"
+    echo "$SUMMARY"
     echo ""
 fi
 

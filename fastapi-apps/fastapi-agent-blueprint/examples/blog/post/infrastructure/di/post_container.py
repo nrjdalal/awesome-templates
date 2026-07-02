@@ -1,10 +1,16 @@
 from dependency_injector import containers, providers
 
-from examples.blog.author.infrastructure.repositories.author_repository import (
+# Cross-domain wiring import. After both domains are copied
+# (`cp -r examples/blog/author src/author`), the concrete AuthorRepository is
+# the class auto-discovery already registered under `src.author` — importing it
+# from anywhere else would map a second AuthorModel onto the same `author`
+# table and crash the boot. Unresolvable while this file lives under examples/.
+from src.author.infrastructure.repositories.author_repository import (
     AuthorRepository,
 )
-from examples.blog.post.domain.services.post_service import PostService
-from examples.blog.post.infrastructure.repositories.post_repository import (
+
+from ...domain.services.post_service import PostService
+from ..repositories.post_repository import (
     PostRepository,
 )
 

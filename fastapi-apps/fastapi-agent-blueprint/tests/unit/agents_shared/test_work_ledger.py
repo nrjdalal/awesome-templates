@@ -77,6 +77,35 @@ def test_write_ledger_ignores_wrong_schema_version(tmp_path, monkeypatch):
     assert wl.read_ledger() is None
 
 
+def test_read_ledger_migrates_v1_to_v2(tmp_path, monkeypatch):
+    monkeypatch.setattr(wl, "LEDGER_PATH", tmp_path / "v1.json")
+    v1 = {
+        "schema_version": 1,
+        "meta": {"updated_at": "2026-01-01T00:00:00+00:00", "updated_by": "test"},
+        "last_prompt": "plan this",
+        "goal": "native workflow",
+        "scope": ".agents/",
+        "plan": "task list",
+        "blockers": None,
+        "verification": {
+            "status": "passed",
+            "last_verified_at": "2026-01-01T00:01:00+00:00",
+            "last_command": "pytest",
+            "changed_py_files": [],
+        },
+    }
+    (tmp_path / "v1.json").write_text(json.dumps(v1), encoding="utf-8")
+
+    migrated = wl.read_ledger()
+
+    assert migrated is not None
+    assert migrated["schema_version"] == 2
+    assert migrated["goal"] == "native workflow"
+    assert migrated["verification"]["last_command"] == "pytest"
+    assert migrated["workflow"]["stage"] == "idle"
+    assert migrated["workflow"]["review"]["status"] == "not_required"
+
+
 # ---------------------------------------------------------------------------
 # update_last_prompt
 # ---------------------------------------------------------------------------
@@ -124,6 +153,35 @@ def test_update_goal_scope_plan_partial_does_not_overwrite():
     ledger = wl.read_ledger()
     assert ledger["goal"] == "original"
     assert ledger["scope"] == "new-scope"
+
+
+# ---------------------------------------------------------------------------
+# update_workflow_state
+# ---------------------------------------------------------------------------
+
+
+def test_update_workflow_state_can_clear_nullable_fields():
+    wl.update_workflow_state(
+        stage="executing",
+        plan_ref="issue #257",
+        current_task="Task 1",
+        review_mode="self-structured",
+        review_status="fallback",
+        review_reason="Claude unavailable",
+    )
+
+    wl.update_workflow_state(
+        stage="complete",
+        current_task=None,
+        review_reason=None,
+    )
+
+    ledger = wl.read_ledger()
+    assert ledger is not None
+    workflow = ledger["workflow"]
+    assert workflow["stage"] == "complete"
+    assert workflow["current_task"] is None
+    assert workflow["review"]["reason"] is None
 
 
 # ---------------------------------------------------------------------------

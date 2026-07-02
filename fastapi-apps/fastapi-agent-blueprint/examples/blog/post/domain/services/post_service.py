@@ -1,16 +1,23 @@
-from examples.blog.author.domain.protocols.author_repository_protocol import (
+# Cross-domain dependency on the author domain. `src.author.*` is the layout
+# this example runs in after `cp -r examples/blog/author src/author` — the same
+# absolute-import pattern the real `src/auth -> src/user` dependency uses. It
+# does not resolve while the file still lives under examples/; the blog unit
+# tests provide a src-layout shadow via tests/unit/blog/conftest.py.
+from src.author.domain.protocols.author_repository_protocol import (
     AuthorRepositoryProtocol,
 )
-from examples.blog.post.domain.dtos.post_dto import PostDTO
-from examples.blog.post.domain.protocols.post_repository_protocol import (
-    PostRepositoryProtocol,
-)
-from examples.blog.post.interface.server.schemas.post_schema import (
+
+from src._core.domain.services.base_service import BaseService
+from src._core.domain.validation import ensure_existing_references
+
+from ...interface.server.schemas.post_schema import (
     CreatePostRequest,
     UpdatePostRequest,
 )
-from src._core.domain.services.base_service import BaseService
-from src._core.domain.validation import ensure_existing_references
+from ..dtos.post_dto import PostDTO
+from ..protocols.post_repository_protocol import (
+    PostRepositoryProtocol,
+)
 
 
 class PostService(BaseService[CreatePostRequest, UpdatePostRequest, PostDTO]):

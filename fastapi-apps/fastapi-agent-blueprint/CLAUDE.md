@@ -20,7 +20,8 @@ This file intentionally keeps only Claude-specific setup and workflow guidance.
 - Reasoning-Level Consistency Guards (F / G / H / I) apply to every conversation, cross-review, and document-generation step — not only to PR-level work. See [AGENTS.md § Reasoning-Level Consistency Guards](AGENTS.md#reasoning-level-consistency-guards) for the canonical surface.
 
 ## Skills (slash commands)
-- `/plan-feature {description}` — Feature implementation planning (requirements interview → architecture analysis → security check → task decomposition)
+- `/plan-feature {description}` — Feature implementation planning (requirements interview → architecture analysis → security check → task decomposition → Execution Packet)
+- `/execute-plan {packet|plan-ref}` — Execute an approved Execution Packet through native workflow gates (task order → verification gates → review gates → ledger closure)
 - `/new-domain {name}` — Full domain scaffolding (15 content + 25 `__init__.py` + 4 tests = 44 files)
 - `/add-api {description}` — Add API endpoint to existing domain
 - `/add-worker-task {domain} {task}` — Add async Taskiq task

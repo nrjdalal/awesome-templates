@@ -117,6 +117,8 @@ For each task (refer to "Supervision Level Definitions" in `docs/ai/shared/plann
 - Create dependency graph (which tasks must precede others)
 - Identify task groups that can be executed in parallel
 - Identify the critical path
+- Record the approved task list as an Execution Packet and update the
+  work-ledger with `update_workflow_state(stage="planned", plan_ref=..., tasks=...)`.
 
 ## Output: Feature Implementation Plan
 
@@ -152,9 +154,51 @@ Organize the results of Phases 0-4 above in the following format and present to 
 - Run full pre-commit
 ```
 
+## Execution Packet
+
+The final plan must include an **Execution Packet** that can be consumed by
+`/execute-plan` or `$execute-plan` without additional design decisions.
+
+Required fields:
+
+- **Goal** — one sentence describing the intended outcome.
+- **Scope** — affected domains, harness files, interfaces, and explicit
+  exclusions.
+- **Success Criteria** — observable completion conditions.
+- **Selected Approach** — the chosen approach and one-line rationale.
+- **Architecture Impact** — layer, domain, dependency, DTO, migration, and
+  compatibility impact.
+- **Task List** — ordered tasks with mapped skills, dependencies, and task IDs.
+- **Verification Gates** — exact commands, checks, or manual probes required
+  before completion.
+- **Review Gates** — self-review, architecture/security review,
+  sync-guidelines, and governor-changing cross review or fallback policy.
+
+After the user approves the Execution Packet, write the native workflow state:
+
+```python
+from work_ledger import update_goal_scope_plan, update_workflow_state
+
+update_goal_scope_plan(
+    goal="<Goal>",
+    scope="<Scope>",
+    plan="<Task List>",
+    updated_by="skill:plan-feature",
+)
+update_workflow_state(
+    stage="planned",
+    plan_ref="<issue, PR, or plan file>",
+    tasks=[
+        {"id": "1", "title": "<task title>", "status": "pending"},
+    ],
+    updated_by="skill:plan-feature",
+)
+```
+
 ## After Plan Approval
 
 When the user approves the plan:
-1. Suggest executing from the first task in order
-2. Guide the corresponding Skill before each task execution
-3. Request user confirmation before executing "L3 Supervision Required" tasks
+1. Hand off complex, architecture-changing, governor-changing, or multi-task work
+   to `/execute-plan` or `$execute-plan`.
+2. Guide the corresponding Skill before each task execution.
+3. Request user confirmation before executing "L3 Supervision Required" tasks.

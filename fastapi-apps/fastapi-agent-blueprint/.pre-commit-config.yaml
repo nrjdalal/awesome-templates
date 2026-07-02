@@ -95,6 +95,18 @@ repos:
         pass_filenames: true
         files: '^(AGENTS\.md|CLAUDE\.md|CONTRIBUTING\.md|CODE_OF_CONDUCT\.md|SECURITY\.md|docs/ai/shared/.*\.md|docs/history/.*\.md|\.claude/rules/.*\.md|\.claude/hooks/.*|\.claude/skills/.*\.md|\.codex/rules/.*|\.codex/hooks/.*|\.agents/.*\.(py|md|sh)|\.github/pull_request_template\.md|\.github/workflows/.*\.ya?ml)$'
 
+      # Examples copy-flow guard (issue #260):
+      # examples/ code must survive `cp -r examples/<name> src/<name>`, so
+      # absolute `examples.*` imports are forbidden there (intra-domain
+      # imports are package-relative; cross-domain imports use `src.<other>`).
+      # AST-based; no-argv mode scans git-tracked examples/**/*.py only.
+      - id: examples-copyflow
+        name: "Examples copy-flow: no absolute examples.* imports"
+        language: system
+        entry: python3 tools/check_examples_copyflow.py
+        pass_filenames: true
+        files: '^examples/.*\.py$'
+
       # State lifecycle health check (PR-A.3):
       # FAIL-HARD on git-tracked state files (.claude/state/, .codex/state/).
       # WARN-ONLY (exit 0) when stale marker count exceeds threshold.

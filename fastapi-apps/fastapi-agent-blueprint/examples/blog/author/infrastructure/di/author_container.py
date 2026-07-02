@@ -1,7 +1,7 @@
 from dependency_injector import containers, providers
 
-from examples.blog.author.domain.services.author_service import AuthorService
-from examples.blog.author.infrastructure.repositories.author_repository import (
+from ...domain.services.author_service import AuthorService
+from ..repositories.author_repository import (
     AuthorRepository,
 )
 

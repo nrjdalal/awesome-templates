@@ -63,6 +63,15 @@ An example PR should include:
      `get_user_by_user_id` vs `get_user_by_ids`). Single-lookup
      examples may keep short names (`get_todo`, `update_todo`,
      `delete_todo`).
+   - **Imports must survive the copy** (CI-enforced): intra-domain
+     imports are package-relative (`from ..dtos...`), cross-domain
+     imports reference the post-copy layout
+     (`from src.<other_domain>...`), and bootstraps wire imported
+     module objects (`wire(modules=[<router module>])`). Absolute
+     `examples.*` imports are rejected by
+     `tools/check_examples_copyflow.py` (pre-commit + CI) and every
+     example is booted post-copy by
+     `tests/integration/examples/test_copyflow_smoke.py`.
 2. **A README** in `examples/{name}/README.md` covering:
    - What pattern the example teaches (2–3 sentences).
    - `curl` requests a reader can paste to exercise the endpoints.
@@ -100,11 +109,18 @@ Populated incrementally as contributors land the good-first-issues:
 |---|---|---|---|
 | `todo/` | Minimal CRUD domain (zero infra) | DB-only | ✅ [#112](https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/112) |
 | `url_shortener/` | CRUD + Taskiq worker cleanup task | DB-only | ✅ [#239](https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/239) |
-| `blog/` | Two domains + Protocol-based cross-domain DIP | DB-only | ✅ [#237](https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/237) |
+| `blog/` | Two domains + Protocol-based cross-domain DIP | DB-only | ✅ [#237](https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/237)&nbsp;† |
 | `webhook_receiver/` | Worker task driven by a broker message | DB-only | ✅ [#240](https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/240) |
 | `simple_chatbot/` | Minimal PydanticAI Agent — no RAG | LLM-calling | ✅ [#249](https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/249) |
 | `chatbot_with_guardrails/` | Runtime LLM guardrails around a PydanticAI Agent | LLM-calling | ✅ [#256](https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/256) |
 | `chatbot_with_memory/` | Multi-turn chatbot with session memory and history replay | LLM-calling | ✅ [#255](https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/255) |
+
+> † **`blog/` does not yet run via the copy-into-`src/` flow.** Unlike the
+> single-domain examples above, `blog/` still uses absolute intra-example
+> imports, so copying it into `src/` currently fails at boot (the two
+> `src/`-level domains re-register the same table). Read it in place for the
+> cross-domain DIP pattern; making it copy-runnable is tracked as
+> [#261](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/261).
 
 Finished examples move from 🟡 to ✅ with a link to the PR that landed
 them. If an example you want is not on the list, open a

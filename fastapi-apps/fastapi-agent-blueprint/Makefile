@@ -1,4 +1,4 @@
-.PHONY: help setup quickstart demo demo-rag dev worker langfuse-env observability-langfuse observability-langfuse-down test lint format check check-core check-full check-minimal clean diagrams
+.PHONY: help setup quickstart demo demo-rag dev worker langfuse-env observability-langfuse observability-langfuse-down test lint format check check-core check-full check-minimal smoke-examples clean diagrams
 
 LANGFUSE_ENV_FILE := _env/langfuse.env
 MINIMAL_UV_ENV := /tmp/fastapi-agent-blueprint-minimal-venv
@@ -140,6 +140,12 @@ check-full:
 check-minimal:
 	UV_PROJECT_ENVIRONMENT=$(MINIMAL_UV_ENV) uv sync --group dev && \
 	UV_PROJECT_ENVIRONMENT=$(MINIMAL_UV_ENV) uv run pytest tests/integration/_core/test_minimal_install.py -v
+
+## Copy-flow smoke: every example must boot after cp-to-src (#260).
+## CI's test job already runs this via `pytest tests/`; this target is the
+## fast local loop (make check-core excludes tests/integration).
+smoke-examples:
+	uv run pytest tests/integration/examples -v
 
 ## Run pre-commit on all files
 pre-commit:

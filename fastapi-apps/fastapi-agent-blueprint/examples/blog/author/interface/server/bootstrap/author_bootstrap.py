@@ -2,12 +2,15 @@
 
 from fastapi import FastAPI
 
-from examples.blog.author.infrastructure.di.author_container import AuthorContainer
-from examples.blog.author.interface.server.routers import author_router
+from ....infrastructure.di.author_container import AuthorContainer
+from ..routers import author_router
 
 
 def create_author_container(author_container: AuthorContainer) -> None:
-    author_container.wire(packages=["examples.blog.author.interface.server.routers"])
+    # Wire the imported module object (not a package path string) so the
+    # Provide markers resolve no matter where the domain package lives
+    # (examples/ before the copy, src/ after).
+    author_container.wire(modules=[author_router])
 
 
 def setup_author_routes(app: FastAPI) -> None:

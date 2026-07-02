@@ -1,7 +1,8 @@
-from examples.blog.post.domain.dtos.post_dto import PostDTO
-from examples.blog.post.infrastructure.database.models.post_model import PostModel
 from src._core.infrastructure.persistence.rdb.base_repository import BaseRepository
 from src._core.infrastructure.persistence.rdb.database import Database
+
+from ...domain.dtos.post_dto import PostDTO
+from ..database.models.post_model import PostModel
 
 
 class PostRepository(BaseRepository[PostDTO]):

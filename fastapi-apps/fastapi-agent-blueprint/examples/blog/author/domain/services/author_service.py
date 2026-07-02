@@ -1,12 +1,13 @@
-from examples.blog.author.domain.dtos.author_dto import AuthorDTO
-from examples.blog.author.domain.protocols.author_repository_protocol import (
-    AuthorRepositoryProtocol,
-)
-from examples.blog.author.interface.server.schemas.author_schema import (
+from src._core.domain.services.base_service import BaseService
+
+from ...interface.server.schemas.author_schema import (
     CreateAuthorRequest,
     UpdateAuthorRequest,
 )
-from src._core.domain.services.base_service import BaseService
+from ..dtos.author_dto import AuthorDTO
+from ..protocols.author_repository_protocol import (
+    AuthorRepositoryProtocol,
+)
 
 
 class AuthorService(BaseService[CreateAuthorRequest, UpdateAuthorRequest, AuthorDTO]):

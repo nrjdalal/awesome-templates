@@ -22,7 +22,7 @@ problem framing → approach options → plan → implement
 | problem framing | Confirm the actual problem, scope, edge cases. Distinguish change-of-the-day vs. systemic issue. | `/plan-feature` Phase 0 (Requirements); `/fix-bug` Phase 1 (Reproduce); ad hoc | Mandatory by default |
 | approach options | Compare 2~3 design-level candidates with trade-offs. Recommend exactly one. | `/plan-feature` Phase 1 (Approach Options) | Conditionally mandatory (architecture commitment present) |
 | plan | Produce the implementation plan: tasks, ordering, validation. | `/plan-feature` Phase 4 (Tasks); `/fix-bug` Phase 2 (Trace) | Mandatory by default |
-| implement | Write the code following project patterns. | `/new-domain`, `/add-api`, `/add-worker-task`, `/add-admin-page`, `/add-cross-domain`, `/migrate-domain` | n/a (this *is* the work) |
+| implement | Write the code following project patterns. | `/new-domain`, `/add-api`, `/add-worker-task`, `/add-admin-page`, `/add-cross-domain`, `/migrate-domain`; `/execute-plan` (multi-task orchestration) | n/a (this *is* the work) |
 | verify | Confirm the change does what it claims via tests, runs, or schema validation. | `/test-domain run`, `pytest`, `make demo`, `make demo-rag`, `alembic upgrade head` | Mandatory by default |
 | self-review | Audit the change against project constraints before declaring done. | `/review-architecture`, `/security-review` (when applicable) | Mandatory by default |
 | completion gate | Cross-check drift, generate ADR/follow-up if needed, signal end-of-work. | `/review-pr`, `/sync-guidelines` | Mandatory-by-default; non-blocking reminder via Phase 4 hook + Governor Footer Lint CI |
@@ -31,7 +31,7 @@ Steps are sequential. Returning to an earlier step is permitted (e.g. `verify` f
 
 ### Step interaction with skills
 
-Each shared-procedure skill carries a `Default Flow Position` section that pins which step(s) the skill participates in. Implementation skills (Tier 2 Keep) belong to `implement`; review skills belong to `self-review` or `completion gate`; planning skills span `framing`/`approach options`/`plan`. See [harness-asset-matrix.md §Tier 2](harness-asset-matrix.md#tier-2--skills-3-layer-hybrid-c) for the per-skill mapping.
+Each shared-procedure skill carries a `Default Flow Position` section that pins which step(s) the skill participates in. Implementation skills (Tier 2 Keep) belong to `implement`; review skills belong to `self-review` or `completion gate`; planning skills span `framing`/`approach options`/`plan`; `execute-plan` consumes an approved Execution Packet and orchestrates `implement` → `verify` → `self-review` → `completion gate` for complex / governor-changing / multi-task work (§4 Native execution workflow). See [harness-asset-matrix.md §Tier 2](harness-asset-matrix.md#tier-2--skills-3-layer-hybrid-c) for the per-skill mapping.
 
 A skill must not invoke itself recursively. `/plan-feature` calling `/plan-feature` is forbidden; the recursion guard sits in each skill body.
 
@@ -154,6 +154,26 @@ This is the primary cross-tool clarification: what comes from the upstream "supe
 - Importing an external "superpowers" package and treating it as a dependency. The repo carries no such dependency.
 - Substituting any project-specific skill with a generic philosophy reference.
 - Allowing the philosophy port to weaken any architectural ADR.
+
+### Native execution workflow (issue #257)
+
+The native harness owns the execution workflow after the design phase. Upstream
+superpowers may be used as a design lens while shaping the harness, but routine
+project operation remains local: `/plan-feature` / `$plan-feature` produces an
+Execution Packet, then `/execute-plan` / `$execute-plan` executes complex,
+architecture-changing, governor-changing, or multi-task work.
+
+The Execution Packet is the boundary between planning and implementation. It
+contains Goal, Scope, Success Criteria, Selected Approach, Architecture Impact,
+Task List, Verification Gates, and Review Gates. The packet is recorded in the
+shared work ledger so Claude and Codex can resume with the same current task,
+verification state, and review state.
+
+Enforcement is advisory-first. Stop hooks may remind the agent when native
+harness workflow state is missing, verification is pending, or governor-changing
+work lacks recorded review state. Future PRs may promote only high-confidence
+conditions to hard gates or CI failures after tests prove the detection avoids
+exploration, trivial edits, and single-skill work.
 
 ### Model identity
 

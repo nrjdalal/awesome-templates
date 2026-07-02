@@ -2,12 +2,15 @@
 
 from fastapi import FastAPI
 
-from examples.blog.post.infrastructure.di.post_container import PostContainer
-from examples.blog.post.interface.server.routers import post_router
+from ....infrastructure.di.post_container import PostContainer
+from ..routers import post_router
 
 
 def create_post_container(post_container: PostContainer) -> None:
-    post_container.wire(packages=["examples.blog.post.interface.server.routers"])
+    # Wire the imported module object (not a package path string) so the
+    # Provide markers resolve no matter where the domain package lives
+    # (examples/ before the copy, src/ after).
+    post_container.wire(modules=[post_router])
 
 
 def setup_post_routes(app: FastAPI) -> None:

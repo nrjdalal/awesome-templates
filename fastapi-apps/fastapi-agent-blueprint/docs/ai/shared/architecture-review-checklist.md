@@ -91,7 +91,7 @@ Check app-level files and auto-discovery wiring.
 - [ ] [MEDIUM] `src/{name}/interface/server/bootstrap/{name}_bootstrap.py` exists
 - [ ] [MEDIUM] `src/{name}/infrastructure/di/{name}_container.py` exists
 - [ ] [MEDIUM] `src/{name}/__init__.py` exists
-- [ ] [HIGH] `wire(packages=[...])` targets the correct packages
+- [ ] [HIGH] `wire(packages=[...])` (or `wire(modules=[...])`) targets the correct packages/modules
 - [ ] [NOTE] Domain discovery is automatic; manual app-level registration should not be added unless the pattern itself changes
 
 ## 9. DynamoDB Domain Compliance
@@ -105,3 +105,13 @@ Check only when a domain uses DynamoDB (`infrastructure/dynamodb/` exists).
 - [ ] [HIGH] DI container uses `dynamodb_client=core_container.dynamodb_client`, not `database=core_container.database`
 - [ ] [BLOCKING] No `from sqlalchemy` imports remain in DynamoDB domain files
 - [ ] [HIGH] Protocol inherits from `BaseDynamoRepositoryProtocol[{Name}DTO]`, not `BaseRepositoryProtocol`
+
+## 10. Examples Copy-Flow Compliance
+
+Check only files under `examples/` (issue #260). Machine guards:
+`tools/check_examples_copyflow.py` (pre-commit + CI `architecture` job) and
+`tests/integration/examples/test_copyflow_smoke.py` (cp-to-src boot probe).
+
+- [ ] [HIGH] No absolute `examples.*` imports anywhere in `examples/**/*.py` — intra-domain imports are package-relative
+- [ ] [HIGH] Cross-domain imports between example domains reference the post-copy layout (`from src.{other_domain} import ...`), never `examples.{name}.{other_domain}`
+- [ ] [HIGH] Example bootstraps wire imported module objects — `wire(modules=[<router module>])` — covering the router and any worker task module the InMemory broker executes in the server process

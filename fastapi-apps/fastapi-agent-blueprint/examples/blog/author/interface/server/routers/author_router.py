@@ -1,14 +1,15 @@
 from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, Query
 
-from examples.blog.author.domain.services.author_service import AuthorService
-from examples.blog.author.infrastructure.di.author_container import AuthorContainer
-from examples.blog.author.interface.server.schemas.author_schema import (
+from src._core.application.dtos.base_response import SuccessResponse
+
+from ....domain.services.author_service import AuthorService
+from ....infrastructure.di.author_container import AuthorContainer
+from ..schemas.author_schema import (
     AuthorResponse,
     CreateAuthorRequest,
     UpdateAuthorRequest,
 )
-from src._core.application.dtos.base_response import SuccessResponse
 
 router = APIRouter()
 

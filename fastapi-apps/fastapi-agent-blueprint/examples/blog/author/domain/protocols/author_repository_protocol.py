@@ -1,7 +1,8 @@
 from typing import Protocol
 
-from examples.blog.author.domain.dtos.author_dto import AuthorDTO
 from src._core.domain.protocols.repository_protocol import BaseRepositoryProtocol
+
+from ..dtos.author_dto import AuthorDTO
 
 
 class AuthorRepositoryProtocol(BaseRepositoryProtocol[AuthorDTO], Protocol):

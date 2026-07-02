@@ -6,7 +6,7 @@
 > This file is auto-extracted/updated from `src/user/` (reference domain) and `src/_core/` (Base classes)
 > when `/sync-guidelines` is run. **Run `/sync-guidelines` instead of editing manually.**
 >
-> Last updated: 2026-06-01 (#211 / #197 Phase 5 — guardrail observability ledger + red-team suite)
+> Last updated: 2026-07-02 (#260 — `examples-copyflow` pre-commit guard added to §7 Architecture Violation Check). Prior: 2026-06-01 (#211 / #197 Phase 5 — guardrail observability ledger + red-team suite)
 
 ## Section Index
 §0 Project Scale and Design Philosophy |
@@ -569,6 +569,7 @@ class {Name}Container(containers.DeclarativeContainer):
 
 - no-domain-infra-import: No Infrastructure imports from Domain layer
 - no-entity-pattern: No Entity pattern -- unified to DTO (background: ADR 004)
+- examples-copyflow: No absolute `examples.*` imports inside `examples/` -- the cp-to-src activation contract (#260; AST-based `tools/check_examples_copyflow.py`, paired with the `tests/integration/examples/` boot smoke)
 
 ### Claude Hook
 

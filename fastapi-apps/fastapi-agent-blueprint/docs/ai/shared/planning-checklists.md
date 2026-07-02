@@ -85,9 +85,10 @@
 | Cross-domain connection | `/add-cross-domain` | `from:{consumer} to:{provider}` | Protocol-based DIP |
 | Test generation | `/test-domain` | `{domain} generate` | baseline + conditional test files (see `docs/ai/shared/test-files.md`) |
 | Test execution | `/test-domain` | `{domain} run` | unit + integration + e2e |
-| Architecture verification | `/review-architecture` | `{domain}` or `all` | 9 categories, severity-tagged architecture audit |
+| Architecture verification | `/review-architecture` | `{domain}` or `all` | 10 categories, severity-tagged architecture audit |
 | Security audit | `/security-review` | `{domain}`, `{file}`, or `all` | 12 categories, feature-freshness preflight, stale-drift detection |
 | Guideline sync | `/sync-guidelines` | (none) | Close the quality gate after design changes or review drift |
+| Approved plan execution | `/execute-plan` / `$execute-plan` | `{Execution Packet or plan ref}` | Native execution workflow for complex, architecture-changing, governor-changing, or multi-task plans |
 | Bug fix | `/fix-bug` | `"{description}"` | Reproduce -> Trace -> Fix -> Verify |
 | DB migration | `/migrate-domain` | `generate\|upgrade\|downgrade\|status` | Manual review required after autogenerate |
 | New member onboarding | `/onboard` | (none) | Experience-level adaptive (Beginner/Intermediate/Advanced) |
@@ -208,4 +209,43 @@ Task 1 -> 3 -> 5 -> 6
 - [ ] `/test-domain {domain} run` — run tests
 - [ ] `pre-commit run --all-files` — lint/format check
 - [ ] Verify endpoint behavior in Swagger UI
+```
+
+## 6. Execution Packet Contract
+
+Every approved multi-task, architecture-changing, or governor-changing plan must
+end with an **Execution Packet** for `/execute-plan` / `$execute-plan`.
+
+Required fields:
+
+- **Goal**: one sentence.
+- **Scope**: affected domains, files, interfaces, and explicit exclusions.
+- **Success Criteria**: observable completion conditions.
+- **Selected Approach**: selected option and rationale.
+- **Architecture Impact**: layer, domain, dependency, DTO, migration, and
+  compatibility impact.
+- **Task List**: ordered task IDs, titles, mapped skills, dependencies, and
+  initial status.
+- **Verification Gates**: exact commands or manual probes with expected result.
+- **Review Gates**: self-review, architecture/security review, sync-guidelines,
+  cross-tool review by the other harness when governor-changing, and fallback
+  policy.
+
+After approval, record the packet in the work ledger:
+
+```python
+from work_ledger import update_goal_scope_plan, update_workflow_state
+
+update_goal_scope_plan(
+    goal="<Goal>",
+    scope="<Scope>",
+    plan="<Task List>",
+    updated_by="skill:plan-feature",
+)
+update_workflow_state(
+    stage="planned",
+    plan_ref="<issue, PR, or plan file>",
+    tasks=[{"id": "1", "title": "<task>", "status": "pending"}],
+    updated_by="skill:plan-feature",
+)
 ```

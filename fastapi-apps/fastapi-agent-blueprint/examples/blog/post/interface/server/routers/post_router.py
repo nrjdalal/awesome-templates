@@ -1,14 +1,15 @@
 from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, Query
 
-from examples.blog.post.domain.services.post_service import PostService
-from examples.blog.post.infrastructure.di.post_container import PostContainer
-from examples.blog.post.interface.server.schemas.post_schema import (
+from src._core.application.dtos.base_response import SuccessResponse
+
+from ....domain.services.post_service import PostService
+from ....infrastructure.di.post_container import PostContainer
+from ..schemas.post_schema import (
     CreatePostRequest,
     PostResponse,
     UpdatePostRequest,
 )
-from src._core.application.dtos.base_response import SuccessResponse
 
 router = APIRouter()
 

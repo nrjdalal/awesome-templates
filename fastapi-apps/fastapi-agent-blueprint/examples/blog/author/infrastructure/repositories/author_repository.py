@@ -1,7 +1,8 @@
-from examples.blog.author.domain.dtos.author_dto import AuthorDTO
-from examples.blog.author.infrastructure.database.models.author_model import AuthorModel
 from src._core.infrastructure.persistence.rdb.base_repository import BaseRepository
 from src._core.infrastructure.persistence.rdb.database import Database
+
+from ...domain.dtos.author_dto import AuthorDTO
+from ..database.models.author_model import AuthorModel
 
 
 class AuthorRepository(BaseRepository[AuthorDTO]):

@@ -1,6 +1,6 @@
 # Suggested Commands
 
-> Last synced: 2026-06-10 (admin theme collapsed to a single Toss-style theme — removed the `ADMIN_THEME_PALETTE` env var/setting from the Admin Dashboard section). Prior: 2026-06-02 via #193 (admin UI/UX + design system; added ADMIN_BRAND_NAME / ADMIN_DARK_MODE_DEFAULT env vars; no new make targets).
+> Last synced: 2026-07-02 via #260 (added `make smoke-examples` — per-example cp→src boot smoke — and the `examples-copyflow` checker to Architecture Verification). Prior: 2026-06-10 (admin theme collapsed to a single Toss-style theme — removed the `ADMIN_THEME_PALETTE` env var/setting from the Admin Dashboard section).
 > Purpose: Quick reference for Claude Code when executing shell commands.
 > Also referenced when running Skills.
 > Default Flow context: see [`AGENTS.md` § Default Coding Flow](../../AGENTS.md#default-coding-flow). The commands below are consulted by the `implement` and `verify` steps; this file is **not** a primary entry point in the Default Flow.
@@ -39,6 +39,7 @@ make check         # fast local alias for check-core
 make check-core    # lint + format check + core tests
 make check-full    # CI-parity checks; requires admin + aws extras and dynamodb-local
 make check-minimal # no-extra minimal-install regression
+make smoke-examples # copy-flow smoke: every example boots after cp-to-src (#260)
 
 # Run against real PostgreSQL (docker-compose.local.yml postgres service)
 make test-pg
@@ -113,6 +114,9 @@ grep -r "class.*Entity" src/ --include="*.py"
 
 # Verify no Mapper classes (should return nothing)
 grep -r "class.*Mapper" src/ --include="*.py"
+
+# Verify examples have no absolute examples.* imports (copy-flow guard, #260)
+uv run python tools/check_examples_copyflow.py
 ```
 
 ## DynamoDB Local
