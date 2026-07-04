@@ -166,7 +166,7 @@ Every R-point must be closed as one of: **Fixed** / **Explicitly deferred with r
 
 Classify each question: **effect** (is it working? what's the result?) vs **process** (what should we do? what's next?). Effect questions must be answered with evidence, not process content. Mixed questions: effect-first with evidence, then process options separately. In multi-round conversations, restate the original question before proposing process changes.
 
-**Review-skill enforcement:** `/review-pr`, `/review-architecture`, `/security-review` require a mandatory `Effect Answer` field (1–3 sentence evidence-based summary of what the change *actually* does) before `Findings`. Skipping this field violates Guard H. See `docs/ai/shared/skills/review-pr.md` § Review Contract.
+**Review-skill enforcement:** `/review-pr`, `/review-architecture`, `/security-review` require a mandatory `Effect Answer` field (1–3 sentence evidence-based summary of what the change *actually* does) before `Findings`. Skipping this field violates Guard H. See `docs/ai/shared/review-protocol.md` §3 (Output Contract).
 
 ### I. Self-Licensing Detection — Sanity Check Before Defending a Challenged Conclusion
 

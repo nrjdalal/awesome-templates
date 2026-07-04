@@ -33,29 +33,18 @@ Also run when the user explicitly asks for a security audit.
 
 ## Review Contract
 
-Every result must include:
+This audit emits the shared [Review Protocol §3 output contract](../review-protocol.md#3-output-contract):
+`Scope`, `Effect Answer`, `Sources Loaded`, `Findings` (OPEN only), `Coverage` (OK/SKIP),
+`Drift Candidates`, `Verdict`, `Next Actions`, `Completion State`, `Sync Required`.
 
-- `Scope` - audit target, audited domains/files, important exclusions
-- `Effect Answer` - 1-3 sentence evidence-based summary of what security properties the audited
-  code *actually* exposes or protects. Must come from reading the source, not from procedure
-  restatement. Purpose: Guard H (AGENTS.md § Reasoning-Level Consistency Guards) — security
-  questions are almost always effect-type; "I ran the security checklist" is a process answer,
-  not an effect answer. Write `Effect Answer: N/A — process question` only for checklist-only
-  process queries.
-- `Sources Loaded` - exact shared rule sources used for the audit
-- `Findings` - only open issues; each item includes `severity`, `rule source`,
-  `file:line`, `impact`, and `recommended fix`
-- `Drift Candidates` - shared docs, checklists, wrappers, or `project-dna`
-  targets that may need sync; each item includes `target`, `reason`,
-  `auto-fix`, and `sync-required`
-- `Next Actions` - remediation, verification, sync path
-- `Completion State` - concise closure status for the audit
-- `Sync Required` - explicit `true` or `false`
+- This skill applies the **`SEC` dimension** ([Review Protocol §1](../review-protocol.md#1-review-dimensions-concern-based-stable-ids)) in depth via the 12-category checklist below; every `SEC` finding is `rule-source`-based and cites its checklist category ([Finding Basis §2](../review-protocol.md#2-finding-basis-anti-hallucination-rule)).
+- `Verdict` is **`N/A (audit-only scope)`** — a security audit, not a behavior PASS/FAIL ([Review Protocol §4](../review-protocol.md#4-intent--pass-state)).
+- `Effect Answer` is required (Guard H); security questions are almost always effect-type, so "I ran the checklist" is a process answer, not an effect answer. Write `Effect Answer: N/A — process question` only for checklist-only process queries.
 
 ### Severity Taxonomy
 
-- Review state: `OPEN`, `OK`, `SKIP`
-- Severity: `BLOCKING`, `HIGH`, `MEDIUM`, `LOW`, `NOTE`
+State and severity are defined in [Review Protocol §3](../review-protocol.md#3-output-contract):
+review state `OPEN` / `OK` / `SKIP`; severity `BLOCKING` / `HIGH` / `MEDIUM` / `LOW` / `NOTE`.
 
 ## Audit Target
 
@@ -143,17 +132,22 @@ Scope
 - Target: all
 - Audited domains: docs, user, _core
 
+Effect Answer
+- One user write endpoint is exposed without an auth dependency; admin pages gate correctly.
+
 Sources Loaded
-- AGENTS.md
-- docs/ai/shared/project-dna.md
+- docs/ai/shared/review-protocol.md
 - docs/ai/shared/security-checklist.md
+- AGENTS.md
 
 Findings
-- [OPEN][BLOCKING] Security checklist - src/user/interface/server/routers/user_router.py:19
+- [OPEN][BLOCKING][SEC] src/user/interface/server/routers/user_router.py:19 — basis: rule-source (security-checklist §2)
   Impact: write endpoint has no authentication dependency and is exposed to unauthenticated callers.
   Recommended fix: add the project's auth dependency before allowing create/update/delete actions.
-- [OK][BLOCKING] Security checklist §2 - Admin dashboard: require_auth() awaited in all @ui.page handlers
-- [SKIP] Security checklist §4.2 - File Upload input validation: project-dna §8 and live code both confirm feature inactive
+
+Coverage
+- [OK][SEC] security-checklist §2 Admin dashboard — require_auth() awaited in all @ui.page handlers
+- [SKIP][SEC] security-checklist §4.2 File Upload — project-dna §8 and live code both confirm feature inactive
 
 Drift Candidates
 - target: docs/ai/shared/project-dna.md
@@ -164,6 +158,9 @@ Drift Candidates
   reason: active LLM usage exists but the applicable checklist wording is stale.
   auto-fix: no
   sync-required: true
+
+Verdict
+- N/A (audit-only scope)
 
 Next Actions
 - Fix the endpoint authentication gap.
@@ -176,8 +173,8 @@ Sync Required
 - true
 ```
 
-When there are no security findings, still emit all sections. In particular, do
-not omit `Drift Candidates` or `Sync Required`.
+When there are no security findings, still emit every section: `Findings: none`, the `Coverage`
+records, `Verdict: N/A (audit-only scope)`, and do not omit `Drift Candidates` or `Sync Required`.
 
 ## Cross-Tool Review Prompt Template
 
@@ -228,11 +225,13 @@ Review Angles
 Output format
 - Scope
 - Sources Loaded
-- Findings: open issues only, each with severity, rule source, file:line,
+- Findings: OPEN issues only, each with severity, dimension ID (SEC), basis, file:line,
   impact, and recommended fix
+- Coverage: OK/SKIP records with evidence
 - Drift Candidates: target, reason, auto-fix, sync-required
-- R-points: every cross-review point must include one closure category:
-  Fixed, Deferred-with-rationale, or Rejected. Do not use non-canonical labels.
+- R-points: every cross-review point closes as Fixed / Deferred-with-rationale / Rejected
+  (AGENTS Guard G vocabulary; no non-canonical labels)
+- Verdict: N/A (audit-only scope)
 - Final Verdict: clean / minor fixes recommended / still needs security review /
   block merge
 - Sync Required: true or false

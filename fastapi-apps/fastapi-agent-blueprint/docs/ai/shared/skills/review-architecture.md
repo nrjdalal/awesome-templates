@@ -19,28 +19,18 @@ shared architecture rules, then decide whether the audit also requires
 
 ## Review Contract
 
-Every result must include:
+This audit emits the shared [Review Protocol §3 output contract](../review-protocol.md#3-output-contract):
+`Scope`, `Effect Answer`, `Sources Loaded`, `Findings` (OPEN only), `Coverage` (OK/SKIP),
+`Drift Candidates`, `Verdict`, `Next Actions`, `Completion State`, `Sync Required`.
 
-- `Scope` - audit target, audited domains, important exclusions
-- `Effect Answer` - 1-3 sentence evidence-based summary of what the audited domain/code *actually*
-  does or exposes. Must come from reading the source, not from restating the checklist procedure.
-  Purpose: Guard H (AGENTS.md § Reasoning-Level Consistency Guards) — effect questions must be
-  answered with evidence first. Write `Effect Answer: N/A — process question` for checklist-only
-  process questions.
-- `Sources Loaded` - exact shared rule sources used for the audit
-- `Findings` - only open issues; each item includes `severity`, `rule source`,
-  `file:line`, `impact`, and `recommended fix`
-- `Drift Candidates` - shared docs, checklists, wrappers, or `project-dna`
-  targets that may need sync; each item includes `target`, `reason`,
-  `auto-fix`, and `sync-required`
-- `Next Actions` - implementation follow-up, verification, sync path
-- `Completion State` - concise closure status for the audit
-- `Sync Required` - explicit `true` or `false`
+- This skill applies the **`ARCH` dimension** ([Review Protocol §1](../review-protocol.md#1-review-dimensions-concern-based-stable-ids)) in depth via the 10-category checklist below; every `ARCH` finding is `rule-source`-based and cites its checklist category ([Finding Basis §2](../review-protocol.md#2-finding-basis-anti-hallucination-rule)).
+- `Verdict` is **`N/A (audit-only scope)`** — a structural audit, not a behavior PASS/FAIL ([Review Protocol §4](../review-protocol.md#4-intent--pass-state)).
+- `Effect Answer` is required (Guard H); write `Effect Answer: N/A — process question` for checklist-only process questions.
 
 ### Severity Taxonomy
 
-- Review state: `OPEN`, `OK`, `SKIP`
-- Severity: `BLOCKING`, `HIGH`, `MEDIUM`, `LOW`, `NOTE`
+State and severity are defined in [Review Protocol §3](../review-protocol.md#3-output-contract):
+review state `OPEN` / `OK` / `SKIP`; severity `BLOCKING` / `HIGH` / `MEDIUM` / `LOW` / `NOTE`.
 
 ## Audit Target
 
@@ -135,23 +125,31 @@ Scope
 - Target: docs
 - Audited domains: docs
 
+Effect Answer
+- The docs domain wires an RDB-backed query path; one service imports infrastructure directly.
+
 Sources Loaded
-- AGENTS.md
-- docs/ai/shared/project-dna.md
+- docs/ai/shared/review-protocol.md
 - docs/ai/shared/architecture-review-checklist.md
+- AGENTS.md
 
 Findings
-- [OPEN][BLOCKING] Architecture checklist - src/docs/domain/services/docs_service.py:12
+- [OPEN][BLOCKING][ARCH] src/docs/domain/services/docs_service.py:12 — basis: rule-source (architecture-review-checklist §1)
   Impact: domain layer imports infrastructure directly, breaking the layering rule.
   Recommended fix: introduce a Protocol in the domain layer and invert the dependency.
-- [OK][MEDIUM] Architecture checklist §4 - DI container: providers.DeclarativeContainer and providers.Factory used correctly
-- [SKIP] Architecture checklist §9 - DynamoDB domain compliance: no infrastructure/dynamodb/ directory found in docs domain
+
+Coverage
+- [OK][ARCH] architecture-review-checklist §4 DI container — providers.DeclarativeContainer + providers.Factory used correctly
+- [SKIP][ARCH] architecture-review-checklist §9 DynamoDB — no infrastructure/dynamodb/ directory in docs domain
 
 Drift Candidates
 - target: docs/ai/shared/project-dna.md
   reason: the current admin page pattern differs from the documented layout.
   auto-fix: yes
   sync-required: true
+
+Verdict
+- N/A (audit-only scope)
 
 Next Actions
 - Refactor the direct import.
@@ -164,8 +162,8 @@ Sync Required
 - true
 ```
 
-When the audit is clean, still emit `Findings: none`, `Drift Candidates: none`,
-and `Sync Required: false`.
+When the audit is clean, still emit every section: `Findings: none`, the `Coverage` records,
+`Verdict: N/A (audit-only scope)`, `Drift Candidates: none`, and `Sync Required: false`.
 
 ## Cross-Tool Review Prompt Template
 
@@ -216,11 +214,13 @@ Review Angles
 Output format
 - Scope
 - Sources Loaded
-- Findings: open issues only, each with severity, rule source, file:line,
+- Findings: OPEN issues only, each with severity, dimension ID (ARCH), basis, file:line,
   impact, and recommended fix
+- Coverage: OK/SKIP records with evidence
 - Drift Candidates: target, reason, auto-fix, sync-required
-- R-points: every cross-review point must include one closure category:
-  Fixed, Deferred-with-rationale, or Rejected. Do not use non-canonical labels.
+- R-points: every cross-review point closes as Fixed / Deferred-with-rationale / Rejected
+  (AGENTS Guard G vocabulary; no non-canonical labels)
+- Verdict: N/A (audit-only scope)
 - Final Verdict: clean / minor fixes recommended / still needs architecture
   review / block merge
 - Sync Required: true or false

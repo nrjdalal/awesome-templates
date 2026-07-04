@@ -1,6 +1,6 @@
 # 049. Admin Identity Realm Separation — Dedicated Bounded Context + Token Realm
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-06-01
 - Related issue: [#218](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/218)
 - Supersedes (partial): PR #154/#155 unified-table admin model. The admin-identity invariants IC-155-1~4 (project-dna §15.5) are re-defined against the new `admin_identity` bounded context rather than the shared `user` table. The customer JWT invariants IC-153-2/3/4/6 remain in force for **both** realms.

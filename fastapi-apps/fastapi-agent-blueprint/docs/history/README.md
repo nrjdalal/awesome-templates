@@ -3,11 +3,12 @@
 This directory records the reasoning behind the structural and technology
 choices that shape how code is written in this project.
 
-> **Not every decision is required reading.** The 14 entries below are the
-> load-bearing ones — a contributor needs to internalize these to work
-> anywhere in the codebase. Superseded, operational, and tooling decisions
-> have been preserved under [`archive/`](archive/) so the historical record
-> is intact without burying the core set.
+> **Not every decision is required reading.** The entries below are the
+> load-bearing set — the active decisions a contributor needs to internalize to
+> work anywhere in the codebase (they are exactly the non-archived ADRs).
+> Superseded, operational, and tooling decisions have been preserved under
+> [`archive/`](archive/) so the historical record is intact without burying the
+> core set.
 
 ## Start here — core reading order
 
@@ -22,6 +23,7 @@ Read top-to-bottom; each builds on the ones above it.
 | [007](007-di-container-and-app-separation.md) | DI Container Layering and App Separation | How CoreContainer, DomainContainer, and DynamicContainer fit together. |
 | [019](019-domain-auto-discovery.md) | Domain Auto-Discovery | Why adding a new domain needs no container edits. |
 | [022](022-underscore-prefix-convention.md) | Underscore Prefix Convention | Why `_core`, `_apps` lead with an underscore; what it signals. |
+| [043](043-responsibility-driven-refactor.md) | Responsibility-Driven Refactor | Where provider SDKs, exception mapping, and typed service contracts belong — layer responsibilities readable from the code structure. |
 
 ### 2. Object-model rules
 
@@ -36,6 +38,7 @@ Read top-to-bottom; each builds on the ones above it.
 |---|-------|----------------|
 | [009](009-async-external-clients.md) | Async External Client Standardization | Contract every AWS / HTTP / external client follows. |
 | [017](017-exception-handling-strategy.md) | Exception Handling Strategy | Native handler over middleware; 4-typed handler topology. |
+| [049](049-admin-identity-realm-separation.md) | Admin Identity Realm Separation | Admin vs. customer identity as separate bounded contexts + JWT realms; "share the auth mechanism, separate the trust boundary." |
 
 ### 4. Current AI & persistence abstractions
 
@@ -45,15 +48,20 @@ Read top-to-bottom; each builds on the ones above it.
 | [039](039-pydantic-ai-embedder-transition.md) | PydanticAI Embedder Transition | Current embedding adapter (supersedes the per-provider Selector in 035). |
 | [040](040-rag-as-reusable-pattern.md) | RAG as a Reusable `_core` Pattern | Why RAG lives in `_core/`, not in its own domain. |
 | [041](041-vector-backends-consolidation.md) | Multi-backend Infrastructure Layout | Current `src/_core/infrastructure/` umbrella + subfolder convention. |
+| [042](042-optional-infrastructure-di-pattern.md) | Optional Infrastructure (Selector + Lazy Factory) | How every non-DB infra (storage, DynamoDB, vectors, embedding, LLM) is made optional without breaking app boot. |
+| [051](051-runtime-llm-guardrails.md) | Runtime LLM Guardrails | The runtime prompt-injection + output-integrity layer every LLM adapter wires; precise-block / fuzzy-log + `GUARDRAILS_ENABLED` kill-switch. |
 
 ### 5. Process & harness governance
 
 | # | Title | Why it matters |
 |---|-------|----------------|
 | [045](045-hybrid-harness-target-architecture.md) | Hybrid Harness Target Architecture | The 7-step Default Coding Flow + escape-token vocabulary + Claude/Codex adapter strategy that route AI-assisted work into framing → plan → verify → review by default. |
-| [046](046-observability-strategy.md) | Observability Strategy (OTEL + Langfuse opt-in) | `[otel]` extra, `OTEL_ENABLED` bootstrap, Langfuse opt-in recipe, and deferred prompt domain — the observability layer a contributor needs to understand before adding instrumented services. |
+| [046](046-otel-core-langfuse-recipe-prompt-domain-defer.md) | Observability Strategy (OTEL + Langfuse opt-in) | `[otel]` extra, `OTEL_ENABLED` bootstrap, Langfuse opt-in recipe, and deferred prompt domain — the observability layer a contributor needs to understand before adding instrumented services. |
 | [047](047-governor-review-provenance-consolidation.md) | Governor Review Provenance Consolidation | Folds per-PR `governor-review-log/` into PR-description `## Governor Footer` blocks (CI-linted by `tools/check_governor_footer.py`). The canonical record for all governor-changing PR audit trails. |
 | [048](048-independent-review-generalization.md) | Independent Review Generalization | Generalizes Pillar 2 to accept three modes (`cross-tool` / `self-structured` / `human`). Constrains `[skip-governor-footer]` bypass to non-governor-changing PRs. Read before customizing governance files. |
+| [050](050-midtask-scope-expansion-gate.md) | Mid-Task Scope-Expansion Gate | A capability gap discovered mid-task is new plan-class work; stage-based advisory reminder + Direction & Non-goals in `project-dna`. |
+| [052](052-native-execution-ledger-and-execute-plan.md) | Native Execution Ledger & Execute-Plan | The gitignored work-ledger state machine + `/execute-plan`; `/plan-feature` writes the plan, `/execute-plan` advances the Default-Flow stages. |
+| [053](053-shared-review-protocol.md) | Shared Review Protocol | One shared contract (dimensions / finding-basis / output / verdict / posting) for the three review skills; `review-pr` as the PR entry point. |
 
 ## Archive
 
@@ -68,7 +76,7 @@ the rationale behind each archival bucket.
 
 ## Writing a new ADR
 
-Numbering continues sequentially (next free number is 050). Only add a new
+Numbering continues sequentially (next free number is 054). Only add a new
 ADR when the decision is **load-bearing** — i.e. it constrains how future
 code will be written, not merely which tool was picked. Purely
 operational choices can be captured in `CHANGELOG.md` or a PR description.

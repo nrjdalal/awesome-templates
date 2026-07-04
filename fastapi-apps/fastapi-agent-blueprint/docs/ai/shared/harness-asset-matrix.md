@@ -161,6 +161,7 @@ rather than primary entry points (`Overlay`).
 | `security-checklist.md` | Keep | Low | High |
 | `test-patterns.md` | Keep | Low | High |
 | `architecture-review-checklist.md` | Keep | Low | Medium |
+| `review-protocol.md` | Keep | Low | High |
 | `ai-infrastructure-overview.md` | Keep | Low | Medium |
 | `repo-facts.md` | Keep | Low | Medium |
 | `test-files.md` | Keep | Low | Medium |
@@ -236,6 +237,16 @@ rather than primary entry points (`Overlay`).
 - **Migration risk**: Low.
 - **Stability impact**: Medium.
 - **Notes**: Examples-profile carve-out (`examples/todo`) was added 2026-04-26 — see `repo-facts.md`.
+
+### `review-protocol.md`
+
+- **Current role**: Canonical protocol shared by the three review skills (`/review-pr`, `/review-architecture`, `/security-review`): concern dimensions + stable IDs, the Finding Basis rule, the `Findings`/`Coverage` output contract, the intent/PASS `Verdict`, and the GitHub posting/verdict rules.
+- **Why it exists**: Unifies the review-skill family so review points, output shape, and posting are deterministic; replaces the per-skill "Core Principle" that forbade correctness/regression findings (issue #274).
+- **Replacement feasibility**: None — project-specific review contract.
+- **Final location**: unchanged.
+- **Migration risk**: Low (read-only reference; skills point to it).
+- **Stability impact**: High. All three review skills resolve their contract, dimensions, and posting rules from here; the Reasoning-Level Consistency Guards stay canonical in `AGENTS.md`.
+- **Notes**: `review-pr` is the PR-scoped entry point (emits a behavior `Verdict`); the other two are audit-only (`Verdict: N/A (audit-only scope)`). Skills depend on this protocol + the shared checklists, never on each other's bodies.
 
 ### `ai-infrastructure-overview.md`
 

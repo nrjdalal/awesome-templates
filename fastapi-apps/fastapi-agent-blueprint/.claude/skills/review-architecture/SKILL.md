@@ -20,9 +20,11 @@ Target: $ARGUMENTS (domain name or "all")
 1. Resolve the audit target and load the shared rule sources (Phase 0)
 2. Audit the target against the 10 architecture checklist categories (Phase 1)
 3. Determine `Drift Candidates` and whether `Sync Required` is `true` or `false` (Phase 2)
-4. Report using the shared review contract (Phase 3)
+4. Report using the protocol output contract — `Findings` (open) + `Coverage` (OK/SKIP) + `Verdict: N/A (audit-only scope)` (Phase 3)
 
-Read `docs/ai/shared/skills/review-architecture.md` for detailed steps and output format.
+Read `docs/ai/shared/skills/review-architecture.md` for detailed steps, and
+[`docs/ai/shared/review-protocol.md`](../../../docs/ai/shared/review-protocol.md) for the shared
+output contract (this skill applies the `ARCH` dimension in depth).
 Also refer to `docs/ai/shared/architecture-review-checklist.md` for the full checklist.
 For cross-tool review prompts, use the shared procedure's
 `Cross-Tool Review Prompt Template` section; do not duplicate the template here.
