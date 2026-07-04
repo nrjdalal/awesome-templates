@@ -9,6 +9,13 @@ contract:
   byte-equal to the Codex side automatically.
 * Module-level ``sys.exit`` is forbidden (Plan §D3) — shared import
   failure → ``_SHARED_OK = False`` and ``main()`` returns 0 silently.
+
+Delivery channel (#271, ADR 050 D3 drift candidate): the reminder is
+emitted as ``hookSpecificOutput.additionalContext`` JSON on stdout with
+exit 0 — the documented model-visible, non-blocking PostToolUse channel.
+Plain stderr on exit 0 reaches only the user transcript, never the
+model, so the reminder could not influence the agent's next action.
+Mirrors the PR #270 stage-gate emit pattern.
 """
 
 from __future__ import annotations
@@ -98,8 +105,17 @@ def main() -> int:
             # IC-19: always combine resolver result with canonical English
             # fallback so an empty locale lookup never emits a blank line.
             print(
-                _resolve_locale_string("REMINDER_TEXT") or REMINDER_TEXT,
-                file=sys.stderr,
+                json.dumps(
+                    {
+                        "hookSpecificOutput": {
+                            "hookEventName": "PostToolUse",
+                            "additionalContext": (
+                                _resolve_locale_string("REMINDER_TEXT") or REMINDER_TEXT
+                            ),
+                        }
+                    },
+                    ensure_ascii=False,
+                )
             )
     except Exception:  # noqa: BLE001 — fail-open per HC-5.5
         return 0

@@ -78,7 +78,7 @@ The shared-policy part is identical across tools; the adapters differ because th
 - After each `implement` step, the Default Flow expects a `verify` step within the same session (or before commit).
 - "Verification" includes: test invocation, `make demo`, `make demo-rag`, `alembic upgrade head` (for migration changes), or an explicit user confirmation.
 
-**Claude adapter**: extend `.claude/hooks/post-tool-format.sh` (or add a new sibling) on `PostToolUse Edit|Write` matchers. After Python file edits, suggest `/test-domain run {domain}`. Output is a stderr reminder, not a block.
+**Claude adapter**: extend `.claude/hooks/post-tool-format.sh` (or add a new sibling) on `PostToolUse Edit|Write` matchers. After Python file edits, suggest `/test-domain run {domain}`. Output is an advisory reminder, not a block — since #271 delivered as model-visible `hookSpecificOutput.additionalContext` JSON on stdout with exit 0 (the original stderr-on-exit-0 emit reached only the user transcript, never the model; recorded as an ADR 050 D3 drift candidate).
 **Codex adapter**: **cannot rely on `PostToolUse Bash`** (Codex review R7). Instead, extend `.codex/hooks/stop-sync-reminder.py` to compute `git status --porcelain` and produce the verification reminder when source files changed without a verify-class command being run. Run a small in-session log file under `.codex/state/` (gitignored) to track verify invocations within a session.
 
 **Acceptance**:
@@ -135,6 +135,13 @@ The shared-policy part is identical across tools; the adapters differ because th
 **Rollback**: revert the Phase 5 PR. Phase 2~4 hooks return to their per-tool implementations.
 
 **Risk**: Low (pure refactor by the time we reach Phase 5).
+
+### Post-v1 — Mid-Task Stage-Gate Adapters (ADR 050, issue #268)
+
+Policy lives in `.agents/shared/governor/stage_gate.py` (Phase-5 architecture reused). Adapter status:
+
+- **Claude adapter (shipped, #268)**: `PostToolUse Edit|Write` shim `.claude/hooks/post_tool_stage_gate.py` emitting `hookSpecificOutput.additionalContext` JSON — the documented model-visible non-blocking channel (ADR 050 D3).
+- **Codex adapter (deferred, #269)**: Codex has no PostToolUse. The parity shape mirrors Phase 3 ("Claude PostToolUse + Codex Stop changed-files"): a Stop-time advisory evaluating changed implementation files against the ledger stage, deduped per `CODEX_THREAD_ID`. Deferred-with-rationale: adapter-only work, split to keep the ADR 050 PR reviewable. Until it ships, Codex relies on the canonical rule (target-operating-model.md §2 "Mid-Task Scope Expansion") at prompt-routing time.
 
 ## §2 Rollback
 

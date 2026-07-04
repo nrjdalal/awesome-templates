@@ -92,6 +92,7 @@ HOOK_FILES = [
     REPO_ROOT / ".claude" / "hooks" / "user_prompt_submit.py",
     REPO_ROOT / ".claude" / "hooks" / "verify_first.py",
     REPO_ROOT / ".claude" / "hooks" / "completion_gate.py",
+    REPO_ROOT / ".claude" / "hooks" / "post_tool_stage_gate.py",
     REPO_ROOT / ".codex" / "hooks" / "user-prompt-submit.py",
     REPO_ROOT / ".codex" / "hooks" / "verify_first.py",
     REPO_ROOT / ".codex" / "hooks" / "completion_gate.py",
@@ -133,6 +134,7 @@ CANONICAL_REMINDER_LINES = [
     "No governor-review-log entry matches PR #{pr}.",
     "PR number unknown — open the PR first, then add the governor-review-log/ entry.",
     "[verify-first] Verify step appears to be missing for the changed .py files.",
+    "[stage-gate] Implementation edit with no active plan in the work ledger.",
 ]
 
 
@@ -169,6 +171,11 @@ EXPECTED_SHARED_IMPORTS = {
         "GOVERNOR_REMINDER_WITH_PR",
         "GOVERNOR_REMINDER_NO_PR",
         "parse_trigger_globs",
+    ],
+    REPO_ROOT / ".claude" / "hooks" / "post_tool_stage_gate.py": [
+        "STAGE_GATE_REMINDER",
+        "should_stage_gate",
+        "mark_fired",
     ],
     REPO_ROOT / ".codex" / "hooks" / "user-prompt-submit.py": [
         "safe_parse_exception_token",

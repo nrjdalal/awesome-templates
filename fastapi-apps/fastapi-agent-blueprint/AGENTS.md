@@ -114,6 +114,10 @@ Auto-escapes (no token required): `changed_files == 0`, *general* doc-only chang
 
 > **Doc-only carve-out** (Pillar 3 / Codex review R8 — added to prevent governance loosening). The doc-only auto-escape applies only to **general docs** such as `README.md`, `CHANGELOG.md`, contributor guides, and `docs/` content that is not policy or harness governance. The auto-escape does **not** apply to any path classified under Tier A of [`docs/ai/shared/governor-paths.md`](docs/ai/shared/governor-paths.md). Such changes go through normal `framing` → `plan` → `verify` → `self-review` even though they look doc-only, because they redefine the rules of the system.
 
+### Mid-Task Scope Expansion (ADR 050)
+
+The flow is evaluated **per unit of implementation-class work, not per prompt**. Discovering mid-execution that a needed capability does not exist is new implementation-class work: **stop → report the gap → route to `/plan-feature` / `$plan-feature`** before any implementation edit for the new capability. The test: is the change required by the approved plan's success criteria, or is it a capability the plan never mentioned? Exception tokens cover same-scope work only. Canonical text: [`target-operating-model.md` §2](docs/ai/shared/target-operating-model.md) → "Mid-Task Scope Expansion"; runtime nudge: advisory stage-gate hook ([ADR 050](docs/history/050-midtask-scope-expansion-gate.md)).
+
 ### Self-Review Step — Independent Review Trigger (Pillar 2)
 
 `self-review` is mandatory by default. When the change touches any path classified under **Tier A or Tier B (or Tier C)** of [`docs/ai/shared/governor-paths.md`](docs/ai/shared/governor-paths.md) — and is not entirely covered by an exclusion in the same file — `self-review` must include an **independent review** as a mandatory sub-step.

@@ -25,6 +25,14 @@ TOKEN_REGEX: re.Pattern[str] = re.compile(
 
 EXPLORATION_TOKENS: frozenset[str] = frozenset({"exploration", "탐색"})
 
+# ADR 050 (R1.1): tokens whose §3 semantics license implementation edits
+# without a fresh plan — [trivial] waives framing/approach/plan outright;
+# [hotfix] is an explicit urgency escape where a stage-gate nudge would
+# fight the token's purpose. [exploration] is deliberately EXCLUDED: it
+# declares a read-only session, so an implementation edit under it should
+# still trigger the stage-gate advisory.
+PLAN_WAIVER_TOKENS: frozenset[str] = frozenset({"trivial", "자명", "hotfix", "긴급"})
+
 
 def parse_exception_token(prompt: str) -> dict:
     """Return canonical decision payload per IC-3.

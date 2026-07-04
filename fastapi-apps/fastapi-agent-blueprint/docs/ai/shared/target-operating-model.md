@@ -65,6 +65,18 @@ If unsure, `approach options` is performed.
 
 `completion gate` is mandatory-by-default (Phase 4 Stop hook shipped in #123 / PR #128). Non-blocking: the hook emits a reminder; the Governor Footer Lint CI enforces presence + shape when governance paths are touched.
 
+### Mid-Task Scope Expansion (ADR 050)
+
+The mandatory-by-default rule is evaluated **per unit of implementation-class work, not per prompt**. Discovering mid-execution that a needed capability does not exist is *new* implementation-class work — even though no new prompt was submitted. The agent must:
+
+1. **Stop** implementing the discovered capability.
+2. **Report** the gap to the user (what is missing, why the current task surfaced it).
+3. **Route** to `/plan-feature` / `$plan-feature` (or ask the user to choose deferral) before any implementation edit for the new capability.
+
+The distinguishing test: *is this change required by the approved plan's success criteria, or is it a capability the plan never mentioned?* Small gap-fixes that the current task's success criteria genuinely require are in-scope work, not expansions. Exception tokens keep their §3 semantics — a token that licensed skipping `plan` for the original prompt covers same-scope work only, not a mid-task capability addition.
+
+Enforcement is advisory-first (ADR 050): a stage-gate `PostToolUse` reminder fires once per session when a `.py` file under `src/` or `examples/` is edited while the work ledger's `workflow.stage` is `idle`/`complete`/`blocked` and no *plan-waiver* token marker (`[trivial]`/`[hotfix]`, incl. Korean equivalents) is active — `[exploration]` does not suppress it, since an implementation edit inside a declared read-only session is itself a signal (ADR 050 D6). Missing or unreadable ledger state stays silent (fail-open) — contributors without the maintainer workflow never see it.
+
 ## §3 Allowed Exceptions
 
 Exceptions never override safety. The four-layer precedence from `AGENTS.md` § Default Coding Flow applies:

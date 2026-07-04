@@ -32,6 +32,7 @@ import os
 import sys
 
 from .completion_gate import GOVERNOR_REMINDER_NO_PR, GOVERNOR_REMINDER_WITH_PR
+from .stage_gate import STAGE_GATE_REMINDER
 from .verify import REMINDER_TEXT
 
 # Re-export canonical English constants from their source modules so the
@@ -43,6 +44,7 @@ _LOCALE_EN: dict[str, str] = {
     "REMINDER_TEXT": REMINDER_TEXT,
     "GOVERNOR_REMINDER_WITH_PR": GOVERNOR_REMINDER_WITH_PR,
     "GOVERNOR_REMINDER_NO_PR": GOVERNOR_REMINDER_NO_PR,
+    "STAGE_GATE_REMINDER": STAGE_GATE_REMINDER,
     # Sync advisory headers / footers (Claude shell + Codex Python hook).
     "SYNC_STRONG_HEADER": "=== /sync-guidelines strongly recommended ===",
     "SYNC_STRONG_FOOTER": "=============================================",
@@ -95,6 +97,16 @@ _LOCALE_KO: dict[str, str] = {
             "[completion-gate] 거버너 관련 변경이 감지되었습니다 (Pillar 7).",
             "PR 번호를 알 수 없습니다. 먼저 PR을 연 뒤 본문에 `## Governor Footer` 블록을 채우세요.",
             "참조: docs/history/047-governor-review-provenance-consolidation.md (D2/D5).",
+        ]
+    ),
+    "STAGE_GATE_REMINDER": "\n".join(
+        [
+            "[stage-gate] 작업 원장(work ledger)에 활성 계획이 없는 상태에서 구현 파일이 수정되었습니다.",
+            "작업 중 발견한 기능 공백은 새로운 구현 작업입니다: 멈추고, 공백을 보고한 뒤,",
+            "계속하기 전에 /plan-feature(Claude) 또는 $plan-feature(Codex)로 라우팅하세요",
+            "(AGENTS.md § Mid-Task Scope Expansion, ADR 050).",
+            "자명한 소규모 변경이나 긴급 수정이라면 다음 프롬프트에 [자명] / [긴급] 토큰으로 이 알림을 끄세요.",
+            "권고용 알림 — 세션당 최대 1회 발화합니다.",
         ]
     ),
     "SYNC_STRONG_HEADER": "=== /sync-guidelines 강력 권장 ===",

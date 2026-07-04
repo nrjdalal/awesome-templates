@@ -12,6 +12,9 @@ smokes. Covers (per plan §4.7 + R0.5 + R1.1~R1.3):
 - subsecond ordering (R0.3 — ts_epoch_ns)
 - fail-open on missing state dir / corrupt marker / invalid JSON stdin
 - Phase 2 marker idempotency (read does not mutate file)
+- Claude emit channel (#271): hookSpecificOutput.additionalContext JSON on
+  stdout, nothing on stderr, silent stdout when not reminding, ko locale
+  routed through the envelope (IC-19)
 
 Stop-hook segment merge tests are covered by manual smoke in plan §6 (the
 `changed_files()` git status dependency makes pytest isolation brittle).
@@ -303,14 +306,36 @@ def test_codex_cross_session_does_not_silence(
 # ---------------------------------------------------------------------------
 # 16~18. Subprocess fail-open smoke (HC-3.6)
 # ---------------------------------------------------------------------------
-def _run_claude_verify_first(stdin: str) -> subprocess.CompletedProcess[str]:
+def _run_claude_verify_first(
+    stdin: str, env: dict[str, str] | None = None
+) -> subprocess.CompletedProcess[str]:
     return subprocess.run(  # noqa: S603
         [sys.executable, str(CLAUDE_PY)],
         input=stdin,
         capture_output=True,
         text=True,
         check=False,
+        env=env,
     )
+
+
+def _isolated_env(tmp_path: Path, locale: str | None = None) -> dict[str, str]:
+    """Subprocess env with deterministic state dir and locale.
+
+    ``HARNESS_STATE_ROOT`` points at ``tmp_path`` so real repo markers
+    cannot silence the reminder; ``AGENT_LOCALE`` is scrubbed (or forced)
+    so the expected text is deterministic.
+    """
+    scrub = {"AGENT_LOCALE", "HARNESS_DEBUG", "HARNESS_LAUNCHER_STRICT"}
+    env = {
+        k: v
+        for k, v in __import__("os").environ.items()
+        if k not in scrub and not k.startswith("HARNESS_PYTHON_")
+    }
+    env["HARNESS_STATE_ROOT"] = str(tmp_path)
+    if locale is not None:
+        env["AGENT_LOCALE"] = locale
+    return env
 
 
 def test_fail_open_empty_stdin() -> None:
@@ -329,6 +354,100 @@ def test_fail_open_missing_state_dir(claude_helper, tmp_path) -> None:
     assert (
         claude_helper.should_remind(payload, state_dir=tmp_path / "nonexistent") is True
     )
+
+
+# ---------------------------------------------------------------------------
+# 18a~18d. Claude emit channel — model-visible additionalContext JSON (#271)
+# ---------------------------------------------------------------------------
+# ADR 050 D3 drift-candidate remediation: plain stderr on exit 0 reaches only
+# the user transcript, never the model. The reminder must be emitted as
+# hookSpecificOutput.additionalContext JSON on stdout (exit 0) — the
+# documented model-visible, non-blocking PostToolUse channel.
+def test_claude_emits_additional_context_json_on_stdout(
+    claude_helper, tmp_path
+) -> None:
+    payload = {"tool_name": "Edit", "tool_input": {"file_path": "src/foo.py"}}
+    result = _run_claude_verify_first(json.dumps(payload), env=_isolated_env(tmp_path))
+    assert result.returncode == 0
+    envelope = json.loads(result.stdout)
+    assert envelope["hookSpecificOutput"]["hookEventName"] == "PostToolUse"
+    assert (
+        envelope["hookSpecificOutput"]["additionalContext"]
+        == claude_helper.REMINDER_TEXT
+    )
+
+
+def test_claude_reminder_not_on_stderr(tmp_path) -> None:
+    """Regression for the invisible-reminder defect — stderr stays empty."""
+    payload = {"tool_name": "Edit", "tool_input": {"file_path": "src/foo.py"}}
+    result = _run_claude_verify_first(json.dumps(payload), env=_isolated_env(tmp_path))
+    assert result.returncode == 0
+    assert result.stderr.strip() == ""
+
+
+def test_claude_silent_stdout_when_not_reminding(tmp_path) -> None:
+    """Non-Python edit → no envelope at all (empty stdout, exit 0)."""
+    payload = {"tool_name": "Edit", "tool_input": {"file_path": "README.md"}}
+    result = _run_claude_verify_first(json.dumps(payload), env=_isolated_env(tmp_path))
+    assert result.returncode == 0
+    assert result.stdout.strip() == ""
+
+
+def test_claude_emit_localizes_additional_context(claude_helper, tmp_path) -> None:
+    """AGENT_LOCALE=ko routes the ko table through the JSON envelope (IC-19)."""
+    payload = {"tool_name": "Edit", "tool_input": {"file_path": "src/foo.py"}}
+    result = _run_claude_verify_first(
+        json.dumps(payload), env=_isolated_env(tmp_path, locale="ko")
+    )
+    assert result.returncode == 0
+    envelope = json.loads(result.stdout)
+    context = envelope["hookSpecificOutput"]["additionalContext"]
+    assert context  # never blank (IC-19 fallback)
+    assert context != claude_helper.REMINDER_TEXT  # actually translated
+    assert "[verify-first]" in context  # shared tag survives translation
+
+
+# ---------------------------------------------------------------------------
+# 18e~18f. Registered wrapper path — bash verify-first.sh (#271 cross-review R1)
+# ---------------------------------------------------------------------------
+# settings.json registers the .sh wrapper (which pipes through
+# harness-python.sh), not the .py module. The delivery-channel contract is
+# only real if the wrapper forwards exactly one parseable JSON document on
+# stdout — launcher/wrapper noise on stdout would corrupt the envelope.
+CLAUDE_SH = REPO_ROOT / ".claude" / "hooks" / "verify-first.sh"
+
+
+def _run_claude_wrapper(
+    stdin: str, env: dict[str, str]
+) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(  # noqa: S603
+        ["bash", str(CLAUDE_SH)],
+        input=stdin,
+        capture_output=True,
+        text=True,
+        check=False,
+        env=env,
+    )
+
+
+def test_wrapper_stdout_is_single_json_envelope(claude_helper, tmp_path) -> None:
+    payload = {"tool_name": "Edit", "tool_input": {"file_path": "src/foo.py"}}
+    result = _run_claude_wrapper(json.dumps(payload), env=_isolated_env(tmp_path))
+    assert result.returncode == 0
+    assert result.stderr.strip() == ""
+    envelope = json.loads(result.stdout)  # exactly one JSON document
+    assert envelope["hookSpecificOutput"]["hookEventName"] == "PostToolUse"
+    assert (
+        envelope["hookSpecificOutput"]["additionalContext"]
+        == claude_helper.REMINDER_TEXT
+    )
+
+
+def test_wrapper_silent_when_not_reminding(tmp_path) -> None:
+    payload = {"tool_name": "Edit", "tool_input": {"file_path": "README.md"}}
+    result = _run_claude_wrapper(json.dumps(payload), env=_isolated_env(tmp_path))
+    assert result.returncode == 0
+    assert result.stdout.strip() == ""
 
 
 # ---------------------------------------------------------------------------

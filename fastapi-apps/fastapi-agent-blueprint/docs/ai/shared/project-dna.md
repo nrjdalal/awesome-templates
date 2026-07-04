@@ -54,6 +54,24 @@ Skills proactively consider the following perspectives when generating code, mak
 - Endpoints requiring authentication must be explicitly marked
 - Environment-specific settings (secrets, DB URLs) must be managed via environment variables only
 
+### Direction & Non-goals (ADR 050)
+
+**Direction** — used by `plan-feature` Phase 1 (repo-specific fit) and reviews as the alignment reference:
+
+- **Positioning: AI hooks on a solid FastAPI foundation.** The DDD/FastAPI foundation carries production weight; AI capabilities (LLM, Embedding, RAG, Vectors) attach as optional, stub-degradable hooks — never as load-bearing dependencies.
+- **Infra-optional first.** Every non-DB infrastructure stays optional (`providers.Selector` + stub fallback, ADR 042). The zero-config quickstart (`make quickstart`) must always boot and serve.
+- **AI enters as core patterns + consumer examples.** New AI capability = reusable pattern in `_core/infrastructure/` + a thin consumer domain or `examples/` entry (RAG precedent: `_core/infrastructure/rag/` + `src/docs/`) — not a monolithic feature domain.
+- **Dual audience.** OSS adopters (contributor examples, copy-flow contract) and a real service target (5+ team members, 10+ domains) — proposals must serve both or state which one they trade off.
+- **Process: advisory-first hybrid harness.** Claude/Codex parity via shared policy modules; enforcement starts as non-blocking reminders; governance surface grows only with demonstrated need.
+
+**Non-goals** — proposals matching these are rejected by default (revisiting one requires an ADR):
+
+- A general-purpose web framework or an admin-panel product — the NiceGUI admin remains an optional extra.
+- A hosted platform/SaaS or provider lock-in — provider abstraction stays behind PydanticAI / env-driven selection.
+- Features that break the zero-config quickstart or make optional infra mandatory.
+- Framework-breadth chasing — file upload, WebSocket, rate limiting, and similar items ship on demonstrated demand, not as roadmap commitments.
+- Hard-blocking automation gates — the harness nudges; humans and CI decide.
+
 ---
 
 ## §1. Layer Directory Structure

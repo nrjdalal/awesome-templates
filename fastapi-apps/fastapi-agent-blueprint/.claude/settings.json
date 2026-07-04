@@ -52,6 +52,10 @@
           {
             "type": "command",
             "command": "bash .claude/hooks/verify-first.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/stage-gate.sh"
           }
         ]
       }

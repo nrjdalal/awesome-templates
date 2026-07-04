@@ -41,6 +41,10 @@ for implementing the requirements gathered in Phase 0.
   low-level implementation details.
 - Compare along four axes: scope, complexity, extensibility, and
   repo-specific fit.
+- For the **repo-specific fit** axis, check each candidate against
+  `project-dna.md` §0 "Direction & Non-goals" (ADR 050): a candidate that
+  contradicts a stated non-goal must say so explicitly, and may only be
+  recommended with a rationale for revisiting the direction.
 - Conclude with exactly one `Recommended Approach`.
 
 **Procedure**:
