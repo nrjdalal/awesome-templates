@@ -238,7 +238,8 @@ def test_codex_stop_hook_refreshes_work_ledger_before_building_segments() -> Non
     source = CODEX_STOP_HOOK.read_text(encoding="utf-8")
 
     update_pos = source.index("update_verification_from_git()")
-    build_pos = source.index("segments = build_segments()")
+    # #269 passes the pre-computed changed set: `build_segments(changed)`.
+    build_pos = source.index("segments = build_segments(")
 
     assert update_pos < build_pos, (
         "Codex Stop hook must refresh work-ledger verification state before "

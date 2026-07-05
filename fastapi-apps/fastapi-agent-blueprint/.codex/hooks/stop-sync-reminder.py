@@ -24,6 +24,15 @@ preserves all five existing Stop-hook responsibilities:
 covers responsibilities 1–3. ``main`` calls ``build_segments`` then
 executes 4 and 5 inside their own suppress blocks.
 
+Issue #269 adds responsibility 6 — the mid-task stage-gate advisory (ADR
+050): a Stop-time port of the Claude ``PostToolUse`` shim
+(``.claude/hooks/post_tool_stage_gate.py``). ``stage_gate_segment`` is the
+pure decision (callable in-process from tests, reusing ``governor.stage_gate``
+unchanged); ``main`` evaluates it *before* Phase 2 marker consumption because
+the shared ``should_stage_gate`` reads the exception-token markers that step 4
+deletes, then claims the once-per-session marker via the shared ``mark_fired``
+before appending.
+
 IC-19 (always-fallback) — every locale resolver call must be combined
 with the canonical English fallback. The ``_loc(key, fallback)`` helper
 centralises this so each call site reads naturally.
@@ -33,9 +42,18 @@ from __future__ import annotations
 
 import contextlib
 import json
+import os
 import sys
+from pathlib import Path
 
 from _shared import REPO_ROOT, changed_files
+
+# Codex state dir — dedup markers (``stage-gate-*.json``) and the
+# exception-token markers the stage-gate policy reads. Mirrors
+# ``verify_first`` / ``completion_gate``; ``HARNESS_STATE_ROOT`` lets tests
+# redirect it.
+STATE_ROOT = Path(os.environ.get("HARNESS_STATE_ROOT", REPO_ROOT))
+STATE_DIR = STATE_ROOT / ".codex" / "state"
 
 # AGENT_LOCALE resolver (issue #133) — separate try block so a locale.py
 # failure cannot break sync reminders. Keeps the canonical English values
@@ -65,6 +83,29 @@ except Exception:  # noqa: BLE001 — HC-5.5 fail-open
     _SYNC_OK = False
 
 
+# Mid-task stage-gate policy (ADR 050, #269) — separate try block so a
+# stage_gate.py import failure cannot silence sync reminders (HC-5.5). The
+# reminder text is imported, never redeclared, so Claude and Codex share one
+# canonical string (ADR050-G4).
+try:
+    from governor.stage_gate import (  # noqa: E402 — sys.path adjusted above
+        STAGE_GATE_REMINDER,
+        default_ledger_path,
+        is_implementation_source,
+        mark_fired,
+        should_stage_gate,
+    )
+
+    _STAGE_GATE_OK = True
+except Exception:  # noqa: BLE001 — HC-5.5 fail-open
+    STAGE_GATE_REMINDER = ""
+    default_ledger_path = None  # type: ignore[assignment]
+    is_implementation_source = None  # type: ignore[assignment]
+    mark_fired = None  # type: ignore[assignment]
+    should_stage_gate = None  # type: ignore[assignment]
+    _STAGE_GATE_OK = False
+
+
 def _loc(key: str, fallback: str) -> str:
     """Resolve locale string with canonical English fallback (IC-19).
 
@@ -73,6 +114,51 @@ def _loc(key: str, fallback: str) -> str:
     is machine-enforced.
     """
     return _resolve_locale_string(key) or fallback
+
+
+def stage_gate_segment(
+    changed: list[str],
+    sid: str,
+    *,
+    state_dir: Path = STATE_DIR,
+    ledger_path: Path | None = None,
+    repo_root: Path = REPO_ROOT,
+) -> str | None:
+    """Mid-task stage-gate advisory text for the Codex Stop event (ADR 050, #269).
+
+    Stop-time port of the Claude ``PostToolUse`` shim
+    (``.claude/hooks/post_tool_stage_gate.py``). Codex has no per-edit
+    ``file_path``, only a changed-file *set*, so this bridges the set to the
+    shared single-file ``should_stage_gate`` policy (Approach A): it
+    synthesizes a PostToolUse-shaped payload for the first changed
+    implementation source and defers the whole decision — gated ledger stage,
+    plan-waiver token, once-per-session dedup read — to the shared policy, so
+    Claude and Codex evaluate one decision surface. The gate fires when *any*
+    changed file is an implementation source, so short-circuiting on the first
+    one is sufficient (dedup makes multi-fire moot regardless).
+
+    Pure: performs no writes. The ``mark_fired`` claim is the caller's job
+    (see ``main``) so a race-losing concurrent hook stays silent (R1.3).
+    Returns the locale-rendered reminder text when the gate fires, else None.
+    """
+    if not _STAGE_GATE_OK:
+        return None
+    impl = next(
+        (path for path in changed if is_implementation_source(path, repo_root)),
+        None,
+    )
+    if impl is None:
+        return None
+    payload = {"tool_input": {"file_path": impl}, "session_id": sid}
+    resolved_ledger = (
+        ledger_path if ledger_path is not None else default_ledger_path(STATE_ROOT)
+    )
+    if not should_stage_gate(payload, state_dir, resolved_ledger, repo_root):
+        return None
+    # IC-19: combine the resolver result with the canonical English fallback so
+    # an empty locale lookup never appends a blank segment. Mirrors the Claude
+    # shim's emit line exactly (imported reminder text, never inline — ADR050-G4).
+    return _resolve_locale_string("STAGE_GATE_REMINDER") or STAGE_GATE_REMINDER
 
 
 def build_segments(changed: list[str] | None = None) -> list[str]:
@@ -202,7 +288,22 @@ def main() -> int:
 
         update_verification_from_git()
 
-    segments = build_segments()
+    changed = changed_files()
+    segments = build_segments(changed)
+
+    # (6) Mid-task stage-gate advisory (ADR 050, #269) — advisory-only,
+    # deduped per session. ORDERING: this MUST run before the Phase 2 marker
+    # consumption below, because ``should_stage_gate`` reads the
+    # exception-token markers (plan-waiver suppression) that
+    # ``consume_phase2_markers`` deletes. The exclusive-create ``mark_fired``
+    # claim gates the append so concurrent Stop hooks emit at most once (R1.3).
+    with contextlib.suppress(Exception):
+        import verify_first  # noqa: PLC0415 — local import for fail-open
+
+        sid = verify_first.session_id()
+        seg = stage_gate_segment(changed, sid)
+        if seg is not None and mark_fired(STATE_DIR, sid) is not None:
+            segments.append(seg)
 
     # (4) Phase 2 marker consumption + (5) stale verify-log cleanup.
     with contextlib.suppress(Exception):

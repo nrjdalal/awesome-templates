@@ -379,6 +379,9 @@ def test_codex_stop_sync_emission_keys() -> None:
         "SYNC_STRUCTURE_LEAD",
         "SYNC_STRUCTURE_FILES_HEADER",
         "SYNC_REPORT_BOTH_NOTE",
+        # Mid-task stage-gate advisory (ADR 050, #269) — imported reminder text,
+        # resolved via `_resolve_locale_string("STAGE_GATE_REMINDER") or ...`.
+        "STAGE_GATE_REMINDER",
     }
     assert keys == expected
 

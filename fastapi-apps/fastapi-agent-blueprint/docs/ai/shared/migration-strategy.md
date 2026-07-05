@@ -141,7 +141,7 @@ The shared-policy part is identical across tools; the adapters differ because th
 Policy lives in `.agents/shared/governor/stage_gate.py` (Phase-5 architecture reused). Adapter status:
 
 - **Claude adapter (shipped, #268)**: `PostToolUse Edit|Write` shim `.claude/hooks/post_tool_stage_gate.py` emitting `hookSpecificOutput.additionalContext` JSON — the documented model-visible non-blocking channel (ADR 050 D3).
-- **Codex adapter (deferred, #269)**: Codex has no PostToolUse. The parity shape mirrors Phase 3 ("Claude PostToolUse + Codex Stop changed-files"): a Stop-time advisory evaluating changed implementation files against the ledger stage, deduped per `CODEX_THREAD_ID`. Deferred-with-rationale: adapter-only work, split to keep the ADR 050 PR reviewable. Until it ships, Codex relies on the canonical rule (target-operating-model.md §2 "Mid-Task Scope Expansion") at prompt-routing time.
+- **Codex adapter (shipped, #269)**: Codex has no PostToolUse. The parity shape mirrors Phase 3 ("Claude PostToolUse + Codex Stop changed-files"): a Stop-time advisory in `.codex/hooks/stop-sync-reminder.py` (`stage_gate_segment`, advisory #6) that bridges the changed-file set to the shared single-file `should_stage_gate` policy — it synthesizes a payload for the first changed implementation source, evaluates it against the ledger stage, and dedupes per `CODEX_THREAD_ID` via the shared `stage_gate.mark_fired`. The decision runs before Phase 2 marker consumption because the shared policy reads the exception-token (plan-waiver) markers that consumption deletes. Reuses `governor.stage_gate` unchanged — adapter-only, no policy change; parity + decision + ordering tests in `tests/unit/agents_shared/test_stage_gate.py`.
 
 ## §2 Rollback
 

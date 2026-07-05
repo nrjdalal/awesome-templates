@@ -56,7 +56,9 @@ Only **plan-waiver tokens** suppress the gate (cross-review R1.1 narrowed this f
 
 ### D7 — Codex parity: documented deferral
 
-Codex has no `PostToolUse`. The parity adapter (Stop-time advisory evaluating changed implementation files against the ledger stage) is specified in `migration-strategy.md` and deferred to a follow-up issue rather than widening this PR. Codex retains the canonical rule (prompt-time routing) meanwhile.
+Codex has no `PostToolUse`. At the time of this ADR the parity adapter (Stop-time advisory evaluating changed implementation files against the ledger stage) was specified in `migration-strategy.md` and deferred to a follow-up issue rather than widening this PR; Codex retained the canonical rule (prompt-time routing) in the interim.
+
+**Update (#269):** shipped. The Stop-time adapter now lives in `.codex/hooks/stop-sync-reminder.py` (`stage_gate_segment`, advisory #6): it bridges the changed-file set to the shared single-file `should_stage_gate` and reuses this policy unchanged (adapter-only). See `migration-strategy.md` § Post-v1 — Mid-Task Stage-Gate Adapters.
 
 ### D8 — Direction & Non-goals lives in `project-dna.md` §0
 

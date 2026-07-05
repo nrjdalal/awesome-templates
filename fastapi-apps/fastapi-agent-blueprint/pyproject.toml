@@ -1,6 +1,6 @@
 [project]
 name = "fastapi-agent-blueprint"
-version = "0.8.3"
+version = "0.8.4"
 description = "FastAPI backend blueprint for AI agent apps: DDD domains, SQLAlchemy, Taskiq, RAG infra, and Claude/Codex collaboration harness"
 readme = "README.md"
 requires-python = ">=3.12.9"

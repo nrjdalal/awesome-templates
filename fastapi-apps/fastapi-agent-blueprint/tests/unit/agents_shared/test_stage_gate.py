@@ -13,11 +13,13 @@ Covers the pure decision surface of ``governor.stage_gate``:
 
 from __future__ import annotations
 
+import importlib.util
 import json
 import os
 import subprocess
 import sys
 import time
+import types
 from pathlib import Path
 
 import pytest
@@ -370,3 +372,188 @@ def test_shim_fail_open_on_bad_stdin(tmp_path: Path, stdin_text: str) -> None:
     result = _run_shim(stdin_text, _seed_state_root(tmp_path, "complete"))
     assert result.returncode == 0
     assert result.stdout == ""
+
+
+# --- Codex Stop-hook adapter (issue #269) -------------------------------
+#
+# The Codex adapter reuses ``governor.stage_gate`` unchanged; ``stage_gate_segment``
+# in ``.codex/hooks/stop-sync-reminder.py`` bridges the Stop-time changed-file set
+# to the shared single-file policy. These tests assert decision parity with the
+# Claude shim and byte-identical reminder text (AC-3).
+
+_CODEX_HOOKS = REPO_ROOT / ".codex" / "hooks"
+_CODEX_STOP_HOOK = _CODEX_HOOKS / "stop-sync-reminder.py"
+
+
+def _load_codex_stop_hook() -> types.ModuleType:
+    """Load the hyphenated ``stop-sync-reminder.py`` in-process.
+
+    Preloads the Codex ``_shared`` shim so the hook's ``from _shared import``
+    resolves, then restores ``sys.modules`` so the load does not leak into
+    other tests (mirrors ``test_stop_advisory_inline_guard._load_codex_stop_sync``).
+    """
+    saved = {name: sys.modules.pop(name, None) for name in ("_shared", "_codex_stop")}
+    try:
+        for name, path in (
+            ("_shared", _CODEX_HOOKS / "_shared.py"),
+            ("_codex_stop", _CODEX_STOP_HOOK),
+        ):
+            spec = importlib.util.spec_from_file_location(name, path)
+            assert spec is not None and spec.loader is not None
+            mod = importlib.util.module_from_spec(spec)
+            sys.modules[name] = mod
+            spec.loader.exec_module(mod)
+        return sys.modules["_codex_stop"]
+    finally:
+        for name, mod in saved.items():
+            if mod is not None:
+                sys.modules[name] = mod
+            else:
+                sys.modules.pop(name, None)
+
+
+_STOP = _load_codex_stop_hook()
+_stage_gate_segment = _STOP.stage_gate_segment
+
+
+def _codex_seg(
+    changed: list[str],
+    tmp_path: Path,
+    state_dir: Path,
+    stage: str = "complete",
+    sid: str = "sess-1",
+) -> str | None:
+    return _stage_gate_segment(
+        changed,
+        sid,
+        state_dir=state_dir,
+        ledger_path=_ledger(tmp_path, stage),
+        repo_root=tmp_path,
+    )
+
+
+@pytest.mark.parametrize("stage", sorted(GATED_STAGES))
+def test_codex_segment_fires_on_gated_stages(
+    tmp_path: Path, state_dir: Path, stage: str
+) -> None:
+    seg = _codex_seg(["src/user/service.py"], tmp_path, state_dir, stage=stage)
+    assert seg == STAGE_GATE_REMINDER
+
+
+@pytest.mark.parametrize("stage", ["planned", "executing", "reviewing", "future-stage"])
+def test_codex_segment_silent_on_active_or_unknown(
+    tmp_path: Path, state_dir: Path, stage: str
+) -> None:
+    assert _codex_seg(["src/user/service.py"], tmp_path, state_dir, stage=stage) is None
+
+
+def test_codex_segment_silent_on_missing_ledger(
+    tmp_path: Path, state_dir: Path
+) -> None:
+    seg = _stage_gate_segment(
+        ["src/user/service.py"],
+        "sess-1",
+        state_dir=state_dir,
+        ledger_path=tmp_path / "absent.json",
+        repo_root=tmp_path,
+    )
+    assert seg is None
+
+
+def test_codex_segment_fires_on_mixed_set(tmp_path: Path, state_dir: Path) -> None:
+    """Any implementation source in the changed set trips the gate."""
+    seg = _codex_seg(
+        ["tests/unit/x_test.py", "docs/note.md", "src/user/service.py"],
+        tmp_path,
+        state_dir,
+    )
+    assert seg == STAGE_GATE_REMINDER
+
+
+@pytest.mark.parametrize(
+    "changed",
+    [
+        [],
+        ["tests/unit/user/test_user.py"],
+        ["docs/ai/shared/project-dna.md", "README.md"],
+        [".codex/hooks/stop-sync-reminder.py"],
+    ],
+)
+def test_codex_segment_silent_without_impl_source(
+    tmp_path: Path, state_dir: Path, changed: list[str]
+) -> None:
+    assert _codex_seg(changed, tmp_path, state_dir) is None
+
+
+@pytest.mark.parametrize("token", ["trivial", "자명", "hotfix", "긴급"])
+def test_codex_segment_silent_on_plan_waiver_token(
+    tmp_path: Path, state_dir: Path, token: str
+) -> None:
+    write_marker(
+        {"matched": True, "token": token, "rationale_required": True}, state_dir
+    )
+    assert _codex_seg(["src/user/service.py"], tmp_path, state_dir) is None
+
+
+@pytest.mark.parametrize("token", ["exploration", "탐색"])
+def test_codex_segment_exploration_token_does_not_suppress(
+    tmp_path: Path, state_dir: Path, token: str
+) -> None:
+    write_marker(
+        {"matched": True, "token": token, "rationale_required": True}, state_dir
+    )
+    assert (
+        _codex_seg(["src/user/service.py"], tmp_path, state_dir) == STAGE_GATE_REMINDER
+    )
+
+
+def test_codex_segment_dedup_after_mark_fired(tmp_path: Path, state_dir: Path) -> None:
+    changed = ["src/user/service.py"]
+    assert _codex_seg(changed, tmp_path, state_dir, sid="sess-A") == STAGE_GATE_REMINDER
+    mark_fired(state_dir, "sess-A")
+    assert _codex_seg(changed, tmp_path, state_dir, sid="sess-A") is None
+
+
+def test_codex_segment_ko_locale_renders(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, state_dir: Path
+) -> None:
+    monkeypatch.setenv("AGENT_LOCALE", "ko")
+    seg = _codex_seg(["src/user/service.py"], tmp_path, state_dir)
+    assert seg and seg != STAGE_GATE_REMINDER and seg.startswith("[stage-gate]")
+
+
+def test_codex_and_claude_emit_identical_reminder(
+    tmp_path: Path, state_dir: Path
+) -> None:
+    """AC-3 parity: the Codex segment and the Claude shim's additionalContext
+    are byte-identical (both resolve to the shared STAGE_GATE_REMINDER)."""
+    codex_seg = _codex_seg(["src/user/service.py"], tmp_path, state_dir, sid="id-x")
+    result = _run_shim(_smoke_payload("id-y"), _seed_state_root(tmp_path, "complete"))
+    claude_ctx = json.loads(result.stdout)["hookSpecificOutput"]["additionalContext"]
+    assert codex_seg == claude_ctx == STAGE_GATE_REMINDER
+
+
+# --- static guards (adapter-only + ordering invariant) ------------------
+
+
+def test_codex_hook_imports_reminder_never_inline() -> None:
+    """Adapter-only: the reminder text lives in the policy, not inline (ADR050-G4)."""
+    text = _CODEX_STOP_HOOK.read_text(encoding="utf-8")
+    assert "from governor.stage_gate import" in text
+    assert "STAGE_GATE_REMINDER" in text
+    # Canonical reminder text must never be duplicated inside the hook.
+    assert "[stage-gate] Implementation edit" not in text
+
+
+def test_codex_hook_stage_gate_runs_before_marker_consumption() -> None:
+    """Ordering invariant: should_stage_gate reads the exception-token markers
+    that consume_phase2_markers deletes, so the stage-gate call must come first."""
+    text = _CODEX_STOP_HOOK.read_text(encoding="utf-8")
+    call = text.find("seg = stage_gate_segment(")
+    # Anchor on the actual invocation, not the comment reference above it.
+    consume = text.find("completion_gate.consume_phase2_markers(")
+    assert call != -1 and consume != -1
+    assert call < consume, (
+        "stage_gate_segment must be evaluated before consume_phase2_markers — "
+        "the shared policy reads exception-token markers that consumption deletes."
+    )
