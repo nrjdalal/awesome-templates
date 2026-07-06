@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "build": "bun ../../.github/scripts/compress-images.ts && bun ../../.github/scripts/docs.ts --strict && fumadocs-mdx && next build",
-    "check-types": "tsc --noEmit",
+    "check-types": "fumadocs-mdx && tsc --noEmit",
     "dev": "bun ../../.github/scripts/docs.ts && next dev",
     "start": "bun .next/standalone/web/next/server.js"
   },
@@ -14,7 +14,6 @@
     "@packages/auth": "workspace:*",
     "@packages/config": "workspace:*",
     "@packages/env": "workspace:*",
-    "@posthog/react": "catalog:",
     "@remixicon/react": "catalog:",
     "@shadcn/react": "catalog:",
     "@tanstack/react-form": "catalog:",
@@ -70,5 +69,8 @@
     "@takumi-rs/core-linux-x64-musl": "catalog:",
     "@takumi-rs/core-win32-arm64-msvc": "catalog:",
     "@takumi-rs/core-win32-x64-msvc": "catalog:"
-  }
+  },
+  "browserslist": [
+    "defaults"
+  ]
 }
