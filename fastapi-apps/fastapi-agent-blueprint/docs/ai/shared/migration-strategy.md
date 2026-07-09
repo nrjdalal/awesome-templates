@@ -143,6 +143,15 @@ Policy lives in `.agents/shared/governor/stage_gate.py` (Phase-5 architecture re
 - **Claude adapter (shipped, #268)**: `PostToolUse Edit|Write` shim `.claude/hooks/post_tool_stage_gate.py` emitting `hookSpecificOutput.additionalContext` JSON — the documented model-visible non-blocking channel (ADR 050 D3).
 - **Codex adapter (shipped, #269)**: Codex has no PostToolUse. The parity shape mirrors Phase 3 ("Claude PostToolUse + Codex Stop changed-files"): a Stop-time advisory in `.codex/hooks/stop-sync-reminder.py` (`stage_gate_segment`, advisory #6) that bridges the changed-file set to the shared single-file `should_stage_gate` policy — it synthesizes a payload for the first changed implementation source, evaluates it against the ledger stage, and dedupes per `CODEX_THREAD_ID` via the shared `stage_gate.mark_fired`. The decision runs before Phase 2 marker consumption because the shared policy reads the exception-token (plan-waiver) markers that consumption deletes. Reuses `governor.stage_gate` unchanged — adapter-only, no policy change; parity + decision + ordering tests in `tests/unit/agents_shared/test_stage_gate.py`.
 
+### Post-v1 — Plan→Execute Boundary Adapters (ADR 054)
+
+Same shared policy (`governor/stage_gate.py`), a **disjoint sibling gate** keyed to `PLAN_EXECUTE_GATED_STAGES = {planned}`. Here the two adapters diverge in **enforcement strength** — the first intentional Claude/Codex asymmetry in the governor surface (ADR054-G4):
+
+- **Claude adapter (this change)**: a `PreToolUse Edit|Write` **hard block** `.claude/hooks/pre_tool_stage_block.py`, using `should_block_plan_execute_edit` (no session dedup — the block must hold on every edit). It blocks with exit 2 + stderr (the model-visible `PreToolUse` channel that `pre_tool_security.py` uses), not `additionalContext` — because here the goal is to *block* the edit, the inverse of ADR 050's non-blocking intent (ADR 054 D3). No Claude `PostToolUse` advisory for `planned`: the block intercepts the same cases pre-edit, so one would be dead code (ADR 054 D4).
+- **Codex adapter (this change)**: Codex has no `PreToolUse` and cannot block, so parity is an *advisory*, not a block: `plan_execute_segment` in `.codex/hooks/stop-sync-reminder.py`, mirroring `stage_gate_segment` but calling `should_plan_execute_gate` (with per-session dedup). The two Stop segments key off disjoint stages, so at most one fires; they share the once-per-session marker. Reuses `governor.stage_gate` unchanged — adapter-only. Tests in `tests/unit/agents_shared/test_plan_execute_gate.py`.
+
+Both are best-effort by fail-open (ADR054-G5): any unreadable ledger / import failure / malformed payload allows the edit. The Claude wrapper `pre-tool-stage-block.sh` propagates the Python exit code (unlike `stage-gate.sh`, which always exits 0), and the harness-python launcher itself exits 0 when no interpreter resolves, so a broken environment never wedges editing.
+
 ## §2 Rollback
 
 Every phase is single-PR-revertable. The repo is never left in an intermediate state where one tool implements a phase and the other does not, because each phase is merged as a unit (shared policy + both adapters + tests).

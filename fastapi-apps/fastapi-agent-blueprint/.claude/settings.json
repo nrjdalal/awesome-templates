@@ -39,6 +39,15 @@
             "command": "bash .claude/hooks/pre-tool-security.sh"
           }
         ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/pre-tool-stage-block.sh"
+          }
+        ]
       }
     ],
     "PostToolUse": [

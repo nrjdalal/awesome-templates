@@ -65,11 +65,12 @@ HANGUL_RE = re.compile(r"[가-힯ᄀ-ᇿ㄰-㆏]")
 
 _EXPECTED_KEYS = frozenset(
     {
-        # 4 reminder constants
+        # 5 reminder constants
         "REMINDER_TEXT",
         "GOVERNOR_REMINDER_WITH_PR",
         "GOVERNOR_REMINDER_NO_PR",
         "STAGE_GATE_REMINDER",
+        "PLAN_EXECUTE_REMINDER",
         # 15 sync advisory keys (8 shell + 7 codex-only + 2 shared = 15 distinct)
         "SYNC_STRONG_HEADER",
         "SYNC_STRONG_FOOTER",
@@ -196,7 +197,7 @@ def test_locale_ko_keys_subset_of_en() -> None:
 
 
 def test_locale_keys_match_expected_inventory() -> None:
-    """The 19-key inventory is pinned. Adding a key requires updating
+    """The 20-key inventory is pinned. Adding a key requires updating
     _EXPECTED_KEYS in this test (forces awareness)."""
     assert set(locale_mod._LOCALE_EN) == _EXPECTED_KEYS
 
@@ -347,6 +348,15 @@ def test_claude_stage_gate_emission_keys() -> None:
     assert keys == {"STAGE_GATE_REMINDER"}
 
 
+def test_claude_stage_block_emission_keys() -> None:
+    """Plan→execute boundary block (ADR 054) resolves only PLAN_EXECUTE_REMINDER,
+    imported from the shared policy — never inlined (ADR050-G4 discipline)."""
+    keys = _extract_locale_keys_from_python(
+        REPO_ROOT / ".claude" / "hooks" / "pre_tool_stage_block.py"
+    )
+    assert keys == {"PLAN_EXECUTE_REMINDER"}
+
+
 def test_codex_completion_gate_emission_keys() -> None:
     keys = _extract_locale_keys_from_python(
         REPO_ROOT / ".codex" / "hooks" / "completion_gate.py"
@@ -382,6 +392,9 @@ def test_codex_stop_sync_emission_keys() -> None:
         # Mid-task stage-gate advisory (ADR 050, #269) — imported reminder text,
         # resolved via `_resolve_locale_string("STAGE_GATE_REMINDER") or ...`.
         "STAGE_GATE_REMINDER",
+        # Plan→execute boundary advisory (ADR 054) — Codex Stop-time parity of
+        # the Claude PreToolUse block, resolved the same way.
+        "PLAN_EXECUTE_REMINDER",
     }
     assert keys == expected
 
@@ -611,6 +624,10 @@ def _build_parent_map(tree: ast.AST) -> dict[int, ast.AST]:
         ".claude/hooks/completion_gate.py",
         ".codex/hooks/completion_gate.py",
         ".codex/hooks/stop-sync-reminder.py",
+        # Stage-gate advisory (ADR 050) + plan→execute block (ADR 054) —
+        # both resolve a reminder key and must keep the IC-19 `or` fallback.
+        ".claude/hooks/post_tool_stage_gate.py",
+        ".claude/hooks/pre_tool_stage_block.py",
     ],
 )
 def test_python_resolver_callsites_have_or_fallback(rel: str) -> None:

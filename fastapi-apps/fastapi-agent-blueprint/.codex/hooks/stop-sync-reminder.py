@@ -89,19 +89,23 @@ except Exception:  # noqa: BLE001 — HC-5.5 fail-open
 # canonical string (ADR050-G4).
 try:
     from governor.stage_gate import (  # noqa: E402 — sys.path adjusted above
+        PLAN_EXECUTE_REMINDER,
         STAGE_GATE_REMINDER,
         default_ledger_path,
         is_implementation_source,
         mark_fired,
+        should_plan_execute_gate,
         should_stage_gate,
     )
 
     _STAGE_GATE_OK = True
 except Exception:  # noqa: BLE001 — HC-5.5 fail-open
+    PLAN_EXECUTE_REMINDER = ""
     STAGE_GATE_REMINDER = ""
     default_ledger_path = None  # type: ignore[assignment]
     is_implementation_source = None  # type: ignore[assignment]
     mark_fired = None  # type: ignore[assignment]
+    should_plan_execute_gate = None  # type: ignore[assignment]
     should_stage_gate = None  # type: ignore[assignment]
     _STAGE_GATE_OK = False
 
@@ -159,6 +163,46 @@ def stage_gate_segment(
     # an empty locale lookup never appends a blank segment. Mirrors the Claude
     # shim's emit line exactly (imported reminder text, never inline — ADR050-G4).
     return _resolve_locale_string("STAGE_GATE_REMINDER") or STAGE_GATE_REMINDER
+
+
+def plan_execute_segment(
+    changed: list[str],
+    sid: str,
+    *,
+    state_dir: Path = STATE_DIR,
+    ledger_path: Path | None = None,
+    repo_root: Path = REPO_ROOT,
+) -> str | None:
+    """Plan→execute boundary advisory for the Codex Stop event (ADR 054 D8).
+
+    Codex has no ``PreToolUse`` and cannot hard-block like Claude
+    (``.claude/hooks/pre_tool_stage_block.py``), so the plan→execute boundary
+    surfaces here as a Stop-time advisory — the same shape as
+    ``stage_gate_segment`` (#269) but keyed to the ``planned`` stage via the
+    shared ``should_plan_execute_gate``. Bridges the Stop-time changed-file set
+    to the single-file policy (Approach A) and reuses the shared decision
+    unchanged, so Claude's block and Codex's advisory evaluate one surface.
+
+    Pure: performs no writes. The ``mark_fired`` claim is the caller's job
+    (see ``main``) so a race-losing concurrent hook stays silent (R1.3).
+    Returns the locale-rendered reminder text when the gate fires, else None.
+    """
+    if not _STAGE_GATE_OK:
+        return None
+    impl = next(
+        (path for path in changed if is_implementation_source(path, repo_root)),
+        None,
+    )
+    if impl is None:
+        return None
+    payload = {"tool_input": {"file_path": impl}, "session_id": sid}
+    resolved_ledger = (
+        ledger_path if ledger_path is not None else default_ledger_path(STATE_ROOT)
+    )
+    if not should_plan_execute_gate(payload, state_dir, resolved_ledger, repo_root):
+        return None
+    # IC-19 + ADR050-G4: imported reminder text, never inline.
+    return _resolve_locale_string("PLAN_EXECUTE_REMINDER") or PLAN_EXECUTE_REMINDER
 
 
 def build_segments(changed: list[str] | None = None) -> list[str]:
@@ -291,17 +335,19 @@ def main() -> int:
     changed = changed_files()
     segments = build_segments(changed)
 
-    # (6) Mid-task stage-gate advisory (ADR 050, #269) — advisory-only,
-    # deduped per session. ORDERING: this MUST run before the Phase 2 marker
-    # consumption below, because ``should_stage_gate`` reads the
-    # exception-token markers (plan-waiver suppression) that
-    # ``consume_phase2_markers`` deletes. The exclusive-create ``mark_fired``
+    # (6) Mid-task stage-gate advisory (ADR 050, #269) + plan→execute boundary
+    # advisory (ADR 054) — advisory-only, deduped per session. The two gates key
+    # off disjoint ledger stages (no-plan set vs ``planned``) so at most one
+    # fires; they share the once-per-session marker (one nudge budget). ORDERING:
+    # this MUST run before the Phase 2 marker consumption below, because the
+    # shared policy reads the exception-token markers (plan-waiver suppression)
+    # that ``consume_phase2_markers`` deletes. The exclusive-create ``mark_fired``
     # claim gates the append so concurrent Stop hooks emit at most once (R1.3).
     with contextlib.suppress(Exception):
         import verify_first  # noqa: PLC0415 — local import for fail-open
 
         sid = verify_first.session_id()
-        seg = stage_gate_segment(changed, sid)
+        seg = stage_gate_segment(changed, sid) or plan_execute_segment(changed, sid)
         if seg is not None and mark_fired(STATE_DIR, sid) is not None:
             segments.append(seg)
 

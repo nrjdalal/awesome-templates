@@ -201,8 +201,30 @@ update_workflow_state(
 
 ## After Plan Approval
 
+`/plan-feature` ends at the approved Execution Packet — it does **not** implement.
 When the user approves the plan:
-1. Hand off complex, architecture-changing, governor-changing, or multi-task work
-   to `/execute-plan` or `$execute-plan`.
-2. Guide the corresponding Skill before each task execution.
-3. Request user confirmation before executing "L3 Supervision Required" tasks.
+
+1. Write the native workflow state (`stage="planned"`, see the block above). This
+   is a required close-out, not optional: the plan→execute boundary gate
+   ([ADR 054](../../history/054-plan-execute-boundary-hard-gate.md)) fires only
+   when the ledger positively reads `planned`, so skipping the write silently
+   downgrades the Claude hard block to the ADR 050 advisory.
+2. **Stop. Hand control back to the user in the same turn — do not start
+   implementing.** Execution is always a separate, explicit step:
+   - Complex / architecture-changing / governor-changing / multi-task work: the
+     user invokes `/execute-plan` (Claude) or `$execute-plan` (Codex) with the
+     approved packet. `/execute-plan` advances the ledger to `executing` (which
+     clears the plan→execute block) and routes to the implement skills
+     internally — so implement skills run under `/execute-plan`, not directly
+     from `planned`.
+   - A single self-evident follow-up must be authorised with a `[trivial]` /
+     `[hotfix]` token (which the plan→execute block honours) or by invoking
+     `/execute-plan`. A bare verbal go-ahead does **not** release the Claude
+     hard block — it changes neither the ledger stage nor a waiver token
+     (ADR 054 D6).
+3. For an L3 (Supervision Required) task, the executing step still confirms with
+   the user before acting.
+
+Sliding from an approved plan straight into implementation without invoking
+`/execute-plan` (or an explicit `[trivial]`/`[hotfix]` token) is the exact drift
+ADR 054 hard-blocks on Claude and advises against on Codex.

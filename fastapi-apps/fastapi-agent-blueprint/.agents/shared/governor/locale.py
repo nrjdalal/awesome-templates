@@ -32,7 +32,7 @@ import os
 import sys
 
 from .completion_gate import GOVERNOR_REMINDER_NO_PR, GOVERNOR_REMINDER_WITH_PR
-from .stage_gate import STAGE_GATE_REMINDER
+from .stage_gate import PLAN_EXECUTE_REMINDER, STAGE_GATE_REMINDER
 from .verify import REMINDER_TEXT
 
 # Re-export canonical English constants from their source modules so the
@@ -45,6 +45,7 @@ _LOCALE_EN: dict[str, str] = {
     "GOVERNOR_REMINDER_WITH_PR": GOVERNOR_REMINDER_WITH_PR,
     "GOVERNOR_REMINDER_NO_PR": GOVERNOR_REMINDER_NO_PR,
     "STAGE_GATE_REMINDER": STAGE_GATE_REMINDER,
+    "PLAN_EXECUTE_REMINDER": PLAN_EXECUTE_REMINDER,
     # Sync advisory headers / footers (Claude shell + Codex Python hook).
     "SYNC_STRONG_HEADER": "=== /sync-guidelines strongly recommended ===",
     "SYNC_STRONG_FOOTER": "=============================================",
@@ -107,6 +108,16 @@ _LOCALE_KO: dict[str, str] = {
             "(AGENTS.md § Mid-Task Scope Expansion, ADR 050).",
             "자명한 소규모 변경이나 긴급 수정이라면 다음 프롬프트에 [자명] / [긴급] 토큰으로 이 알림을 끄세요.",
             "권고용 알림 — 세션당 최대 1회 발화합니다.",
+        ]
+    ),
+    "PLAN_EXECUTE_REMINDER": "\n".join(
+        [
+            "[stage-gate] 작업 원장(work ledger) 단계가 'planned'인 상태에서 구현 파일이 수정되었습니다.",
+            "승인된 계획은 있으나 /execute-plan(Claude) 또는 $execute-plan(Codex)으로",
+            "실행이 아직 정식으로 시작되지 않았습니다. 실행하려면 해당 스킬을 호출하세요 —",
+            "원장 단계가 'executing'으로 넘어갑니다. 자명한 소규모 변경이나 긴급 수정이라면",
+            "다음 프롬프트에 [자명] / [긴급] 토큰을 사용하세요.",
+            "(AGENTS.md § Plan→Execute Boundary, ADR 054)",
         ]
     ),
     "SYNC_STRONG_HEADER": "=== /sync-guidelines 강력 권장 ===",

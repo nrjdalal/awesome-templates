@@ -47,10 +47,32 @@ STAGE_GATE_REMINDER = "\n".join(
     ]
 )
 
+# ADR 054: shown when an implementation edit is attempted while the ledger
+# stage is `planned` (a plan exists but `/execute-plan` has not been invoked).
+# Canonical English source; locale-rendered at the hook emit site (ADR050-G4).
+# Neutral wording: on Claude the PreToolUse hook prefixes a [BLOCKED] cue and
+# exits 2 (hard block); on Codex it is a Stop-time advisory segment.
+PLAN_EXECUTE_REMINDER = "\n".join(
+    [
+        "[stage-gate] Implementation edit while the work ledger stage is 'planned'.",
+        "An approved plan exists but execution has not formally started via",
+        "/execute-plan (Claude) or $execute-plan (Codex). Invoke it to begin — it",
+        "advances the ledger to 'executing'. For a small self-evident change or",
+        "urgent fix, use a [trivial] / [hotfix] token on your next prompt instead.",
+        "(AGENTS.md § Plan→Execute Boundary, ADR 054)",
+    ]
+)
+
 # ADR050-G2: allowlist of stages that positively mean "no active plan".
 # Active stages (planned/executing/reviewing), unknown strings, and a
 # missing/unreadable ledger all stay silent.
 GATED_STAGES: frozenset[str] = frozenset({"idle", "complete", "blocked"})
+
+# ADR054-G2: disjoint sibling of GATED_STAGES. `planned` means a plan exists
+# in the ledger but `/execute-plan` has not been invoked; an implementation
+# edit here is gated separately from the "no plan at all" case above. The two
+# sets never overlap — a stage falls in at most one.
+PLAN_EXECUTE_GATED_STAGES: frozenset[str] = frozenset({"planned"})
 
 # ADR050-G3: implementation surface. Widening this tuple re-enters ADR 050.
 IMPLEMENTATION_PREFIXES: tuple[str, ...] = ("src", "examples")
@@ -215,4 +237,78 @@ def should_stage_gate(
     if read_latest_token(state_dir, MarkerLifecycle.READ_ONLY) in PLAN_WAIVER_TOKENS:
         return False
 
+    return not has_fired_this_session(state_dir, extract_session_id(payload))
+
+
+def _plan_execute_core(
+    payload: dict,
+    state_dir: Path,
+    ledger_path: Path,
+    repo_root: Path,
+) -> bool:
+    """Shared predicate for the plan→execute boundary (ADR 054).
+
+    True iff ALL of:
+      1. the edited file is a ``.py`` under ``src/`` or ``examples/``;
+      2. the ledger stage is positively in ``PLAN_EXECUTE_GATED_STAGES``
+         (``planned`` — a plan exists but ``/execute-plan`` has not run);
+      3. no *plan-waiver* token marker is active (``[trivial]``/``[hotfix]``;
+         ``[exploration]`` does NOT suppress — it implies no committed plan).
+
+    Deliberately carries NO once-per-session term: callers layer dedup on only
+    where an advisory budget applies (Codex Stop), never on the Claude block
+    (ADR054-G1 D5 — a once-fired block would let the retry through).
+    """
+
+    tool_input = payload.get("tool_input") or {}
+    file_path = tool_input.get("file_path") if isinstance(tool_input, dict) else None
+    if not is_implementation_source(
+        file_path if isinstance(file_path, str) else None, repo_root
+    ):
+        return False
+
+    if read_ledger_stage(ledger_path) not in PLAN_EXECUTE_GATED_STAGES:
+        return False
+
+    return (
+        read_latest_token(state_dir, MarkerLifecycle.READ_ONLY)
+        not in PLAN_WAIVER_TOKENS
+    )
+
+
+def should_block_plan_execute_edit(
+    payload: dict,
+    state_dir: Path,
+    ledger_path: Path,
+    repo_root: Path = REPO_ROOT,
+) -> bool:
+    """Claude ``PreToolUse`` hard-block decision (ADR 054, ADR054-G1).
+
+    True iff an implementation-source ``Edit``/``Write`` is attempted while the
+    ledger stage is ``planned`` and no plan-waiver token is active. No session
+    dedup — the block holds on every edit until ``/execute-plan`` advances the
+    stage to ``executing`` (ADR054-G1 D5). Fail-open (exit-0 allow on error) is
+    the calling hook's job; this pure decision never raises for well-formed
+    input and is side-effect free for tests.
+    """
+
+    return _plan_execute_core(payload, state_dir, ledger_path, repo_root)
+
+
+def should_plan_execute_gate(
+    payload: dict,
+    state_dir: Path,
+    ledger_path: Path,
+    repo_root: Path = REPO_ROOT,
+) -> bool:
+    """Codex Stop-time advisory decision (ADR 054 D8).
+
+    Same core predicate as ``should_block_plan_execute_edit`` plus the
+    once-per-session dedup the advisory channel uses (mirrors
+    ``should_stage_gate``). Marker writing stays the caller's job
+    (``mark_fired``) so this function is side-effect free for tests.
+    """
+
+    if not _plan_execute_core(payload, state_dir, ledger_path, repo_root):
+        return False
     return not has_fired_this_session(state_dir, extract_session_id(payload))

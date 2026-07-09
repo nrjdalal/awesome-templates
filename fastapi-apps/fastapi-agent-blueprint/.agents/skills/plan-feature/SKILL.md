@@ -9,7 +9,7 @@ metadata:
 
 ## Default Flow Position
 - Steps: **`framing`** (Phase 0) + **`approach options`** (Phase 1) + **`plan`** (Phases 2~4)
-- Routes after: hand off to the appropriate `implement` skill
+- Routes after: **STOP at the approved Execution Packet.** Execution is a separate, explicit step — invoke `$execute-plan`, which advances the ledger to `executing` and routes to the implement skills internally. To run a single implement skill directly, use a `[trivial]`/`[hotfix]` token. Never auto-continue from planning into implementation in the same turn ([ADR 054](../../../docs/history/054-plan-execute-boundary-hard-gate.md); Codex surfaces the drift as a Stop-time advisory, Claude hard-blocks)
 - Recursion guard: do not invoke `/plan-feature` recursively. Implement skills must not call `/plan-feature` (planning happens before implement)
 
 ## Procedure Overview
@@ -29,4 +29,7 @@ metadata:
 4. Propose 2-3 approach options with trade-offs and recommend one.
 5. Analyze architecture impact, run security checkpoint, break into tasks.
 6. Present the implementation plan in the standard output format, including the Execution Packet.
-7. After approval, hand complex, architecture-changing, governor-changing, or multi-task work to `$execute-plan`.
+7. After approval, write the ledger (`stage="planned"`) and **stop** — hand
+   complex, architecture-changing, governor-changing, or multi-task work to
+   `$execute-plan` as a separate step. Do not implement within `$plan-feature`
+   (ADR 054; on Codex the plan→execute drift surfaces as a Stop-time advisory).

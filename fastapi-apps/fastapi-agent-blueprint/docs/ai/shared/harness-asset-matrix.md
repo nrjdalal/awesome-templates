@@ -1,6 +1,6 @@
 # Harness Asset Inventory Matrix
 
-> Last synced: 2026-07-03 (#268 / ADR 050: added `.claude/hooks/stage-gate.{sh}` + `post_tool_stage_gate.py` Tier 3 rows, `governor/stage_gate.py` module, counts 68 → 70). Prior: 2026-06-29 (#257: added native `execute-plan` Tier 2 row + counts)
+> Last synced: 2026-07-09 (#281 / ADR 054: added `.claude/hooks/pre-tool-stage-block.{sh}` + `pre_tool_stage_block.py` Tier 3 rows for the plan→execute hard block; also rowed the previously-omitted `.claude/hooks/session-start-context.sh`; counts 70 → 73). Prior: 2026-07-03 (#268 / ADR 050: added `.claude/hooks/stage-gate.{sh}` + `post_tool_stage_gate.py` Tier 3 rows, `governor/stage_gate.py` module, counts 68 → 70). Prior: 2026-06-29 (#257: added native `execute-plan` Tier 2 row + counts)
 > Source of truth: this is a **living inventory**. Update when assets are added, renamed, or removed. `/sync-guidelines` validates that this file matches the actual filesystem.
 > Sibling docs: [ADR 045](../../history/045-hybrid-harness-target-architecture.md) · [target-operating-model.md](target-operating-model.md) · [migration-strategy.md](migration-strategy.md)
 
@@ -563,22 +563,25 @@ Bucket guideline:
 
 ## Tier 3 — Hooks
 
-Twenty hook scripts (7 Claude shell + 5 Claude Python implementations + 8 Codex Python). Phase 2 (#121) added `.claude/hooks/user-prompt-submit.sh` + `.claude/hooks/user_prompt_submit.py` as the first Claude UserPromptSubmit hook surface; Phase 3 (#122) added `.claude/hooks/verify-first.{sh,py}` + `.codex/hooks/verify_first.py`; Phase 4 (#123) added `.claude/hooks/completion_gate.py` + `.codex/hooks/completion_gate.py` as the completion-gate helper pair (IC-11 Option A + Pillar 7); #268 (ADR 050) added `.claude/hooks/stage-gate.sh` + `.claude/hooks/post_tool_stage_gate.py` as the mid-task stage-gate advisory pair (third `PostToolUse Edit|Write` sibling); #269 shipped the Codex counterpart as a Stop-time advisory folded into `.codex/hooks/stop-sync-reminder.py` (no new hook file — Codex fires one Stop event), reusing the shared `governor.stage_gate` policy.
+Twenty-three hook scripts (9 Claude shell + 6 Claude Python implementations + 8 Codex Python; the count includes `.claude/hooks/session-start-context.sh`, an active SessionStart hook rowed during the #281 sync after a prior sync omitted it). Phase 2 (#121) added `.claude/hooks/user-prompt-submit.sh` + `.claude/hooks/user_prompt_submit.py` as the first Claude UserPromptSubmit hook surface; Phase 3 (#122) added `.claude/hooks/verify-first.{sh,py}` + `.codex/hooks/verify_first.py`; Phase 4 (#123) added `.claude/hooks/completion_gate.py` + `.codex/hooks/completion_gate.py` as the completion-gate helper pair (IC-11 Option A + Pillar 7); #268 (ADR 050) added `.claude/hooks/stage-gate.sh` + `.claude/hooks/post_tool_stage_gate.py` as the mid-task stage-gate advisory pair (third `PostToolUse Edit|Write` sibling); #269 shipped the Codex counterpart as a Stop-time advisory folded into `.codex/hooks/stop-sync-reminder.py` (no new hook file — Codex fires one Stop event), reusing the shared `governor.stage_gate` policy; #281 (ADR 054) added `.claude/hooks/pre-tool-stage-block.sh` + `.claude/hooks/pre_tool_stage_block.py` as the plan→execute boundary **hard block** (a new `PreToolUse Edit|Write` sibling, exit 2), with the Codex counterpart folded into `.codex/hooks/stop-sync-reminder.py` as a Stop-time advisory (`plan_execute_segment`, no new hook file).
 
 | Asset | Bucket | Risk | Impact |
 |---|---|---|---|
 | `.claude/hooks/check-required-plugins.sh` | Keep | Low | Low |
+| `.claude/hooks/session-start-context.sh` | Keep | Low | Low |
 | `.claude/hooks/pre-tool-security.sh` | Keep | Low | Medium |
 | `.claude/hooks/post-tool-format.sh` | Keep | Low | Medium |
 | `.claude/hooks/stop-sync-reminder.sh` | Keep | Low | Medium |
 | `.claude/hooks/user-prompt-submit.sh` | Keep | Low | Medium |
 | `.claude/hooks/verify-first.sh` | Overlay | Low | Low |
 | `.claude/hooks/stage-gate.sh` | Overlay | Low | Low |
+| `.claude/hooks/pre-tool-stage-block.sh` | Overlay | Low | Low |
 | `.claude/hooks/pre_tool_security.py` | Keep | Low | Medium |
 | `.claude/hooks/user_prompt_submit.py` | Keep | Low | Medium |
 | `.claude/hooks/verify_first.py` | Overlay | Low | Low |
 | `.claude/hooks/completion_gate.py` | Overlay | Low | Low |
 | `.claude/hooks/post_tool_stage_gate.py` | Overlay | Low | Low |
+| `.claude/hooks/pre_tool_stage_block.py` | Overlay | Low | Low |
 | `.codex/hooks/_shared.py` | Keep | Low | Low |
 | `.codex/hooks/session-start.py` | Keep | Low | Low |
 | `.codex/hooks/user-prompt-submit.py` | Keep | Low | Medium |
@@ -594,6 +597,13 @@ Twenty hook scripts (7 Claude shell + 5 Claude Python implementations + 8 Codex 
 - **Why it exists**: #63 plugin migration; missing plugins silently break LSP-aware skills.
 - **Bucket**: Keep.
 - **Notes**: No Default Flow interaction.
+
+### `.claude/hooks/session-start-context.sh`
+
+- **Current role**: SessionStart hook that injects project status/context (via `.agents/shared` state) into the session at startup.
+- **Why it exists**: Surfaces the resumed work-ledger goal/scope/stage and environment notes at session start so the agent has current project context without an explicit read.
+- **Bucket**: Keep.
+- **Notes**: Rowed during the #281 / ADR 054 sync — this active SessionStart hook (wired in `.claude/settings.json`) had been omitted from the matrix by a prior sync. No Default Flow interaction.
 
 ### `.claude/hooks/pre-tool-security.sh`
 
@@ -683,6 +693,20 @@ Twenty hook scripts (7 Claude shell + 5 Claude Python implementations + 8 Codex 
 - **Why it exists**: Fires once per session when a `.py` under `src/`/`examples/` is edited while the work ledger's `workflow.stage` is `idle`/`complete`/`blocked` and no plan-waiver token marker is active. Fail-open on missing/corrupt ledger (`.agents/state/` is untracked, so contributors and CI never see it).
 - **Bucket**: Overlay.
 - **Notes**: Exclusive-create session marker (`stage-gate-<session_id>.json`) — only the claim winner emits (R1.3). Locale key `STAGE_GATE_REMINDER` resolved at emit time (#133 pattern). Phase 5 invariants: no top-level `sys.exit` (R0-A.1), HC-5.5 fail-open. ADR 050 D3 records the drift candidate that `verify_first.py` still emits transcript-only stderr.
+
+### `.claude/hooks/pre-tool-stage-block.sh`
+
+- **Current role**: #281 (ADR 054) `PreToolUse Edit|Write` wrapper for the plan→execute hard block. Pipes stdin to `pre_tool_stage_block.py` and **propagates its exit code** (unlike `stage-gate.sh`, which always exits 0) so exit 2 blocks the edit. Guards a missing/unreadable script or launcher with `|| exit 0` so the interpreter's own exit 2 cannot masquerade as a block (fail-open, ADR054-G5).
+- **Why it exists**: The ADR 050 advisory stays silent on `workflow.stage == "planned"` (an approved plan not yet handed to `/execute-plan`) — the exact window ADR 054 hard-blocks so an approved plan cannot slide into implementation without an explicit `/execute-plan`.
+- **Bucket**: Overlay.
+- **Notes**: Second Claude `PreToolUse Edit|Write` hook (after `pre-tool-security.sh`); wired as a distinct matcher entry in `.claude/settings.json`. Codex has no `PreToolUse`, so its counterpart is the Stop-time advisory `plan_execute_segment` in `.codex/hooks/stop-sync-reminder.py` (ADR054-G4 asymmetry — Claude blocks, Codex advises).
+
+### `.claude/hooks/pre_tool_stage_block.py`
+
+- **Current role**: Thin shim over `governor.stage_gate.should_block_plan_execute_edit`. Blocks the edit with exit 2 + `[BLOCKED]` stderr (the model-visible `PreToolUse` channel `pre_tool_security.py` uses) when a `.py` under `src/`/`examples/` is edited while `workflow.stage == "planned"` and no plan-waiver token (`[trivial]`/`[hotfix]`) is active.
+- **Why it exists**: Enforces the plan→execute boundary on Claude (ADR054-G1). Unlike the ADR 050 advisory it has **no once-per-session dedup** — a block must hold on every retry until `/execute-plan` advances the stage to `executing`. There is deliberately no Claude `PostToolUse` advisory for `planned` (the block intercepts the same cases pre-edit — ADR 054 D4).
+- **Bucket**: Overlay.
+- **Notes**: Reuses the `governor.stage_gate` policy + `PLAN_EXECUTE_GATED_STAGES = {planned}` (disjoint from the ADR 050 `GATED_STAGES`). Locale key `PLAN_EXECUTE_REMINDER` resolved at emit time (#133 pattern), imported never inlined (ADR050-G4). Phase 5 invariants: no top-level `sys.exit` outside `__main__`; HC-5.5 / ADR054-G5 fail-open (any error → exit 0, never fail-closed).
 
 ### `.codex/hooks/pre-tool-security.py`
 
@@ -784,13 +808,13 @@ Six rule files (5 Claude + 1 Codex). All `Keep` except `commands.md` which becom
 
 | Bucket | Count | Share | Notes |
 |---|---|---|---|
-| Keep | 53 | ~79% | Project-specific architecture / safety / reference value (incl. admin-design-system.md #193 + 4 design + 3 self-coherence-recovery process-governor artefacts + 2 Phase 2 #121 hooks + Phase 5 #124 shared governor package now extended by ADR 047 PR B-F with `sync_cosmetic.py`; ADR 047 PR B-F also added `tools/check_governor_footer.py` + `.github/workflows/governor-footer-lint.yml` in place of the removed `tools/check_g_closure.py`) |
-| Overlay | 16 | ~23% | Process discipline now routed by Default Flow (issue #268 adds the 2 stage-gate hooks; issue #257 adds `execute-plan`; Phase 3 #122 adds 3 verify-first; Phase 4 #123 adds 2 completion-gate hooks; Phase 5 #124 reduces those hooks to thin shims without changing buckets) |
+| Keep | 54 | ~74% | Project-specific architecture / safety / reference value (incl. admin-design-system.md #193 + 4 design + 3 self-coherence-recovery process-governor artefacts + 2 Phase 2 #121 hooks + `session-start-context.sh` rowed in the #281 sync + Phase 5 #124 shared governor package now extended by ADR 047 PR B-F with `sync_cosmetic.py`; ADR 047 PR B-F also added `tools/check_governor_footer.py` + `.github/workflows/governor-footer-lint.yml` in place of the removed `tools/check_g_closure.py`) |
+| Overlay | 18 | ~25% | Process discipline now routed by Default Flow (issue #268 adds the 2 stage-gate hooks; issue #281 / ADR 054 adds the 2 plan→execute block hooks; issue #257 adds `execute-plan`; Phase 3 #122 adds 3 verify-first; Phase 4 #123 adds 2 completion-gate hooks; Phase 5 #124 reduces those hooks to thin shims without changing buckets) |
 | Replace | 0 | 0% | None in initial inventory; reserved for future passes |
 | Drop | 1 | ~1% | `tools/check_g_closure.py` retired by ADR 047 PR B-F (Guard G enforcement target moved to PR-description Governor Footer; `tools/check_governor_footer.py` is the replacement and is counted under `Keep`). |
-| **Total** | **70** | 100% | |
+| **Total** | **73** | 100% | |
 
-Counting note: `Tier 0=9` (8 + ADR 045 + `.github/pull_request_template.md`), `Tier 1=21` (13 reference incl. `admin-design-system.md` + 3 design living docs + `governor-review-log/` directory + `governor-paths.md` + `.agents/shared/governor/` package + `tools/check_g_closure.py` historical-Drop + `tools/check_governor_footer.py` + `docs/history/047-governor-review-provenance-consolidation.md`), `Tier 2=15` (skill rows; each row covers all 3 wrapper layers), `Tier 3=20` (#268 added `.claude/hooks/stage-gate.sh` + `.claude/hooks/post_tool_stage_gate.py`; Phase 4 #123 = 18, Phase 3 = 16, Phase 2 = 13, Phase 1 = 10; Phase 5 #124 converted 6 of these to thin shims without changing the count), `Tier 4=6` — sum 71. The 70 figure above excludes `.claude/settings.local.json` from the active-share count because it is `.gitignore`d. The bucket-share percentages use 70 as the denominator.
+Counting note: `Tier 0=9` (8 + ADR 045 + `.github/pull_request_template.md`), `Tier 1=21` (13 reference incl. `admin-design-system.md` + 3 design living docs + `governor-review-log/` directory + `governor-paths.md` + `.agents/shared/governor/` package + `tools/check_g_closure.py` historical-Drop + `tools/check_governor_footer.py` + `docs/history/047-governor-review-provenance-consolidation.md`), `Tier 2=15` (skill rows; each row covers all 3 wrapper layers), `Tier 3=23` (#281 / ADR 054 added `.claude/hooks/pre-tool-stage-block.sh` + `.claude/hooks/pre_tool_stage_block.py` and rowed the previously-omitted `.claude/hooks/session-start-context.sh`; #268 added `.claude/hooks/stage-gate.sh` + `.claude/hooks/post_tool_stage_gate.py`; Phase 4 #123 = 18, Phase 3 = 16, Phase 2 = 13, Phase 1 = 10; Phase 5 #124 converted 6 of these to thin shims without changing the count), `Tier 4=6` — sum 74. The 73 figure above excludes `.claude/settings.local.json` from the active-share count because it is `.gitignore`d. The bucket-share percentages use 73 as the denominator.
 
 This distribution matches the "Mostly Local with Philosophy Overlay" model declared in [ADR 045 §D4](../../history/045-hybrid-harness-target-architecture.md). The `Replace` and `Drop` columns are both empty: no asset's content is being rewritten, and self-verification during cross-link work showed that the only `Drop` candidate identified during the first triage was actually an active component (a sh-wrapper `.py` pair).
 

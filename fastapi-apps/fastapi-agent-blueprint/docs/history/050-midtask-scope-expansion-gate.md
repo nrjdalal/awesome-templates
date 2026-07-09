@@ -77,6 +77,8 @@ The hook performs no network access, writes only under `HARNESS_STATE_ROOT/.clau
 ### Durable Governance Constraints
 
 - **ADR050-G1** — The stage gate stays advisory. Promotion to a hard gate requires a dedicated hardening PR with false-positive tests covering exploration, trivial edits, and single-skill work (per `/execute-plan` § Advisory-First Enforcement).
+  - **Update (ADR 054):** narrowed. The gate is now a **hard block on Claude for the `planned` stage only** — see [ADR 054](054-plan-execute-boundary-hard-gate.md). ADR050-G1 remains in force for `GATED_STAGES` (the no-plan case stays advisory).
 - **ADR050-G2** — Gating is allowlist-based: the gate fires only on `GATED_STAGES` membership. New ledger stages are silent until explicitly classified.
+  - **Update (ADR 054):** extended with a disjoint sibling allowlist `PLAN_EXECUTE_GATED_STAGES = {planned}` for the plan→execute boundary block. The allowlist discipline is unchanged; the two sets never overlap.
 - **ADR050-G3** — Widening the implementation surface (beyond `.py` under `src/`, `examples/`) or tightening dedup (per-prompt) is a governor change: it re-enters this ADR, not a hook-local edit.
 - **ADR050-G4** — The reminder text is canonical English in `governor/stage_gate.py`, locale-rendered via `governor.locale` at emit time (issue #133 pattern); translations live only in `_LOCALE_KO`.

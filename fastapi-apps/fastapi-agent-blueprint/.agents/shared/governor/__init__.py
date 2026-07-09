@@ -48,6 +48,8 @@ from .safety import (
 )
 from .stage_gate import (
     GATED_STAGES,
+    PLAN_EXECUTE_GATED_STAGES,
+    PLAN_EXECUTE_REMINDER,
     STAGE_GATE_REMINDER,
     default_ledger_path,
     extract_session_id,
@@ -55,6 +57,8 @@ from .stage_gate import (
     is_implementation_source,
     mark_fired,
     read_ledger_stage,
+    should_block_plan_execute_edit,
+    should_plan_execute_gate,
     should_stage_gate,
 )
 from .time_window import _within_24h
@@ -81,6 +85,8 @@ __all__ = [
     "GOVERNOR_REVIEW_LOG_PREFIX",
     "GateResult",
     "MarkerLifecycle",
+    "PLAN_EXECUTE_GATED_STAGES",
+    "PLAN_EXECUTE_REMINDER",
     "PLAN_WAIVER_TOKENS",
     "PROMPT_RULES",
     "ParsedToken",
@@ -112,6 +118,8 @@ __all__ = [
     "read_ledger_stage",
     "render_reminder",
     "safe_parse_exception_token",
+    "should_block_plan_execute_edit",
+    "should_plan_execute_gate",
     "should_remind_claude",
     "should_stage_gate",
     "write_marker",

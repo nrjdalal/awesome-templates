@@ -20,7 +20,7 @@ Description: $ARGUMENTS
 
 ## Default Flow Position
 - Steps: **`framing`** (Phase 0) + **`approach options`** (Phase 1) + **`plan`** (Phases 2~4)
-- Routes after: hand off to the appropriate `implement` skill (`/new-domain`, `/add-api`, `/add-cross-domain`, etc.)
+- Routes after: **STOP at the approved Execution Packet.** Execution is a separate, explicit step — invoke `/execute-plan`, which advances the ledger to `executing` (clearing the plan→execute block) and routes to the implement skills (`/new-domain`, `/add-api`, `/add-cross-domain`, etc.) internally. To run a single implement skill or self-evident follow-up directly, prefix the next prompt with a `[trivial]`/`[hotfix]` token (the block honours plan-waiver tokens) — invoking an implement skill while the stage is still `planned` without a token is hard-blocked. Never auto-continue from planning into implementation in the same turn ([ADR 054](../../../docs/history/054-plan-execute-boundary-hard-gate.md))
 - Recursion guard: do not invoke `/plan-feature` recursively. Implement skills must not call `/plan-feature` (planning happens before implement)
 
 ## Procedure Overview
@@ -42,4 +42,5 @@ Description: $ARGUMENTS
 Read `docs/ai/shared/skills/plan-feature.md` for detailed steps and output format.
 Also refer to `docs/ai/shared/planning-checklists.md` for question bank and templates.
 For complex, architecture-changing, governor-changing, or multi-task work, hand
-the approved Execution Packet to `/execute-plan`.
+the approved Execution Packet to `/execute-plan` **as a separate step** — do not
+implement within `/plan-feature`. Stopping at the packet is mandatory (ADR 054).
