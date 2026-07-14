@@ -6,6 +6,10 @@ import pytest
 from src._core.domain.value_objects.embedding_config import EmbeddingConfig
 
 _has_pydantic_ai = importlib.util.find_spec("pydantic_ai") is not None
+_has_openai_embeddings = (
+    importlib.util.find_spec("pydantic_ai") is not None
+    and importlib.util.find_spec("openai") is not None
+)
 
 
 class TestEmbeddingConfigValueObject:
@@ -156,7 +160,9 @@ class TestPydanticAIEmbeddingAdapter:
             await adapter.embed_text("test")
 
 
-@pytest.mark.skipif(not _has_pydantic_ai, reason="pydantic-ai not installed")
+@pytest.mark.skipif(
+    not _has_openai_embeddings, reason="pydantic-ai + openai not installed"
+)
 class TestOpenAIBatchSplitting:
     """OpenAI 프로바이더의 배치 분할 로직 테스트."""
 

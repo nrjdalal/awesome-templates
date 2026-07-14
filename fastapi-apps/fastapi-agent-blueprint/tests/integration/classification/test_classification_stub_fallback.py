@@ -26,7 +26,6 @@ class TestClassificationStubFallback:
         """Force the LLM selector into its ``disabled`` branch."""
         monkeypatch.setattr(settings, "llm_provider", None)
         monkeypatch.setattr(settings, "llm_model", None)
-        monkeypatch.setattr(settings, "llm_model_name", None)
 
     @pytest.mark.asyncio
     async def test_stub_classifier_produces_dto(self):
