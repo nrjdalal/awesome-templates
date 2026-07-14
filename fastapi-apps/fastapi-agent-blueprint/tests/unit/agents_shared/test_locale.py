@@ -628,6 +628,9 @@ def _build_parent_map(tree: ast.AST) -> dict[int, ast.AST]:
         # both resolve a reminder key and must keep the IC-19 `or` fallback.
         ".claude/hooks/post_tool_stage_gate.py",
         ".claude/hooks/pre_tool_stage_block.py",
+        ".antigravity/hooks/verify_first.py",
+        ".antigravity/hooks/completion_gate.py",
+        ".antigravity/hooks/stop-sync-reminder.py",
     ],
 )
 def test_python_resolver_callsites_have_or_fallback(rel: str) -> None:

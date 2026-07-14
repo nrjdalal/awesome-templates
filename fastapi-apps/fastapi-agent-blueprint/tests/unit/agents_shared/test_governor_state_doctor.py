@@ -54,16 +54,30 @@ def _make_valid_settings_json(
     return {"hooks": {"Stop": [{"hooks": [{"type": "command", "command": stop_cmd}]}]}}
 
 
+def _make_valid_gemini_settings_json(
+    after_agent_cmd: str = "sh .agents/shared/harness-python.sh .antigravity/hooks/stop-sync-reminder.py",
+) -> dict:
+    return {
+        "hooks": {
+            "AfterAgent": [{"hooks": [{"type": "command", "command": after_agent_cmd}]}]
+        }
+    }
+
+
 def _write_json(path: Path, data: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(data), encoding="utf-8")
 
 
 def _make_minimal_marker_files(root: Path) -> None:
-    """Create the three files required for C4 to pass."""
+    """Create the files required for C4 to pass."""
     stop_py = root / ".codex" / "hooks" / "stop-sync-reminder.py"
     stop_py.parent.mkdir(parents=True, exist_ok=True)
     stop_py.write_text("consume_phase2_markers(STATE_DIR)", encoding="utf-8")
+
+    antigravity_stop = root / ".antigravity" / "hooks" / "stop-sync-reminder.py"
+    antigravity_stop.parent.mkdir(parents=True, exist_ok=True)
+    antigravity_stop.write_text("consume_phase2_markers(STATE_DIR)", encoding="utf-8")
 
     markers_py = root / ".agents" / "shared" / "governor" / "markers.py"
     markers_py.parent.mkdir(parents=True, exist_ok=True)
@@ -71,6 +85,9 @@ def _make_minimal_marker_files(root: Path) -> None:
 
     gate_py = root / ".codex" / "hooks" / "completion_gate.py"
     gate_py.write_text('glob("verify-log-*.json")', encoding="utf-8")
+
+    antigravity_gate = root / ".antigravity" / "hooks" / "completion_gate.py"
+    antigravity_gate.write_text('glob("verify-log-*.json")', encoding="utf-8")
 
 
 # ---------------------------------------------------------------------------
@@ -80,7 +97,10 @@ def _make_minimal_marker_files(root: Path) -> None:
 
 def test_gitignore_registered_pass(tmp_path: Path) -> None:
     gi = tmp_path / ".gitignore"
-    gi.write_text(".claude/state/\n.codex/state/\n", encoding="utf-8")
+    gi.write_text(
+        ".claude/state/\n.codex/state/\n.antigravity/state/\n",
+        encoding="utf-8",
+    )
     result = check_gitignore_registered(tmp_path)
     assert result.ok is True
     assert result.name == "C1_gitignore_registered"
@@ -105,7 +125,7 @@ def test_gitignore_registered_fail_empty(tmp_path: Path) -> None:
     gi.write_text("", encoding="utf-8")
     result = check_gitignore_registered(tmp_path)
     assert result.ok is False
-    assert len(result.data.get("missing", [])) == 2
+    assert len(result.data.get("missing", [])) == 3
 
 
 # ---------------------------------------------------------------------------
@@ -148,6 +168,9 @@ def test_no_git_tracked_state_fail_command_not_found(tmp_path: Path) -> None:
 def test_stop_hook_schema_pass(tmp_path: Path) -> None:
     _write_json(tmp_path / ".codex" / "hooks.json", _make_valid_hooks_json())
     _write_json(tmp_path / ".claude" / "settings.json", _make_valid_settings_json())
+    _write_json(
+        tmp_path / ".gemini" / "settings.json", _make_valid_gemini_settings_json()
+    )
     result = check_stop_hook_schema(tmp_path)
     assert result.ok is True
 
@@ -155,6 +178,9 @@ def test_stop_hook_schema_pass(tmp_path: Path) -> None:
 def test_stop_hook_schema_fail_no_stop_entry(tmp_path: Path) -> None:
     _write_json(tmp_path / ".codex" / "hooks.json", {"hooks": {"SessionStart": []}})
     _write_json(tmp_path / ".claude" / "settings.json", _make_valid_settings_json())
+    _write_json(
+        tmp_path / ".gemini" / "settings.json", _make_valid_gemini_settings_json()
+    )
     result = check_stop_hook_schema(tmp_path)
     assert result.ok is False
     assert "no Stop entry" in result.detail
@@ -164,6 +190,9 @@ def test_stop_hook_schema_fail_wrong_type(tmp_path: Path) -> None:
     bad = {"hooks": {"Stop": [{"hooks": [{"type": "script", "command": "stop.py"}]}]}}
     _write_json(tmp_path / ".codex" / "hooks.json", bad)
     _write_json(tmp_path / ".claude" / "settings.json", _make_valid_settings_json())
+    _write_json(
+        tmp_path / ".gemini" / "settings.json", _make_valid_gemini_settings_json()
+    )
     result = check_stop_hook_schema(tmp_path)
     assert result.ok is False
     assert "not 'command'" in result.detail or "command" in result.detail
@@ -173,6 +202,9 @@ def test_stop_hook_schema_fail_empty_command(tmp_path: Path) -> None:
     bad = {"hooks": {"Stop": [{"hooks": [{"type": "command", "command": ""}]}]}}
     _write_json(tmp_path / ".codex" / "hooks.json", bad)
     _write_json(tmp_path / ".claude" / "settings.json", _make_valid_settings_json())
+    _write_json(
+        tmp_path / ".gemini" / "settings.json", _make_valid_gemini_settings_json()
+    )
     result = check_stop_hook_schema(tmp_path)
     assert result.ok is False
 
@@ -190,6 +222,9 @@ def test_stop_hook_schema_fail_invalid_json(tmp_path: Path) -> None:
     codex_hooks.parent.mkdir(parents=True)
     codex_hooks.write_text("{not valid json", encoding="utf-8")
     _write_json(tmp_path / ".claude" / "settings.json", _make_valid_settings_json())
+    _write_json(
+        tmp_path / ".gemini" / "settings.json", _make_valid_gemini_settings_json()
+    )
     result = check_stop_hook_schema(tmp_path)
     assert result.ok is False
 
@@ -385,14 +420,24 @@ def test_c5_governor_markers_real_import() -> None:
 def test_c6_hook_command_canaries_real_state_unchanged() -> None:
     before = {
         path: path.stat().st_mtime_ns
-        for rel in (".codex/state", ".claude/state", ".agents/state")
+        for rel in (
+            ".codex/state",
+            ".claude/state",
+            ".antigravity/state",
+            ".agents/state",
+        )
         for path in (_REPO_ROOT / rel).rglob("*")
         if (_REPO_ROOT / rel).exists() and path.is_file()
     }
     result = check_hook_command_canaries(_REPO_ROOT)
     after = {
         path: path.stat().st_mtime_ns
-        for rel in (".codex/state", ".claude/state", ".agents/state")
+        for rel in (
+            ".codex/state",
+            ".claude/state",
+            ".antigravity/state",
+            ".agents/state",
+        )
         for path in (_REPO_ROOT / rel).rglob("*")
         if (_REPO_ROOT / rel).exists() and path.is_file()
     }

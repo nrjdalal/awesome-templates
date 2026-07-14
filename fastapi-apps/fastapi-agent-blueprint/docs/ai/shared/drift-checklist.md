@@ -40,11 +40,11 @@ Read CLAUDE.md and verify Claude-only guidance still matches the harness:
 ## 1C. `harness-asset-matrix.md` ↔ Filesystem Sync Check (ADR 045)
 
 - [ ] Enumerate actual filesystem assets in scope:
-  - Tier 0: `AGENTS.md`, `CLAUDE.md`, `.codex/config.toml`, `.codex/hooks.json`, `.claude/settings.json`, `.claude/settings.local.json`, `.mcp.json`, plus every `docs/history/0XX-*.md` ADR (including ADR 045)
+  - Tier 0: `AGENTS.md`, `CLAUDE.md`, `.codex/config.toml`, `.codex/hooks.json`, `.claude/settings.json`, `.claude/settings.local.json`, `.gemini/settings.json`, `.antigravity/plugin.json`, `.antigravity/gemini-extension.json`, `.antigravity/mcp_config.json`, `.antigravity/permissions.json`, `.mcp.json`, plus every `docs/history/0XX-*.md` ADR (including ADR 045)
   - Tier 1: every `docs/ai/shared/*.md` (parent folder only, not `skills/`)
   - Tier 2: every skill triple — `docs/ai/shared/skills/{name}.md`, `.claude/skills/{name}/SKILL.md`, `.agents/skills/{name}/SKILL.md`
-  - Tier 3: every file under `.claude/hooks/` and `.codex/hooks/`
-  - Tier 4: every file under `.claude/rules/` and `.codex/rules/`
+  - Tier 3: every file under `.claude/hooks/`, `.codex/hooks/`, and `.antigravity/hooks/`
+  - Tier 4: every file under `.claude/rules/`, `.codex/rules/`, and `.antigravity/rules/`
 - [ ] Verify each enumerated asset has exactly one row in `docs/ai/shared/harness-asset-matrix.md`
 - [ ] Verify the Bucket Distribution Summary count equals the row count (subtracting `.gitignore`d entries from the share-percentage denominator)
 - [ ] Verify each row's `Bucket` is one of `Keep` / `Replace` / `Overlay` / `Drop` and matches the bucket definitions at the top of the matrix
@@ -217,7 +217,7 @@ Use these scenario checks when validating the redesigned workflow:
 
 - [ ] Architecture-changing PR -> `/review-pr` should produce findings and/or drift candidates, and `/sync-guidelines` should be required before closure
 - [ ] Security feature active in code but stale in `project-dna` -> `/security-review` should continue auditing and report stale-reference drift instead of ending in `SKIP`
-- [ ] Shared procedure changed without wrapper updates -> `/sync-guidelines` should detect Hybrid C drift for both Claude and Codex wrappers
+- [ ] Shared procedure changed without wrapper updates -> `/sync-guidelines` should detect Hybrid C drift for Claude and Codex wrappers, and shared-source drift for Antigravity assets
 - [ ] Docs-only checklist meaning change -> `/sync-guidelines` should classify it as `REVIEW`, not a silent `AUTO-FIX`
 
 ## Drift Management Rules
@@ -228,18 +228,18 @@ Use these scenario checks when validating the redesigned workflow:
 - Keep root `AGENTS.md` short and stable; when local context needs more detail, prefer named skills instead of expanding the root doc
 - `AGENTS.override.md` may be used only if it is explicitly subject to the same drift-management and language-policy governance as `AGENTS.md` itself
 - Codex memories are personal/session optimization only; do not treat them as a shared rule source
-- Shared rule sources: `AGENTS.md`, `docs/ai/shared/`, `docs/ai/shared/skills/`, `.claude/`, `.codex/`, and `.agents/`
+- Shared rule sources: `AGENTS.md`, `docs/ai/shared/`, `docs/ai/shared/skills/`, `.claude/`, `.codex/`, `.antigravity/`, `.gemini/`, and `.agents/`
 - Update related documentation in the same change when shared rules or harness behavior changes:
   - `README.md`, `docs/README.ko.md`, `CONTRIBUTING.md`, `CLAUDE.md`
   - `docs/ai/shared/` and `docs/ai/shared/skills/`
   - `.claude/rules/` and `.claude/skills/` references when relevant
-  - `.codex/hooks.json`, `.codex/rules/`, and `.agents/skills/` when relevant
+  - `.codex/hooks.json`, `.codex/rules/`, `.antigravity/`, `.gemini/`, and `.agents/skills/` when relevant
 - When modifying a skill procedure, verify both `.claude/skills/` and `.agents/skills/` wrappers reference the same shared procedure
   - For Hybrid C skills: `docs/ai/shared/skills/{name}.md` is the canonical source
-  - Claude and Codex wrappers must stay in sync with the shared procedure's Phase/Step structure
+  - Claude and Codex wrappers must stay in sync with the shared procedure's Phase/Step structure; Antigravity assets must keep pointing at shared skill and governor sources
 - If architecture or shared patterns change, inspect drift before closing the work:
-  - Claude entry point: `/sync-guidelines`; Codex: `$sync-guidelines`
-  - Both tools should run sync after architecture changes — not just the active tool
+  - Claude entry point: `/sync-guidelines`; Codex: `$sync-guidelines`; Antigravity: matching workspace skill
+  - All configured tools should run sync after architecture changes — not just the active tool
 
 ### Skill Split Convention (Hybrid C)
 

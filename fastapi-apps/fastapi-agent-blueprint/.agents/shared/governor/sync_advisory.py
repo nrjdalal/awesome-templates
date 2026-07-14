@@ -1,9 +1,10 @@
 """Shared sync-advisory classification (PR-A.5 + F-1).
 
 Single source of truth for ``FOUNDATION_PREFIXES`` / ``STRUCTURE_MARKERS``
-and the ``classify_advisory`` decision function. Both the Codex Python hook
-(``.codex/hooks/stop-sync-reminder.py``) and the Claude bash hook
-(``.claude/hooks/stop-sync-reminder.sh``) delegate here via thin shims,
+and the ``classify_advisory`` decision function. Codex
+(``.codex/hooks/stop-sync-reminder.py``), Claude
+(``.claude/hooks/stop-sync-reminder.sh``), and Antigravity
+(``.antigravity/hooks/stop-sync-reminder.py``) delegate here via thin shims,
 satisfying IC-2 (single SOT) and IC-14 (no inline policy redeclaration).
 
 The bash hook uses ``governor.sync_advisory_cli`` (same package) as its
@@ -26,6 +27,8 @@ FOUNDATION_PREFIXES: tuple[str, ...] = (
     "AGENTS.md",
     "CLAUDE.md",
     ".codex/",
+    ".antigravity/",
+    ".gemini/",
     ".agents/",
     ".claude/hooks/",
     ".claude/rules/",

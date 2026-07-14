@@ -75,10 +75,10 @@ except Exception:  # noqa: BLE001 — HC-5.5 fail-open
     GOVERNOR_REMINDER_WITH_PR = ""
     GOVERNOR_REMINDER_NO_PR = ""
     MarkerLifecycle = None  # type: ignore[assignment,misc]
-    _shared_read_latest_token = None
-    _shared_consume_phase2_markers = None
-    _shared_governor_subset = None
-    _shared_is_sync_cosmetic_only = None
+    _shared_read_latest_token = None  # type: ignore[assignment]
+    _shared_consume_phase2_markers = None  # type: ignore[assignment]
+    _shared_governor_subset = None  # type: ignore[assignment]
+    _shared_is_sync_cosmetic_only = None  # type: ignore[assignment]
     _SHARED_OK = False
 
     def _within_24h(ts: str) -> bool:  # type: ignore[no-redef]
@@ -98,7 +98,7 @@ except Exception:  # noqa: BLE001 — HC-5.5 fail-open
     ) -> bool:
         return False
 
-    def match_log_entry(  # type: ignore[no-redef]
+    def match_log_entry(  # type: ignore[no-redef, misc]
         changed: list[str], current_pr: int | None
     ) -> str:
         return "missing"

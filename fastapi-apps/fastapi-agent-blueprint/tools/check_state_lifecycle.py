@@ -2,9 +2,10 @@
 """State lifecycle health check — pre-commit integration (PR-A.3).
 
 Two-tier policy:
-  FAIL-HARD (exit 1) — git-tracked files exist under .claude/state/ or
-    .codex/state/: the .gitignore guard has been bypassed and exception-token
-    or verify-log files may be committed to version control.
+  FAIL-HARD (exit 1) — git-tracked files exist under .claude/state/,
+    .codex/state/, or .antigravity/state/: the .gitignore guard has been
+    bypassed and exception-token or verify-log files may be committed to
+    version control.
 
   WARN-ONLY (exit 0 + stderr) — stale marker count exceeds the threshold K.
     A non-zero stale count is informational: the Stop hook may not have fired
@@ -26,15 +27,16 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 _STATE_DIRS = (
     REPO_ROOT / ".claude" / "state",
     REPO_ROOT / ".codex" / "state",
+    REPO_ROOT / ".antigravity" / "state",
 )
-# Warn when the total stale-marker count across both state dirs reaches this.
+# Warn when the total stale-marker count across state dirs reaches this.
 _STALE_WARN_THRESHOLD = 10
 
 
 def _git_tracked_state_files() -> list[str]:
-    """Return a list of git-tracked paths inside the two state directories."""
+    """Return a list of git-tracked paths inside the state directories."""
     tracked: list[str] = []
-    for pattern in (".claude/state/", ".codex/state/"):
+    for pattern in (".claude/state/", ".codex/state/", ".antigravity/state/"):
         result = subprocess.run(  # noqa: S603
             ["git", "ls-files", pattern],
             cwd=str(REPO_ROOT),
@@ -79,7 +81,7 @@ def main() -> int:
             print(f"  {f}", file=sys.stderr)
         print(
             "\nThese files must not be committed.  Add them to .gitignore or run:\n"
-            "  git rm --cached .claude/state/ .codex/state/",
+            "  git rm --cached .claude/state/ .codex/state/ .antigravity/state/",
             file=sys.stderr,
         )
         return 1

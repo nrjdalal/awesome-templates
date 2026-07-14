@@ -1,9 +1,9 @@
 """AST guard: no pytest fixture may write directly to real state dirs (PR-A.1).
 
 Rationale: if a test fixture writes exception-token or verify-log markers to
-the real ``.claude/state/`` or ``.codex/state/`` directories (not tmp_path),
-it poisons the production lifecycle and causes the very stale-marker
-accumulation this PR is diagnosing.
+the real ``.claude/state/``, ``.codex/state/``, or ``.antigravity/state/``
+directories (not tmp_path), it poisons the production lifecycle and causes
+the very stale-marker accumulation this PR is diagnosing.
 
 This guard scans every ``tests/`` file for string literals that reference the
 real state dir paths inside function bodies decorated with ``@pytest.fixture``.
@@ -22,6 +22,7 @@ _TESTS_DIR = _REPO_ROOT / "tests"
 _FORBIDDEN_LITERAL_SUBSTRINGS = (
     ".claude/state",
     ".codex/state",
+    ".antigravity/state",
 )
 
 
@@ -176,3 +177,18 @@ async def async_bad(tmp_path):
     async_file.write_text(async_source, encoding="utf-8")
     violations = _scan_file(async_file)
     assert violations, "Scanner should flag async fixture with real state path"
+
+
+def test_scanner_flags_antigravity_state_fixture(tmp_path: Path) -> None:
+    """AST scanner covers Antigravity state paths too."""
+    bad_source = """\
+import pytest
+
+@pytest.fixture
+def bad_antigravity_fixture(tmp_path):
+    return ".antigravity/state/foo.json"
+"""
+    bad_file = tmp_path / "test_antigravity_bad.py"
+    bad_file.write_text(bad_source, encoding="utf-8")
+    violations = _scan_file(bad_file)
+    assert violations, "Scanner should flag fixture with Antigravity state path"

@@ -200,3 +200,55 @@ def test_clean_service_code_passes() -> None:
 )
 def test_safe_content_passes(content: str) -> None:
     assert check_code_safety(_SRC, content) == []
+
+
+# ---------------------------------------------------------------------------
+# Path-normalization regressions — a crafted path must not spoof the
+# test-file skip (or the domain-layer classification) via a bare substring.
+# ---------------------------------------------------------------------------
+
+
+def test_traversal_into_src_does_not_bypass_secret_check() -> None:
+    # "./tests/../src/config.py" contains the substring "/tests/" but resolves
+    # to a production file, so it must NOT be treated as a test file.
+    content = _PWD + " = " + _DQ + "my_super_s3cret_val" + _DQ
+    errors = check_code_safety("./tests/../src/config.py", content)
+    assert any("Hardcoded secret" in e for e in errors)
+
+
+def test_deep_traversal_resolving_to_src_flagged() -> None:
+    content = _PWD + " = " + _DQ + "another_s3cret_here" + _DQ
+    errors = check_code_safety("tests/x/../../src/config.py", content)
+    assert any("Hardcoded secret" in e for e in errors)
+
+
+def test_relative_tests_dir_is_exempted() -> None:
+    # A relative test path (no leading slash) is exempted via segment match,
+    # which the old "/tests/" substring check missed.
+    content = _PWD + " = " + _DQ + "hardcoded_in_test" + _DQ
+    assert check_code_safety("tests/unit/conftest.py", content) == []
+
+
+def test_domain_check_survives_traversal() -> None:
+    # A traversal that resolves into a domain path is still flagged.
+    content = "from src.user.infrastructure import UserRepo"
+    errors = check_code_safety("src/user/foo/../domain/service.py", content)
+    assert any("Domain layer" in e for e in errors)
+
+
+def test_domain_substring_in_component_not_treated_as_domain() -> None:
+    # "domain_events" is not a "domain" segment — the infra import must pass.
+    content = "from src.user.infrastructure import UserRepo"
+    assert check_code_safety("src/user/domain_events/service.py", content) == []
+
+
+def test_backslash_is_not_a_posix_separator() -> None:
+    # On POSIX a backslash is a valid filename char, not a separator. A path
+    # like "src\tests\config.py" is a single production filename and must NOT
+    # be exempted as a test file (folding "\" -> "/" would reintroduce the
+    # bypass this fix closes).
+    content = _PWD + " = " + _DQ + "backslash_s3cret_val" + _DQ
+    errors = check_code_safety(
+        "src" + chr(92) + "tests" + chr(92) + "config.py", content
+    )
+    assert any("Hardcoded secret" in e for e in errors)

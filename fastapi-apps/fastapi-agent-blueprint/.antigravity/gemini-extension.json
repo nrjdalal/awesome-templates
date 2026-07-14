@@ -1,0 +1,5 @@
+{
+  "name": "fastapi-agent-blueprint",
+  "version": "1.0.0",
+  "description": "Project-local extension manifest for validating and linking the Antigravity harness through Gemini CLI."
+}

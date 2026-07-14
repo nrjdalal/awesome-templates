@@ -56,7 +56,7 @@ The shared-policy part is identical across tools; the adapters differ because th
 
 **Shared policy**:
 - Exception-token recognition rules formalised as a regex (`^\s*\[(trivial|hotfix|exploration|자명|긴급|탐색)\](?:\s|$)`) with NFKC normalisation.
-- Decision payload schema (`{"matched": bool, "token": str|null, "rationale_required": bool}`) shared between Claude and Codex implementations.
+- Decision payload schema (`{"matched": bool, "token": str|null, "rationale_required": bool}`) shared between Claude, Codex, and later Antigravity implementations.
 - Token usage carries a follow-up obligation logged to a per-session marker file.
 
 **Claude adapter**: new `.claude/hooks/user-prompt-submit.sh` (Claude does not currently have one). Wires to a `.claude/settings.json` UserPromptSubmit entry with no matcher (all prompts).
@@ -126,6 +126,7 @@ The shared-policy part is identical across tools; the adapters differ because th
 
 **Claude adapter**: shell hooks call into the shared module.
 **Codex adapter**: Python hooks `import` the shared module directly.
+**Antigravity adapter**: Python hooks under `.antigravity/hooks/` import the shared module directly and are wired through `.gemini/settings.json`.
 
 **Acceptance**:
 - Single source for token vocabulary, parser, completion-gate logic.
@@ -142,6 +143,7 @@ Policy lives in `.agents/shared/governor/stage_gate.py` (Phase-5 architecture re
 
 - **Claude adapter (shipped, #268)**: `PostToolUse Edit|Write` shim `.claude/hooks/post_tool_stage_gate.py` emitting `hookSpecificOutput.additionalContext` JSON — the documented model-visible non-blocking channel (ADR 050 D3).
 - **Codex adapter (shipped, #269)**: Codex has no PostToolUse. The parity shape mirrors Phase 3 ("Claude PostToolUse + Codex Stop changed-files"): a Stop-time advisory in `.codex/hooks/stop-sync-reminder.py` (`stage_gate_segment`, advisory #6) that bridges the changed-file set to the shared single-file `should_stage_gate` policy — it synthesizes a payload for the first changed implementation source, evaluates it against the ledger stage, and dedupes per `CODEX_THREAD_ID` via the shared `stage_gate.mark_fired`. The decision runs before Phase 2 marker consumption because the shared policy reads the exception-token (plan-waiver) markers that consumption deletes. Reuses `governor.stage_gate` unchanged — adapter-only, no policy change; parity + decision + ordering tests in `tests/unit/agents_shared/test_stage_gate.py`.
+- **Antigravity adapter (shipped, 2026-07-09)**: `.gemini/settings.json` wires Antigravity / Gemini CLI events to `.antigravity/hooks/`. `BeforeAgent` mirrors UserPromptSubmit token parsing, `BeforeTool` mirrors shell/code safety, `AfterTool` records verify-class commands, and `AfterAgent` merges sync, verify-first, completion-gate, native workflow, and stage-gate advisories. Runtime state is isolated under `.antigravity/state/`. The adapter reuses `.agents/shared/governor/` policy unchanged and is covered by `tests/unit/agents_shared/test_antigravity_harness.py` plus the shared boundary and language-policy tests.
 
 ### Post-v1 — Plan→Execute Boundary Adapters (ADR 054)
 
@@ -188,7 +190,7 @@ The order in which assets are touched matters for review-burden management.
 4. **Fourth (Phase 4)** — Stop completion gate. Output merge into existing sync-reminder.
 5. **Fifth (Phase 5)** — `.agents/shared/governor/` module creation; per-tool hooks rewritten to consume it.
 
-Hook surfaces (`.claude/settings.json`, `.codex/hooks.json`) are touched only in Phase 2~4. Hook implementation files (`.claude/hooks/*`, `.codex/hooks/*`) are touched in Phase 2~5. Constitutional surfaces (`AGENTS.md`, ADRs) are stable from Phase 1 onward.
+Hook surfaces (`.claude/settings.json`, `.codex/hooks.json`, and later `.gemini/settings.json`) are touched only when a tool adapter needs a runtime event mapping. Hook implementation files (`.claude/hooks/*`, `.codex/hooks/*`, `.antigravity/hooks/*`) are thin shims over shared policy after Phase 5. Constitutional surfaces (`AGENTS.md`, ADRs) are stable from Phase 1 onward except for explicit governor-changing extensions.
 
 ## §5 What Stays Stable Until the End
 

@@ -8,8 +8,10 @@ Tool-specific harness files must reference this document instead of duplicating 
 - `CLAUDE.md` — Claude-specific hooks, plugins, slash skills, and tool usage guidance
 - `.codex/config.toml` — Codex CLI project settings, profiles, feature flags, and MCP configuration
 - `.codex/hooks.json` — Codex command-hook configuration
+- `.gemini/settings.json` — Antigravity / Gemini CLI project hook configuration
+- `.antigravity/` — Antigravity plugin, hook shims, rules, MCP, and permission templates
 - `.agents/skills/` — repo-local Codex workflow skills
-- `docs/ai/shared/` — shared workflow references consumed by both Claude and Codex
+- `docs/ai/shared/` — shared workflow references consumed by Claude, Codex, and Antigravity
 - `.mcp.json` — Claude-only MCP server configuration
 
 ### Process Governor Reference Documents
@@ -18,14 +20,14 @@ Issue #117 introduced a hybrid local process governor. The four documents below,
 
 - [`docs/history/045-hybrid-harness-target-architecture.md`](docs/history/045-hybrid-harness-target-architecture.md) — top-level decisions + design-question resolutions
 - [`docs/ai/shared/harness-asset-matrix.md`](docs/ai/shared/harness-asset-matrix.md) — living inventory of every harness asset and its bucket (Keep / Replace / Overlay / Drop)
-- [`docs/ai/shared/target-operating-model.md`](docs/ai/shared/target-operating-model.md) — the target workflow, exception model, Claude/Codex alignment, and sample-workflow traces
+- [`docs/ai/shared/target-operating-model.md`](docs/ai/shared/target-operating-model.md) — the target workflow, exception model, Claude/Codex/Antigravity alignment, and sample-workflow traces
 - [`docs/ai/shared/migration-strategy.md`](docs/ai/shared/migration-strategy.md) — phased migration plan, rollback rules, and the asset-move ordering
 
 ### Hybrid Harness v1 status
 
-- **Phase 5 shipped** (#124 — 2026-05-03): governor *policy* consolidated into [`.agents/shared/governor/`](.agents/shared/governor/); Claude / Codex hook scripts are thin shims enforced by `tests/unit/agents_shared/test_governor_boundary.py`; future governor changes must go into the shared package, not per-tool inline copies.
+- **Phase 5 shipped** (#124 — 2026-05-03; extended to Antigravity on 2026-07-09): governor *policy* consolidated into [`.agents/shared/governor/`](.agents/shared/governor/); Claude / Codex / Antigravity hook scripts are thin shims enforced by `tests/unit/agents_shared/test_governor_boundary.py`; future governor changes must go into the shared package, not per-tool inline copies.
 - **[ADR 047](docs/history/047-governor-review-provenance-consolidation.md) / [ADR 048](docs/history/048-independent-review-generalization.md) steady state**: independent review provenance lives in the PR description `## Governor Footer` block (CI-linted); durable governance constraints promoted to ADR Consequences (`ADR{NNN}-G{N}` slots); `governor-review-log/` archive frozen as closed historical record.
-- **Permanent governance model**: escape-token vocabulary, dual-tool adapters, and scope-of-impact-driven independent review remain permanent (target-operating-model §3 / §7).
+- **Permanent governance model**: escape-token vocabulary, tool-specific adapters, and scope-of-impact-driven independent review remain permanent (target-operating-model §3 / §7).
 
 ## Project Scale
 
@@ -39,7 +41,7 @@ All proposals and designs must consider scalability, maintainability, and team c
 - No separate Mapper classes (inline conversion is sufficient)
 - No Entity pattern — unified to DTO (background: [ADR 004](docs/history/004-dto-entity-responsibility.md))
 - No modifying or deleting shared rule sources without cross-reference verification
-  - Shared rule sources: `AGENTS.md`, `docs/ai/shared/`, `.claude/`, `.codex/`, and `.agents/`
+- Shared rule sources: `AGENTS.md`, `docs/ai/shared/`, `.claude/`, `.codex/`, `.antigravity/`, `.gemini/`, and `.agents/`
   - Before changing them, verify no dependent tool configs or skills reference the changed content
 
 Note: Domain → Interface **schema** imports (Request/Response types) are permitted.
@@ -55,6 +57,7 @@ Tier 1 paths are **English-only prose**. Korean prose is hard-blocked by the pre
 - `docs/ai/shared/**`, `docs/history/**`
 - `.claude/rules/**`, `.claude/hooks/**`, `.claude/skills/**`
 - `.codex/rules/**`, `.codex/hooks/**`, `.agents/**`
+- `.antigravity/**`, `.gemini/**`
 - `.github/pull_request_template.md`, `.github/workflows/**`
 
 ### Two narrowly-scoped exceptions
@@ -146,7 +149,7 @@ Non-governor-changing PRs are **exempt** from independent review (issue #117 Non
 
 Each step routes to one or more skills. The shared procedure for each skill (under [`docs/ai/shared/skills/`](docs/ai/shared/skills/)) carries a "Default Flow Position" section documenting which step(s) the skill participates in, and tool-specific wrappers (`.claude/skills/`, `.agents/skills/`) mirror the same position. See [`target-operating-model.md`](docs/ai/shared/target-operating-model.md) §1 for the canonical mapping.
 
-### Claude / Codex Alignment
+### Claude / Codex / Antigravity Alignment
 
 This document is canonical. Tool-specific enforcement adapters are defined per migration phase in [`migration-strategy.md`](docs/ai/shared/migration-strategy.md). In particular, Codex enforcement is built around prompt-time routing and changed-file completion checks, not Bash-only `PostToolUse` matchers — skill-body instructions alone are insufficient because Codex does not read a skill until it is invoked.
 
@@ -379,6 +382,6 @@ uv run alembic current
 > Full rules and Skill Split Convention (Hybrid C): [`docs/ai/shared/drift-checklist.md`](docs/ai/shared/drift-checklist.md) § Drift Management Rules. Entry point: `/sync-guidelines` (Claude) · `$sync-guidelines` (Codex).
 
 - `AGENTS.md` is the canonical source for shared rules — tool-specific harness docs point here, never re-copy
-- Shared rule sources: `AGENTS.md`, `docs/ai/shared/`, `.claude/`, `.codex/`, `.agents/`
+- Shared rule sources: `AGENTS.md`, `docs/ai/shared/`, `.claude/`, `.codex/`, `.antigravity/`, `.gemini/`, `.agents/`
 - Update related docs in the same change when shared rules or harness behavior changes (see drift-checklist.md for the full sync checklist)
 - Language drift: new prose in Tier 1 paths must be English — run `python3 tools/check_language_policy.py` before closing work

@@ -1,0 +1,16 @@
+{
+  "name": "fastapi-agent-blueprint",
+  "version": "1.0.0",
+  "description": "Project harness adapter for Antigravity 2.0 and Gemini CLI.",
+  "author": {
+    "name": "FastAPI Agent Blueprint maintainers"
+  },
+  "license": "MIT",
+  "keywords": [
+    "fastapi",
+    "agent-harness",
+    "governor",
+    "antigravity",
+    "gemini-cli"
+  ]
+}

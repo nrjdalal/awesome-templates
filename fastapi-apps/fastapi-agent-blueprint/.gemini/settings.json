@@ -1,0 +1,62 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh .agents/shared/harness-python.sh .antigravity/hooks/session-start.py"
+          }
+        ]
+      }
+    ],
+    "BeforeAgent": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh .agents/shared/harness-python.sh .antigravity/hooks/user-prompt-submit.py"
+          }
+        ]
+      }
+    ],
+    "BeforeTool": [
+      {
+        "matcher": "replace|write_file|run_shell_command",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh .agents/shared/harness-python.sh .antigravity/hooks/pre-tool-security.py"
+          }
+        ]
+      }
+    ],
+    "AfterTool": [
+      {
+        "matcher": "replace|write_file|run_shell_command",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh .agents/shared/harness-python.sh .antigravity/hooks/post-tool-format.py"
+          }
+        ]
+      }
+    ],
+    "AfterAgent": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh .agents/shared/harness-python.sh .antigravity/hooks/stop-sync-reminder.py"
+          }
+        ]
+      }
+    ],
+    "Notification": [],
+    "SessionEnd": [],
+    "PreCompress": [],
+    "BeforeModel": [],
+    "AfterModel": [],
+    "BeforeToolSelection": []
+  }
+}

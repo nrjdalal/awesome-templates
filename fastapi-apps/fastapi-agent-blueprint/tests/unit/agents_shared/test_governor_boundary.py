@@ -96,6 +96,11 @@ HOOK_FILES = [
     REPO_ROOT / ".codex" / "hooks" / "user-prompt-submit.py",
     REPO_ROOT / ".codex" / "hooks" / "verify_first.py",
     REPO_ROOT / ".codex" / "hooks" / "completion_gate.py",
+    REPO_ROOT / ".antigravity" / "hooks" / "user-prompt-submit.py",
+    REPO_ROOT / ".antigravity" / "hooks" / "pre-tool-security.py",
+    REPO_ROOT / ".antigravity" / "hooks" / "verify_first.py",
+    REPO_ROOT / ".antigravity" / "hooks" / "completion_gate.py",
+    REPO_ROOT / ".antigravity" / "hooks" / "stop-sync-reminder.py",
 ]
 
 
@@ -189,6 +194,28 @@ EXPECTED_SHARED_IMPORTS = {
         "GOVERNOR_REMINDER_WITH_PR",
         "GOVERNOR_REMINDER_NO_PR",
         "parse_trigger_globs",
+    ],
+    REPO_ROOT / ".antigravity" / "hooks" / "user-prompt-submit.py": [
+        "safe_parse_exception_token",
+        "write_marker",
+    ],
+    REPO_ROOT / ".antigravity" / "hooks" / "pre-tool-security.py": [
+        "check_code_safety",
+        "check_bash_command",
+    ],
+    REPO_ROOT / ".antigravity" / "hooks" / "verify_first.py": [
+        "REMINDER_TEXT",
+        "EXPLORATION_TOKENS",
+    ],
+    REPO_ROOT / ".antigravity" / "hooks" / "completion_gate.py": [
+        "GOVERNOR_REMINDER_WITH_PR",
+        "GOVERNOR_REMINDER_NO_PR",
+        "parse_trigger_globs",
+    ],
+    REPO_ROOT / ".antigravity" / "hooks" / "stop-sync-reminder.py": [
+        "STAGE_GATE_REMINDER",
+        "should_stage_gate",
+        "mark_fired",
     ],
 }
 

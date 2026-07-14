@@ -22,6 +22,7 @@ writes) remains in the Claude hook shim because it is tool-specific.
 
 from __future__ import annotations
 
+import posixpath
 import re
 
 # Quoted-value fragment: matches triple-quoted or single-quoted literals >= 3 chars.
@@ -72,6 +73,30 @@ _EXECUTE_FORMAT_RE = re.compile(r'\.execute\s*\(["\x27].*\.format\s*\(', re.IGNO
 _DOMAIN_INFRA_RE = re.compile(r"from\s+src\..*\.infrastructure")
 
 
+def _path_segments(path: str) -> list[str]:
+    """Return the canonical POSIX path segments of *path*, with ``.``/``..`` collapsed.
+
+    ``posixpath.normpath`` resolves ``.`` and ``..`` lexically without touching
+    the filesystem (safe for a not-yet-written target), so a traversal such as
+    ``./tests/../src/config.py`` resolves to its real target (``src/config.py``)
+    *before* any segment is inspected. Callers then match on whole path
+    segments rather than substrings, which stops a bare ``/tests/`` or
+    ``/domain/`` fragment from being spoofed inside another component.
+
+    Separators are POSIX-only by design: the hooks run on macOS/Linux and a
+    backslash is a *valid filename character* there, so folding ``\\`` to ``/``
+    would let ``src\\tests\\config.py`` (a single production filename) masquerade
+    as a ``tests/`` path and skip the secret check. Backslashes are therefore
+    left intact.
+
+    Residual limits (not resolved here — lexical, not filesystem, analysis):
+    symlinked directories and case-insensitive aliases (e.g. ``Domain`` on a
+    case-preserving APFS/HFS+ volume) can still make a real target differ from
+    its textual segments.
+    """
+    return posixpath.normpath(path).split("/")
+
+
 def check_code_safety(path: str, content: str) -> list[str]:
     """Check *content* (to be written to *path*) for security violations.
 
@@ -111,8 +136,13 @@ def check_code_safety(path: str, content: str) -> list[str]:
             'SQL injection risk: execute("...".format()) detected. Use parameterized queries'
         )
 
+    # Canonical, traversal-resolved segments — reused by the test-file and
+    # domain-layer checks below so neither can be spoofed by a crafted path
+    # (e.g. "./tests/../src/config.py").
+    segments = _path_segments(path)
+
     # 2. Hardcoded secrets (skip test files; skip env-var / Pydantic allow-list patterns)
-    is_test_file = "/tests/" in path or path.endswith("_test.py")
+    is_test_file = "tests" in segments or segments[-1].endswith("_test.py")
     if not is_test_file:
         secret_patterns = [
             kw + r"\s*=\s*" + _QUOTED_VALUE_RE for kw in _SENSITIVE_KEYWORDS
@@ -127,7 +157,7 @@ def check_code_safety(path: str, content: str) -> list[str]:
                     break
 
     # 3. Domain -> Infrastructure import violation
-    if "/domain/" in path:
+    if "domain" in segments:
         if _DOMAIN_INFRA_RE.search(content):
             errors.append(
                 "Architecture violation: Domain layer must not import Infrastructure. "

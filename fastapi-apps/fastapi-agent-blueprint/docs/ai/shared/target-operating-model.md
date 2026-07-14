@@ -1,7 +1,7 @@
 # Target Operating Model
 
 > Last synced: 2026-04-26 (initial draft, ADR 045 + Phase 1)
-> Source of truth for the workflow, mandatory steps, exception handling, Claude/Codex alignment, and sample-workflow traces. The shared-constitution summary lives in [`AGENTS.md` § Default Coding Flow](../../../AGENTS.md); this document is the long-form companion.
+> Source of truth for the workflow, mandatory steps, exception handling, Claude/Codex/Antigravity alignment, and sample-workflow traces. The shared-constitution summary lives in [`AGENTS.md` § Default Coding Flow](../../../AGENTS.md); this document is the long-form companion.
 > Sibling docs: [ADR 045](../../history/045-hybrid-harness-target-architecture.md) · [harness-asset-matrix.md](harness-asset-matrix.md) · [migration-strategy.md](migration-strategy.md)
 
 ## Purpose
@@ -75,7 +75,7 @@ The mandatory-by-default rule is evaluated **per unit of implementation-class wo
 
 The distinguishing test: *is this change required by the approved plan's success criteria, or is it a capability the plan never mentioned?* Small gap-fixes that the current task's success criteria genuinely require are in-scope work, not expansions. Exception tokens keep their §3 semantics — a token that licensed skipping `plan` for the original prompt covers same-scope work only, not a mid-task capability addition.
 
-Enforcement is advisory-first (ADR 050) and ships as a tool-specific adapter over one shared `governor.stage_gate` policy: on Claude a `PostToolUse Edit|Write` reminder (#268, `.claude/hooks/post_tool_stage_gate.py`); on Codex a Stop-time `systemMessage` segment (#269, `.codex/hooks/stop-sync-reminder.py` — Codex has no `PostToolUse`, so it bridges the Stop-time changed-file set to the shared single-file decision). Either fires once per session when a `.py` file under `src/` or `examples/` is edited while the work ledger's `workflow.stage` is `idle`/`complete`/`blocked` and no *plan-waiver* token marker (`[trivial]`/`[hotfix]`, incl. Korean equivalents) is active — `[exploration]` does not suppress it, since an implementation edit inside a declared read-only session is itself a signal (ADR 050 D6). Missing or unreadable ledger state stays silent (fail-open) — contributors without the maintainer workflow never see it.
+Enforcement is advisory-first (ADR 050) and ships as a tool-specific adapter over one shared `governor.stage_gate` policy: on Claude a `PostToolUse Edit|Write` reminder (#268, `.claude/hooks/post_tool_stage_gate.py`); on Codex a Stop-time `systemMessage` segment (#269, `.codex/hooks/stop-sync-reminder.py` — Codex has no `PostToolUse`, so it bridges the Stop-time changed-file set to the shared single-file decision); on Antigravity an `AfterAgent` plaintext segment (`.antigravity/hooks/stop-sync-reminder.py`) wired by `.gemini/settings.json`. Each adapter fires once per session when a `.py` file under `src/` or `examples/` is edited while the work ledger's `workflow.stage` is `idle`/`complete`/`blocked` and no *plan-waiver* token marker (`[trivial]`/`[hotfix]`, incl. Korean equivalents) is active — `[exploration]` does not suppress it, since an implementation edit inside a declared read-only session is itself a signal (ADR 050 D6). Missing or unreadable ledger state stays silent (fail-open) — contributors without the maintainer workflow never see it.
 
 ### Plan→Execute Boundary (ADR 054)
 
@@ -168,7 +168,7 @@ This is the primary cross-tool clarification: what comes from the upstream "supe
 - Each step's *concrete* skill mapping (Tier 2 Keep skills are project-specific).
 - The 3-tier hybrid architecture, optional-infra DI pattern, error-mapper ACL, and every other ADR-level decision (040 / 042 / 043).
 - The exception-token vocabulary, including Korean tokens.
-- Tool-specific hook adapters (Claude vs Codex; see §5).
+- Tool-specific hook adapters (Claude, Codex, and Antigravity; see §5).
 - All `harness-asset-matrix.md` content.
 - Every skill body under `docs/ai/shared/skills/` and the wrappers under `.claude/skills/` and `.agents/skills/`.
 
@@ -189,7 +189,7 @@ architecture-changing, governor-changing, or multi-task work.
 The Execution Packet is the boundary between planning and implementation. It
 contains Goal, Scope, Success Criteria, Selected Approach, Architecture Impact,
 Task List, Verification Gates, and Review Gates. The packet is recorded in the
-shared work ledger so Claude and Codex can resume with the same current task,
+shared work ledger so Claude, Codex, and Antigravity can resume with the same current task,
 verification state, and review state.
 
 Enforcement is advisory-first. Stop hooks may remind the agent when native
@@ -200,22 +200,22 @@ exploration, trivial edits, and single-skill work.
 
 ### Model identity
 
-This is **Mostly Local with Philosophy Overlay**, matching the bucket distribution in [harness-asset-matrix.md](harness-asset-matrix.md): ~80% Keep / ~20% Overlay / 0% Replace / 0% Drop (Phase 5 #124 closure; matrix is canonical). The philosophy port adds the framing / governance layer; the substantive content is and remains local.
+This is **Mostly Local with Philosophy Overlay**, matching the bucket distribution in [harness-asset-matrix.md](harness-asset-matrix.md): ~75% Keep / ~24% Overlay / 0% Replace / ~1% Drop (matrix is canonical). The philosophy port adds the framing / governance layer; the substantive content is and remains local.
 
-## §5 Claude / Codex Alignment
+## §5 Claude / Codex / Antigravity Alignment
 
-`AGENTS.md` is canonical. Tool-specific adapters expose the shared rules in each tool's runtime model. The two tools have **different hook surfaces**, which has consequences for Phase 2~5.
+`AGENTS.md` is canonical. Tool-specific adapters expose the shared rules in each tool's runtime model. The three tools have **different hook surfaces**, which has consequences for prompt, tool, and session-end enforcement.
 
 ### Surface differences
 
-| Surface | Claude | Codex |
-|---|---|---|
-| SessionStart hook | yes | yes |
-| UserPromptSubmit hook | absent today; added in Phase 2 | yes (existing) |
-| PreToolUse matcher | `Edit`, `Write`, `Bash` | `Bash` only |
-| PostToolUse matcher | `Edit`, `Write` | `Bash` only |
-| Stop hook | yes | yes |
-| File-level edits visible to PostToolUse? | **yes** (`Edit`/`Write` matcher) | **no** (`apply_patch` and similar bypass `Bash`) |
+| Surface | Claude | Codex | Antigravity / Gemini CLI |
+|---|---|---|---|
+| SessionStart hook | yes | yes | yes |
+| Prompt hook | `UserPromptSubmit` | `UserPromptSubmit` | `BeforeAgent` |
+| Pre-tool matcher | `Edit`, `Write`, `Bash` | `Bash` only | `replace`, `write_file`, `run_shell_command` |
+| Post-tool matcher | `Edit`, `Write` | `Bash` only | `replace`, `write_file`, `run_shell_command` |
+| Session-end hook | `Stop` | `Stop` | `AfterAgent` |
+| File-level edits visible to post-tool hooks? | **yes** (`Edit`/`Write` matcher) | **no** (`apply_patch` and similar bypass `Bash`) | **yes** for `replace` / `write_file`; shell writes are command-derived |
 
 The asymmetry in the last row is critical (Codex review R7). Phase 3 verification-first cannot rely on Codex's `PostToolUse` because Codex performs file edits via mechanisms that do not match `^Bash$`.
 
@@ -223,11 +223,12 @@ The asymmetry in the last row is critical (Codex review R7). Phase 3 verificatio
 
 - **Claude side**: file edits trigger `PostToolUse Edit|Write`. Phase 3 verification-first hook attaches there to suggest test runs after a code edit.
 - **Codex side**: file edits do not surface in `PostToolUse`. Phase 3 detection runs on the **Stop side** by computing `git status --porcelain` over the working tree and triggering the verification reminder when changed source files exist without a corresponding test run.
-- **Both sides**: UserPromptSubmit recognises the exception-token vocabulary identically (Phase 2). As of Phase 5 (#124, Hybrid Harness v1 milestone), the shared parser, marker writer, lifecycle reader, verify-first decision, and completion-gate logic all live in [`.agents/shared/governor/`](../../../.agents/shared/governor/). Hook scripts under `.claude/hooks/` and `.codex/hooks/` are thin shims that import from this package; they cannot redeclare reminder strings or governor-paths globs inline (`tests/unit/agents_shared/test_governor_boundary.py`). The hybrid governance model — escape-token vocabulary, dual-tool adapters, scope-of-impact-driven independent review — is permanent; only the *implementation* moved into the shared module. ADR 047 retargets the independent review *capture location* from `governor-review-log/` to the PR-description `## Governor Footer` block (CI-linted) without changing the trigger or review obligation itself.
+- **Antigravity side**: `.gemini/settings.json` wires Gemini / Antigravity events to `.antigravity/hooks/`. Prompt handling runs on `BeforeAgent`, tool safety and verify logging run on `BeforeTool` / `AfterTool`, and sync / verify / completion / workflow / stage-gate reminders are merged on `AfterAgent`. Runtime markers and verify logs stay under `.antigravity/state/`.
+- **All adapters**: prompt hooks recognise the exception-token vocabulary identically (Phase 2). As of Phase 5 (#124, Hybrid Harness v1 milestone), the shared parser, marker writer, lifecycle reader, verify-first decision, and completion-gate logic all live in [`.agents/shared/governor/`](../../../.agents/shared/governor/). Hook scripts under `.claude/hooks/`, `.codex/hooks/`, and `.antigravity/hooks/` are thin shims that import from this package; they cannot redeclare reminder strings or governor-paths globs inline (`tests/unit/agents_shared/test_governor_boundary.py`). The hybrid governance model — escape-token vocabulary, tool-specific adapters, scope-of-impact-driven independent review — is permanent; only the *implementation* moved into the shared module. ADR 047 retargets the independent review *capture location* from `governor-review-log/` to the PR-description `## Governor Footer` block (CI-linted) without changing the trigger or review obligation itself.
 
 ### Canonical-truth precedence
 
-When tool runtime config conflicts with shared rules, shared rules in `AGENTS.md` win — but **only within the bands that shared rules cover**. A Codex-specific rule (e.g. `web_search="disabled"` default) is canonical for Codex; `AGENTS.md` does not override it. The Default Flow is explicitly subordinate to such tool runtime configuration (see `AGENTS.md` § Default Coding Flow precedence table).
+When tool runtime config conflicts with shared rules, shared rules in `AGENTS.md` win — but **only within the bands that shared rules cover**. A Codex-specific rule (e.g. `web_search="disabled"` default) is canonical for Codex; an Antigravity-specific setting in `.gemini/settings.json` is canonical for Antigravity. `AGENTS.md` does not override tool runtime capabilities. The Default Flow is explicitly subordinate to such tool runtime configuration (see `AGENTS.md` § Default Coding Flow precedence table).
 
 ### Where enforcement lives (issue #117 Q5)
 
@@ -306,8 +307,9 @@ equivalent model/effort routing only when those tools expose it explicitly.
 | Architecture rules | `AGENTS.md` + `.claude/rules/architecture-conventions.md` + ADRs |
 | Claude rules (auto-load) | `.claude/rules/*.md` |
 | Codex rules (prefix) | `.codex/rules/fastapi-agent-blueprint.rules` |
-| Hook configuration | `.claude/settings.json` and `.codex/hooks.json` |
-| Hook implementations | `.claude/hooks/*.sh` and `.codex/hooks/*.py` |
+| Antigravity rules (adapter) | `.antigravity/rules/*.md` |
+| Hook configuration | `.claude/settings.json`, `.codex/hooks.json`, and `.gemini/settings.json` |
+| Hook implementations | `.claude/hooks/*.sh`, `.codex/hooks/*.py`, and `.antigravity/hooks/*.py` |
 
 When two locations could plausibly host the same fact, the table above resolves the conflict in favour of the listed canonical. Drift between any two of them is what `/sync-guidelines` looks for.
 
@@ -315,10 +317,10 @@ When two locations could plausibly host the same fact, the table above resolves 
 
 The Target Operating Model is **Mostly Local with Philosophy Overlay**.
 
-- "Mostly Local" because the bucket distribution is ~80% Keep / ~20% Overlay / 0% Replace / 0% Drop (Phase 5 #124 closure; 64 active assets). The substantive content of the harness remains local.
+- "Mostly Local" because the bucket distribution is ~75% Keep / ~24% Overlay / 0% Replace / ~1% Drop (88 active assets; matrix is canonical). The substantive content of the harness remains local.
 - "Philosophy Overlay" because the *governance* layer — Default Flow, mandatory subset, exception vocabulary, completion-gate idea — is borrowed from the superpowers philosophy and grafted on top.
 
-This is not a balanced 50/50 hybrid. It is 80%-local-with-a-process-shell. That ratio is the answer to issue #117's Key Design Question 7 ("How should Claude and Codex stay aligned without duplicating too much harness logic?"): they share the philosophy overlay; the substantive content is the same per-tool because both read identical shared documents.
+This is not a balanced 50/50 hybrid. It is 80%-local-with-a-process-shell. That ratio is the answer to issue #117's Key Design Question 7 ("How should Claude and Codex stay aligned without duplicating too much harness logic?"), now extended to Antigravity: the tools share the philosophy overlay; the substantive content is the same per-tool because they read identical shared documents.
 
 ---
 
@@ -407,5 +409,5 @@ Detailed answers live in [ADR 045 §Eight Design Questions](../../history/045-hy
 4. Mandatory by default for coding work → §2.
 5. Where enforcement lives → §5 ("Where enforcement lives" table).
 6. Valid exception → §3.
-7. Claude / Codex alignment → §5.
+7. Claude / Codex / Antigravity alignment → §5.
 8. Rigor without friction → §1 (mandatory subset) + §3 (escape lanes) + §7 (model identity).

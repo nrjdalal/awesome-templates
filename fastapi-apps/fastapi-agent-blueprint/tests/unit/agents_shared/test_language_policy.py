@@ -306,6 +306,28 @@ def test_codex_rules_file_is_tier1_scanned(tmp_path: Path) -> None:
     assert len(violations) == 1
 
 
+def test_antigravity_harness_file_is_tier1_scanned(tmp_path: Path) -> None:
+    """AGENTS.md lists `.antigravity/**` as a tool harness surface."""
+    target = tmp_path / ".antigravity" / "hooks" / "user-prompt-submit.py"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text('MESSAGE = "한국어 rationale"\n', encoding="utf-8")
+
+    assert CHECKER.filter_to_tier1([target], repo_root=tmp_path) == [target]
+    violations = CHECKER.find_violations(target, repo_root=tmp_path)
+    assert len(violations) == 1
+
+
+def test_gemini_settings_file_is_tier1_scanned(tmp_path: Path) -> None:
+    """AGENTS.md lists `.gemini/**` as the Antigravity/Gemini settings surface."""
+    target = tmp_path / ".gemini" / "settings.json"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text('{"comment": "한국어 rationale"}\n', encoding="utf-8")
+
+    assert CHECKER.filter_to_tier1([target], repo_root=tmp_path) == [target]
+    violations = CHECKER.find_violations(target, repo_root=tmp_path)
+    assert len(violations) == 1
+
+
 # ---------------------------------------------------------------------------
 # 9. Drift test — TIER1_GLOBS vs AGENTS.md § Language Policy bullet list
 # ---------------------------------------------------------------------------
@@ -336,6 +358,8 @@ def _extract_policy_paths_from_agents_md() -> set[str]:
         "docs/",
         ".claude/",
         ".codex/",
+        ".antigravity/",
+        ".gemini/",
         ".agents/",
         ".github/",
     )

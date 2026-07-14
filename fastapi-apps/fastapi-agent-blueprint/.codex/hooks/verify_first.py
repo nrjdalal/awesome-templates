@@ -48,7 +48,7 @@ except Exception:  # noqa: BLE001 — HC-5.5 fail-open
     EXPLORATION_TOKENS = frozenset()
     REMINDER_TEXT = ""
     MarkerLifecycle = None  # type: ignore[assignment,misc]
-    _shared_read_latest_token = None
+    _shared_read_latest_token = None  # type: ignore[assignment]
     _SHARED_OK = False
 
     def _within_24h(ts: str) -> bool:  # type: ignore[no-redef]

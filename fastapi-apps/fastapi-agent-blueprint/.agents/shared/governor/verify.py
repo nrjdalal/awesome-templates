@@ -56,7 +56,7 @@ def extract_file_path(payload: dict) -> str | None:
 def is_python_source(file_path: str | None) -> bool:
     """Return True iff ``file_path`` is a non-empty ``.py`` path."""
 
-    return bool(file_path) and file_path.endswith(".py")
+    return file_path is not None and file_path.endswith(".py")
 
 
 def should_remind_claude(payload: dict, state_dir: Path) -> bool:

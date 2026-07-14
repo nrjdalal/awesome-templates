@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "always_approve": [
+      "pwd",
+      "ls",
+      "rg",
+      "sed",
+      "cat",
+      "git status",
+      "git diff"
+    ],
+    "rules": [
+      {
+        "command": "regex:^rm(\\s|$)",
+        "action": "ask",
+        "description": "Ask before destructive file removal."
+      },
+      {
+        "command": "regex:^git\\s+(reset|checkout\\s+--|clean)(\\s|$)",
+        "action": "ask",
+        "description": "Ask before destructive git operations."
+      },
+      {
+        "command": "regex:.*(password|token|secret|api[_-]?key).*",
+        "action": "ask",
+        "description": "Ask before commands that may expose sensitive values."
+      }
+    ]
+  }
+}

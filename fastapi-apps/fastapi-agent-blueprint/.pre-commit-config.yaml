@@ -93,7 +93,7 @@ repos:
         language: system
         entry: python3 tools/check_language_policy.py
         pass_filenames: true
-        files: '^(AGENTS\.md|CLAUDE\.md|CONTRIBUTING\.md|CODE_OF_CONDUCT\.md|SECURITY\.md|docs/ai/shared/.*\.md|docs/history/.*\.md|\.claude/rules/.*\.md|\.claude/hooks/.*|\.claude/skills/.*\.md|\.codex/rules/.*|\.codex/hooks/.*|\.agents/.*\.(py|md|sh)|\.github/pull_request_template\.md|\.github/workflows/.*\.ya?ml)$'
+        files: '^(AGENTS\.md|CLAUDE\.md|CONTRIBUTING\.md|CODE_OF_CONDUCT\.md|SECURITY\.md|docs/ai/shared/.*\.md|docs/history/.*\.md|\.claude/rules/.*\.md|\.claude/hooks/.*|\.claude/skills/.*\.md|\.codex/rules/.*|\.codex/hooks/.*|\.antigravity/.*|\.gemini/.*|\.agents/.*\.(py|md|sh)|\.github/pull_request_template\.md|\.github/workflows/.*\.ya?ml)$'
 
       # Examples copy-flow guard (issue #260):
       # examples/ code must survive `cp -r examples/<name> src/<name>`, so
@@ -108,7 +108,7 @@ repos:
         files: '^examples/.*\.py$'
 
       # State lifecycle health check (PR-A.3):
-      # FAIL-HARD on git-tracked state files (.claude/state/, .codex/state/).
+      # FAIL-HARD on git-tracked state files (.claude/state/, .codex/state/, .antigravity/state/).
       # WARN-ONLY (exit 0) when stale marker count exceeds threshold.
       # pass_filenames: false — checks fixed state dirs, not changed-file list.
       - id: state-lifecycle-check
@@ -120,8 +120,8 @@ repos:
 
       # Hook execution surface guard:
       # live agent hook wrappers must invoke the shared harness launcher instead
-      # of bare python3. Scope is limited to .codex/hooks.json commands and
-      # executable lines in .claude/hooks/*.sh.
+      # of bare python3. Scope is limited to .codex/hooks.json and
+      # .gemini/settings.json commands plus executable lines in .claude/hooks/*.sh.
       - id: harness-hook-surface
         name: "Harness hooks: no bare python3 execution"
         language: system

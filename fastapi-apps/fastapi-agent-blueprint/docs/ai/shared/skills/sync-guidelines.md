@@ -6,7 +6,7 @@ This skill participates in the [Default Coding Flow](../../../../AGENTS.md#defau
 
 It is invoked when any of:
 - A `self-review` skill (`/review-architecture`, `/security-review`, `/review-pr`) reported `Drift Candidates` or `Sync Required: true`.
-- The change touched shared rule sources (`AGENTS.md`, `docs/ai/shared/`, `.claude/rules/`, `.codex/rules/`, ADRs).
+- The change touched shared rule sources (`AGENTS.md`, `docs/ai/shared/`, `.claude/rules/`, `.codex/rules/`, `.antigravity/rules/`, `.gemini/`, ADRs).
 - An ADR was created or amended in the session.
 
 Recursion guard: do **not** invoke `/sync-guidelines` recursively from within itself, and do not invoke `/plan-feature` from inside this skill. This skill is the closure step of the flow; it does not re-enter the flow.
@@ -45,7 +45,7 @@ Treat sync as required when at least one of the following changed or drifted:
 - `docs/ai/shared/project-dna.md`
 - shared checklists
 - shared skill procedures or tool wrappers
-- harness docs (`CLAUDE.md`, `.claude/rules/`, `.codex/`)
+- harness docs (`CLAUDE.md`, `.claude/rules/`, `.codex/`, `.antigravity/`, `.gemini/`)
 - base classes, shared architecture wiring, or other documented reference
   patterns
 
@@ -106,6 +106,8 @@ Before closing:
 - verify both Claude and Codex wrappers reference the same shared procedure
 - verify both wrappers keep the same Phase/Step overview count as the shared
   procedure
+- verify Antigravity assets reference shared skills and governor policy instead
+  of copying shared procedure text
 - verify shared procedures do not contain tool-specific instructions
 - **`project-status.md` table hygiene**: count rows in the `Recent Major Changes` table; if row count exceeds 15, flag for archival; scan cells for multi-line content that would break markdown table rendering; when a new version ships, archive pre-release rows to `docs/history/archive/project-status/` following the PR-B.1 pattern
 
@@ -123,8 +125,8 @@ Use these scenarios as regression examples for the workflow.
    - `/security-review` should not end in `SKIP`
    - it should raise a stale-reference drift candidate and require sync
 3. Shared procedure changed but wrapper did not
-   - `/sync-guidelines` should detect Hybrid C drift for both Claude and Codex
-     wrappers
+   - `/sync-guidelines` should detect Hybrid C drift for Claude and Codex
+     wrappers, and shared-source drift for Antigravity assets
 4. Docs-only change that alters checklist meaning
    - `/sync-guidelines` should classify it under `REVIEW`, not a silent auto-fix
 

@@ -1,6 +1,6 @@
 ---
 name: sync-guidelines
-description: Inspect drift between code, shared workflow references, and Claude or Codex harness assets after architecture or workflow changes.
+description: Inspect drift between code, shared workflow references, and Claude, Codex, or Antigravity harness assets after architecture or workflow changes.
 metadata:
   short-description: Sync shared guidelines
 ---
@@ -16,7 +16,7 @@ metadata:
 1. Determine the sync mode, gather incoming `Drift Candidates`, and load the governing sources (Phase 0)
 2. Reconcile drift candidates with code, shared references, harness docs, and wrappers (Phase 1)
 3. Refresh `project-dna` and dependent shared references as needed (Phase 2)
-4. Verify Hybrid C parity for both Claude and Codex wrappers; run `project-status.md` table hygiene check (row count > 15 → flag for archival, cell-wrap scan, version-release archive to `docs/history/archive/project-status/`); then close with the sync contract (Phase 3)
+4. Verify Hybrid C parity for Claude and Codex wrappers plus Antigravity shared-source references; run `project-status.md` table hygiene check (row count > 15 → flag for archival, cell-wrap scan, version-release archive to `docs/history/archive/project-status/`); then close with the sync contract (Phase 3)
 
 Read `AGENTS.md` and `docs/ai/shared/skills/sync-guidelines.md` for detailed steps.
 Also refer to `docs/ai/shared/drift-checklist.md` for inspection items.

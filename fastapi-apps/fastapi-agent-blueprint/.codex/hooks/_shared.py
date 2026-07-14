@@ -71,9 +71,13 @@ def extract_python_paths(command: str) -> list[Path]:
     matches = re.findall(r"([A-Za-z0-9_./-]+\.py)\b", command)
     paths: list[Path] = []
     for match in matches:
+        # Resolve BOTH branches (relative AND absolute) before the confinement
+        # check. ``Path.relative_to`` is purely lexical and does not collapse
+        # ``..``, so an absolute path like ``<repo>/../outside.py`` would pass
+        # the check unresolved and let ruff mutate a file outside the workspace.
         candidate = (
-            (REPO_ROOT / match).resolve() if not match.startswith("/") else Path(match)
-        )
+            Path(match) if match.startswith("/") else REPO_ROOT / match
+        ).resolve()
         try:
             candidate.relative_to(REPO_ROOT)
         except ValueError:

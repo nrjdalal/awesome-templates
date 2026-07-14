@@ -1,6 +1,6 @@
 # Project DNA - Shared Pattern Reference Extracted from Code
 
-> Shared canonical reference for both Claude and Codex workflow assets.
+> Shared canonical reference for Claude, Codex, and Antigravity workflow assets.
 > Update this file when shared architecture patterns change, then sync the harness docs that point to it.
 
 > This file is auto-extracted/updated from `src/user/` (reference domain) and `src/_core/` (Base classes)
@@ -62,7 +62,7 @@ Skills proactively consider the following perspectives when generating code, mak
 - **Infra-optional first.** Every non-DB infrastructure stays optional (`providers.Selector` + stub fallback, ADR 042). The zero-config quickstart (`make quickstart`) must always boot and serve.
 - **AI enters as core patterns + consumer examples.** New AI capability = reusable pattern in `_core/infrastructure/` + a thin consumer domain or `examples/` entry (RAG precedent: `_core/infrastructure/rag/` + `src/docs/`) — not a monolithic feature domain.
 - **Dual audience.** OSS adopters (contributor examples, copy-flow contract) and a real service target (5+ team members, 10+ domains) — proposals must serve both or state which one they trade off.
-- **Process: advisory-first hybrid harness.** Claude/Codex parity via shared policy modules; enforcement starts as non-blocking reminders; governance surface grows only with demonstrated need.
+- **Process: advisory-first hybrid harness.** Claude/Codex/Antigravity parity via shared policy modules; enforcement starts as non-blocking reminders; governance surface grows only with demonstrated need.
 
 **Non-goals** — proposals matching these are rejected by default (revisiting one requires an ADR):
 

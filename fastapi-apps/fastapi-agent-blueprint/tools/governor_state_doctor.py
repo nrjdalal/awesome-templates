@@ -3,13 +3,13 @@
 
 Seven checks:
 
-    C1  gitignore_registered  — .claude/state/ and .codex/state/ in .gitignore
+    C1  gitignore_registered  — tool state dirs in .gitignore
     C2  no_git_tracked_state  — no state/*.json files tracked by git
-    C3  stop_hook_schema      — Stop entry in hooks.json + settings.json is valid
+    C3  stop_hook_schema      — session-end hook entries are valid
     C4  marker_glob_coverage  — Stop hooks reference all known marker globs
     C5  hook_interpreter      — Hook files exist; .sh exec bit; launcher imports governor
-    C6  hook_command_canaries — Runs configured Codex hook commands in isolated state
-    C7  stale_stats           — Counts stale (>24 h) markers in both state dirs
+    C6  hook_command_canaries — Runs configured hook commands in isolated state
+    C7  stale_stats           — Counts stale (>24 h) markers in tool state dirs
 
 Usage:
     python3 tools/governor_state_doctor.py [--json]
@@ -61,7 +61,11 @@ class CheckResult:
 # C1 — .gitignore registration
 # ---------------------------------------------------------------------------
 
-_REQUIRED_GITIGNORE_PATTERNS = (".claude/state/", ".codex/state/")
+_REQUIRED_GITIGNORE_PATTERNS = (
+    ".claude/state/",
+    ".codex/state/",
+    ".antigravity/state/",
+)
 
 
 def check_gitignore_registered(root: Path = PROJECT_ROOT) -> CheckResult:
@@ -81,7 +85,7 @@ def check_gitignore_registered(root: Path = PROJECT_ROOT) -> CheckResult:
     return CheckResult(
         "C1_gitignore_registered",
         True,
-        "Both state/ patterns present in .gitignore",
+        "All tool state/ patterns present in .gitignore",
     )
 
 
@@ -93,7 +97,13 @@ def check_gitignore_registered(root: Path = PROJECT_ROOT) -> CheckResult:
 def check_no_git_tracked_state(root: Path = PROJECT_ROOT) -> CheckResult:
     try:
         result = subprocess.run(
-            ["git", "ls-files", ".claude/state/", ".codex/state/"],
+            [
+                "git",
+                "ls-files",
+                ".claude/state/",
+                ".codex/state/",
+                ".antigravity/state/",
+            ],
             cwd=root,
             capture_output=True,
             text=True,
@@ -126,25 +136,26 @@ def check_no_git_tracked_state(root: Path = PROJECT_ROOT) -> CheckResult:
 # ---------------------------------------------------------------------------
 
 
-def _validate_stop_entries(
+def _validate_event_entries(
     config: dict,
     label: str,
+    event_name: str,
 ) -> list[str]:
     """Return a list of issues found in a hooks config dict."""
     issues: list[str] = []
-    stop_events = config.get("hooks", {}).get("Stop", [])
-    if not stop_events:
-        issues.append(f"{label}: no Stop entry found")
+    event_blocks = config.get("hooks", {}).get(event_name, [])
+    if not event_blocks:
+        issues.append(f"{label}: no {event_name} entry found")
         return issues
-    for event_block in stop_events:
+    for event_block in event_blocks:
         for hook in event_block.get("hooks", []):
             if hook.get("type") != "command":
                 issues.append(
-                    f"{label}: Stop hook type is not 'command': {hook.get('type')!r}"
+                    f"{label}: {event_name} hook type is not 'command': {hook.get('type')!r}"
                 )
             cmd = hook.get("command", "").strip()
             if not cmd:
-                issues.append(f"{label}: Stop hook has empty command")
+                issues.append(f"{label}: {event_name} hook has empty command")
     return issues
 
 
@@ -160,7 +171,7 @@ def check_stop_hook_schema(root: Path = PROJECT_ROOT) -> CheckResult:
         except json.JSONDecodeError as exc:
             issues.append(f".codex/hooks.json JSON parse error: {exc}")
             data = {}
-        issues.extend(_validate_stop_entries(data, "Codex hooks.json"))
+        issues.extend(_validate_event_entries(data, "Codex hooks.json", "Stop"))
 
     claude_settings = root / ".claude" / "settings.json"
     if not claude_settings.exists():
@@ -171,7 +182,20 @@ def check_stop_hook_schema(root: Path = PROJECT_ROOT) -> CheckResult:
         except json.JSONDecodeError as exc:
             issues.append(f".claude/settings.json JSON parse error: {exc}")
             data = {}
-        issues.extend(_validate_stop_entries(data, "Claude settings.json"))
+        issues.extend(_validate_event_entries(data, "Claude settings.json", "Stop"))
+
+    gemini_settings = root / ".gemini" / "settings.json"
+    if not gemini_settings.exists():
+        issues.append(".gemini/settings.json not found")
+    else:
+        try:
+            data = json.loads(gemini_settings.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as exc:
+            issues.append(f".gemini/settings.json JSON parse error: {exc}")
+            data = {}
+        issues.extend(
+            _validate_event_entries(data, "Gemini settings.json", "AfterAgent")
+        )
 
     if issues:
         return CheckResult(
@@ -183,7 +207,7 @@ def check_stop_hook_schema(root: Path = PROJECT_ROOT) -> CheckResult:
     return CheckResult(
         "C3_stop_hook_schema",
         True,
-        "Stop hook entries valid in both hooks.json and settings.json",
+        "Session-end hook entries valid in Codex, Claude, and Gemini settings",
     )
 
 
@@ -205,6 +229,15 @@ def check_marker_glob_coverage(root: Path = PROJECT_ROOT) -> CheckResult:
                 ".codex/hooks/stop-sync-reminder.py: consume_phase2_markers not referenced"
             )
 
+    antigravity_stop = root / ".antigravity" / "hooks" / "stop-sync-reminder.py"
+    if not antigravity_stop.exists():
+        issues.append(".antigravity/hooks/stop-sync-reminder.py not found")
+    else:
+        if "consume_phase2_markers" not in antigravity_stop.read_text(encoding="utf-8"):
+            issues.append(
+                ".antigravity/hooks/stop-sync-reminder.py: consume_phase2_markers not referenced"
+            )
+
     # governor/markers.py must define the exception-token glob
     markers_py = root / ".agents" / "shared" / "governor" / "markers.py"
     if not markers_py.exists():
@@ -224,6 +257,15 @@ def check_marker_glob_coverage(root: Path = PROJECT_ROOT) -> CheckResult:
         if "verify-log-*.json" not in gate_py.read_text(encoding="utf-8"):
             issues.append(
                 ".codex/hooks/completion_gate.py: verify-log-*.json glob pattern not found"
+            )
+
+    antigravity_gate_py = root / ".antigravity" / "hooks" / "completion_gate.py"
+    if not antigravity_gate_py.exists():
+        issues.append(".antigravity/hooks/completion_gate.py not found")
+    else:
+        if "verify-log-*.json" not in antigravity_gate_py.read_text(encoding="utf-8"):
+            issues.append(
+                ".antigravity/hooks/completion_gate.py: verify-log-*.json glob pattern not found"
             )
 
     if issues:
@@ -252,6 +294,7 @@ def _collect_hook_commands(root: Path) -> list[str]:
     for cfg_path in (
         root / ".codex" / "hooks.json",
         root / ".claude" / "settings.json",
+        root / ".gemini" / "settings.json",
     ):
         if not cfg_path.exists():
             continue
@@ -350,6 +393,7 @@ def check_hook_interpreter(root: Path = PROJECT_ROOT) -> CheckResult:
 _STATE_SNAPSHOT_DIRS = (
     Path(".claude/state"),
     Path(".codex/state"),
+    Path(".antigravity/state"),
     Path(".agents/state"),
 )
 
@@ -384,6 +428,20 @@ def _first_codex_command(root: Path, event_name: str) -> str | None:
     hooks_json = root / ".codex" / "hooks.json"
     try:
         data = json.loads(hooks_json.read_text(encoding="utf-8"))
+    except (FileNotFoundError, json.JSONDecodeError):
+        return None
+    for block in data.get("hooks", {}).get(event_name, []):
+        for hook in block.get("hooks", []):
+            command = hook.get("command", "").strip()
+            if command:
+                return command
+    return None
+
+
+def _first_gemini_command(root: Path, event_name: str) -> str | None:
+    settings_json = root / ".gemini" / "settings.json"
+    try:
+        data = json.loads(settings_json.read_text(encoding="utf-8"))
     except (FileNotFoundError, json.JSONDecodeError):
         return None
     for block in data.get("hooks", {}).get(event_name, []):
@@ -438,6 +496,17 @@ def _assert_system_message_stdout(stdout: str, *, allow_empty: bool = False) -> 
         raise ValueError("stdout JSON missing systemMessage string")
 
 
+def _assert_additional_context_contains(stdout: str, expected: str) -> None:
+    """Gemini / Antigravity SessionStart injects context via JSON
+    ``hookSpecificOutput.additionalContext`` (stdout is parsed as JSON on
+    exit 0 — plain text is rejected)."""
+    data = _load_single_json_stream(stdout)
+    output = data.get("hookSpecificOutput", {}) if isinstance(data, dict) else {}
+    context = output.get("additionalContext", "")
+    if not isinstance(context, str) or expected not in context:
+        raise ValueError(f"additionalContext missing expected text: {expected}")
+
+
 def _assert_pre_tool_deny(stdout: str) -> None:
     data = _load_single_json_stream(stdout)
     output = data.get("hookSpecificOutput", {}) if isinstance(data, dict) else {}
@@ -459,8 +528,18 @@ def _assert_stdout_empty_or_json(stdout: str) -> None:
     _load_single_json_stream(stdout)
 
 
+def _assert_plaintext_contains(stdout: str, expected: str) -> None:
+    if expected not in stdout:
+        raise ValueError(f"stdout missing expected text: {expected}")
+
+
+def _assert_exit_code(proc: subprocess.CompletedProcess[str], expected: int) -> None:
+    if proc.returncode != expected:
+        raise ValueError(f"expected exit {expected}, got {proc.returncode}")
+
+
 def check_hook_command_canaries(root: Path = PROJECT_ROOT) -> CheckResult:
-    """Run configured Codex hook commands against isolated temp state."""
+    """Run configured hook commands against isolated temp state."""
 
     payloads = {
         "SessionStart": "",
@@ -480,6 +559,48 @@ def check_hook_command_canaries(root: Path = PROJECT_ROOT) -> CheckResult:
             proc.stdout, allow_empty=True
         ),
     }
+    antigravity_payloads = {
+        "SessionStart": "",
+        "BeforeAgent": json.dumps({"prompt": "[trivial] doctor canary"}),
+        "BeforeTool": json.dumps(
+            {
+                "tool_name": "run_shell_command",
+                "tool_input": {"command": "git reset --hard"},
+            }
+        ),
+        "AfterTool": json.dumps(
+            {
+                "tool_name": "run_shell_command",
+                "tool_input": {
+                    "command": "pytest tests/unit/agents_shared/test_antigravity_harness.py -q"
+                },
+                # Real Gemini AfterTool contract: tool_response = {llmContent,
+                # returnDisplay, optional data/error}. A SUCCESSFUL foreground
+                # shell emits neither an "Exit Code:" line nor a `data` object
+                # (the code is appended only on non-zero exit), so a realistic
+                # success payload is just an "Output:" body.
+                "tool_response": {
+                    "llmContent": "Output: 1 passed in 0.10s",
+                    "returnDisplay": "1 passed",
+                },
+            }
+        ),
+        "AfterAgent": "",
+    }
+    antigravity_validators = {
+        "SessionStart": lambda proc: _assert_additional_context_contains(
+            proc.stdout, "Antigravity repo harness active"
+        ),
+        "BeforeAgent": lambda proc: _assert_user_prompt_token(proc.stderr),
+        "BeforeTool": lambda proc: (
+            _assert_exit_code(proc, 2),
+            _assert_plaintext_contains(proc.stderr, "Destructive git rollback"),
+        ),
+        "AfterTool": lambda proc: _assert_stdout_empty_or_json(proc.stdout),
+        "AfterAgent": lambda proc: _assert_system_message_stdout(
+            proc.stdout, allow_empty=True
+        ),
+    }
 
     issues: list[str] = []
     event_data: dict[str, dict] = {}
@@ -491,6 +612,7 @@ def check_hook_command_canaries(root: Path = PROJECT_ROOT) -> CheckResult:
         env["HARNESS_LAUNCHER_STRICT"] = "1"
         env["HARNESS_DEBUG"] = "1"
         env.setdefault("CODEX_THREAD_ID", "doctor-canary")
+        env.setdefault("GEMINI_SESSION_ID", "doctor-canary")
 
         for event_name, payload in payloads.items():
             command = _first_codex_command(root, event_name)
@@ -522,6 +644,43 @@ def check_hook_command_canaries(root: Path = PROJECT_ROOT) -> CheckResult:
                     f"stdout={proc.stdout[:200]!r}; stderr={proc.stderr[:200]!r}"
                 )
 
+        for event_name, payload in antigravity_payloads.items():
+            command = _first_gemini_command(root, event_name)
+            if command is None:
+                issues.append(f"{event_name}: no configured Gemini hook command")
+                continue
+            try:
+                proc = _run_configured_hook(root, command, payload, env)
+            except (FileNotFoundError, subprocess.TimeoutExpired, ValueError) as exc:
+                issues.append(f"{event_name}: Gemini command failed to run: {exc}")
+                continue
+
+            key = f"Gemini:{event_name}"
+            event_data[key] = {
+                "command": command,
+                "returncode": proc.returncode,
+                "stdout_bytes": len(proc.stdout.encode("utf-8")),
+                "stderr_bytes": len(proc.stderr.encode("utf-8")),
+            }
+            # Assert the process exit code per event (mirrors the Codex loop):
+            # BeforeTool must block (exit 2); every other event must succeed
+            # (exit 0). Without this a hook that dies with a nonzero code but
+            # prints plausible output would still pass its content validator.
+            expected_rc = 2 if event_name == "BeforeTool" else 0
+            if proc.returncode != expected_rc:
+                issues.append(
+                    f"{key}: exit {proc.returncode} (expected {expected_rc}); "
+                    f"stderr={proc.stderr[:200]!r}"
+                )
+                continue
+            try:
+                antigravity_validators[event_name](proc)
+            except (json.JSONDecodeError, ValueError, KeyError) as exc:
+                issues.append(
+                    f"{key}: contract validation failed: {exc}; "
+                    f"stdout={proc.stdout[:200]!r}; stderr={proc.stderr[:200]!r}"
+                )
+
     after = _snapshot_real_state(root)
     if before != after:
         before_keys = set(before)
@@ -546,7 +705,7 @@ def check_hook_command_canaries(root: Path = PROJECT_ROOT) -> CheckResult:
     return CheckResult(
         "C6_hook_command_canaries",
         True,
-        "Configured Codex hook canaries passed with real state unchanged",
+        "Configured Codex and Antigravity hook canaries passed with real state unchanged",
         {"events": event_data},
     )
 
@@ -558,6 +717,7 @@ def check_hook_command_canaries(root: Path = PROJECT_ROOT) -> CheckResult:
 _STATE_DIRS = (
     Path(".claude/state"),
     Path(".codex/state"),
+    Path(".antigravity/state"),
 )
 _STALE_THRESHOLD_S = 86_400  # 24 hours
 
@@ -586,7 +746,7 @@ def check_stale_stats(root: Path = PROJECT_ROOT) -> CheckResult:
         }
         total_stale += token_counts["stale"] + verify_counts["stale"]
 
-    detail = f"{total_stale} stale marker(s) found across both state dirs"
+    detail = f"{total_stale} stale marker(s) found across tool state dirs"
     return CheckResult(
         "C7_stale_stats",
         True,  # informational — never fails on its own

@@ -33,10 +33,35 @@ def _write_codex_hooks(root: Path, command: str) -> None:
     )
 
 
+def _write_gemini_settings(root: Path, command: str) -> None:
+    path = root / ".gemini" / "settings.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(
+            {
+                "hooks": {
+                    "AfterAgent": [
+                        {
+                            "hooks": [
+                                {"type": "command", "command": command},
+                            ]
+                        }
+                    ]
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+
+
 def test_hook_surface_accepts_shared_launcher(tmp_path: Path) -> None:
     _write_codex_hooks(
         tmp_path,
         "sh .agents/shared/harness-python.sh .codex/hooks/stop-sync-reminder.py",
+    )
+    _write_gemini_settings(
+        tmp_path,
+        "sh .agents/shared/harness-python.sh .antigravity/hooks/stop-sync-reminder.py",
     )
     shell = tmp_path / ".claude" / "hooks" / "stop-sync-reminder.sh"
     shell.parent.mkdir(parents=True, exist_ok=True)
@@ -55,6 +80,15 @@ def test_hook_surface_rejects_codex_bare_python3(tmp_path: Path) -> None:
 
     assert len(violations) == 1
     assert ".codex/hooks.json" in str(violations[0].path)
+
+
+def test_hook_surface_rejects_gemini_bare_python3(tmp_path: Path) -> None:
+    _write_gemini_settings(tmp_path, "python3 .antigravity/hooks/stop-sync-reminder.py")
+
+    violations = check_root(tmp_path)
+
+    assert len(violations) == 1
+    assert ".gemini/settings.json" in str(violations[0].path)
 
 
 def test_hook_surface_rejects_claude_pipe_to_python3(tmp_path: Path) -> None:

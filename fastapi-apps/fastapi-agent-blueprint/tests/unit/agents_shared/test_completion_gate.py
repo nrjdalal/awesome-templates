@@ -83,11 +83,13 @@ def test_governor_reminder_no_pr_string_equality(claude_gate, codex_gate) -> Non
 # ---------------------------------------------------------------------------
 def test_parse_trigger_globs_returns_globs(codex_gate) -> None:
     globs = codex_gate.parse_trigger_globs()
-    assert len(globs) >= 9  # Tier A(6) + Tier B(3) minimum
+    assert len(globs) >= 12
     assert "AGENTS.md" in globs
     assert "docs/ai/shared/**" in globs
     assert ".claude/**" in globs
     assert ".codex/**" in globs
+    assert ".antigravity/**" in globs
+    assert ".gemini/**" in globs
     assert ".agents/**" in globs
 
 
@@ -128,6 +130,21 @@ def test_claude_hook_is_governor_changing(codex_gate) -> None:
         codex_gate.is_governor_changing([".claude/hooks/verify_first.py"], globs)
         is True
     )
+
+
+def test_antigravity_hook_is_governor_changing(codex_gate) -> None:
+    globs = codex_gate.parse_trigger_globs()
+    assert (
+        codex_gate.is_governor_changing(
+            [".antigravity/hooks/stop-sync-reminder.py"], globs
+        )
+        is True
+    )
+
+
+def test_gemini_settings_is_governor_changing(codex_gate) -> None:
+    globs = codex_gate.parse_trigger_globs()
+    assert codex_gate.is_governor_changing([".gemini/settings.json"], globs) is True
 
 
 # ---------------------------------------------------------------------------

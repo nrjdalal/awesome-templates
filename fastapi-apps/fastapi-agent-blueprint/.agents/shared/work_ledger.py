@@ -1,7 +1,7 @@
 """Shared work ledger — cross-session context persistence.
 
-Keeps the current work context alive across sessions so Claude and Codex
-can resume without losing scope, plan, or verification state.
+Keeps the current work context alive across sessions so Claude, Codex, and
+Antigravity can resume without losing scope, plan, or verification state.
 
 State file: .agents/state/current-work.json  (gitignored)
 

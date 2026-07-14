@@ -3,6 +3,7 @@
 
 Scope is intentionally narrow:
 * .codex/hooks.json command strings
+* .gemini/settings.json command strings
 * .claude/hooks/*.sh executable lines
 
 Docs, Python hook docstrings, shebangs, and pre-commit examples are outside
@@ -35,6 +36,14 @@ class Violation:
 
 
 def _codex_commands(path: Path) -> Iterable[tuple[str, str]]:
+    yield from _json_hook_commands(path)
+
+
+def _gemini_commands(path: Path) -> Iterable[tuple[str, str]]:
+    yield from _json_hook_commands(path)
+
+
+def _json_hook_commands(path: Path) -> Iterable[tuple[str, str]]:
     data = json.loads(path.read_text(encoding="utf-8"))
     hooks = data.get("hooks", {})
     if not isinstance(hooks, dict):
@@ -90,6 +99,19 @@ def check_root(root: Path) -> list[Violation]:
         except json.JSONDecodeError as exc:
             violations.append(
                 Violation(codex_hooks, exc.lineno, f"invalid JSON: {exc}")
+            )
+
+    gemini_settings = root / ".gemini" / "settings.json"
+    if gemini_settings.exists():
+        try:
+            for label, command in _gemini_commands(gemini_settings):
+                if BARE_PYTHON3_RE.search(command):
+                    violations.append(
+                        Violation(gemini_settings, 1, f"{label}: {command}")
+                    )
+        except json.JSONDecodeError as exc:
+            violations.append(
+                Violation(gemini_settings, exc.lineno, f"invalid JSON: {exc}")
             )
 
     claude_hook_dir = root / ".claude" / "hooks"

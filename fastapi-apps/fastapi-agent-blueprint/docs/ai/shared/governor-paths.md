@@ -20,6 +20,7 @@ A PR is **governor-changing** if its `changed_files` intersects any path below.
 - `docs/history/**` (every ADR and archive entry, including `archive/governor-review-log/**`)
 - `.claude/rules/**`
 - `.codex/rules/**`
+- `.antigravity/rules/**`
 - `.github/pull_request_template.md`
 
 The doc-only auto-escape (`target-operating-model.md` §3) does **not** apply to Tier A. Even a one-line edit triggers `framing → plan → verify → self-review → completion gate`.
@@ -28,9 +29,11 @@ The doc-only auto-escape (`target-operating-model.md` §3) does **not** apply to
 
 - `.claude/**` (settings, skills, hooks — entire directory)
 - `.codex/**` (config, hooks, settings — entire directory; rules already in Tier A)
+- `.antigravity/**` (plugin, hooks, rules, MCP, permission templates — entire directory; rules already in Tier A)
+- `.gemini/**` (Antigravity / Gemini CLI project settings — entire directory)
 - `.agents/**` (skills, future shared modules — entire directory)
 
-Tier B includes Tier A's `.claude/rules/**` and `.codex/rules/**` (those are the policy subset of Tier B). Mentioning both `Tier A` and `Tier B` separately is intentional: Tier A captures the *policy* lens (carve-out from doc-only escape), Tier B captures the *tool surface* lens (full directory triggers independent review).
+Tier B includes Tier A's `.claude/rules/**`, `.codex/rules/**`, and `.antigravity/rules/**` (those are the policy subset of Tier B). Mentioning both `Tier A` and `Tier B` separately is intentional: Tier A captures the *policy* lens (carve-out from doc-only escape), Tier B captures the *tool surface* lens (full directory triggers independent review).
 
 ### Tier C — Other Repo-Level Governance Artefacts (trigger if introduced)
 

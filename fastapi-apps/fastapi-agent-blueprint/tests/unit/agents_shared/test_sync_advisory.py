@@ -53,6 +53,14 @@ def test_codex_hook_is_foundation() -> None:
     assert _level([".codex/hooks/pre-tool-security.py"]) == "foundation"
 
 
+def test_antigravity_hook_is_foundation() -> None:
+    assert _level([".antigravity/hooks/pre-tool-security.py"]) == "foundation"
+
+
+def test_gemini_settings_is_foundation() -> None:
+    assert _level([".gemini/settings.json"]) == "foundation"
+
+
 def test_agents_shared_is_foundation() -> None:
     assert _level([".agents/shared/governor/shell_safety.py"]) == "foundation"
 

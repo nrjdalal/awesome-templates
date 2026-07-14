@@ -77,6 +77,8 @@ def test_parse_trigger_globs_returns_globs() -> None:
 
     globs = parse_trigger_globs()
     assert "AGENTS.md" in globs
+    assert ".antigravity/**" in globs
+    assert ".gemini/**" in globs
     assert any(g.endswith("/**") for g in globs)
 
 
