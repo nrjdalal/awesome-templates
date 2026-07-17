@@ -196,6 +196,14 @@ CASES = (
         ),
     ),
     ExampleCase(
+        id="web_search_chatbot",
+        copies=(("web_search_chatbot", "web_search_chatbot"),),
+        probes=(
+            {"method": "POST", "path": "/v1/chat", "json": {"prompt": "hello"}},
+            {"method": "GET", "path": "/v1/chat/1"},
+        ),
+    ),
+    ExampleCase(
         id="blog",
         copies=(("blog/author", "author"), ("blog/post", "post")),
         probes=(

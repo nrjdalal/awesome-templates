@@ -114,6 +114,7 @@ Populated incrementally as contributors land the good-first-issues:
 | `simple_chatbot/` | Minimal PydanticAI Agent — no RAG | LLM-calling | ✅ [#249](https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/249) |
 | `chatbot_with_guardrails/` | Runtime LLM guardrails around a PydanticAI Agent | LLM-calling | ✅ [#256](https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/256) |
 | `chatbot_with_memory/` | Multi-turn chatbot with session memory and history replay | LLM-calling | ✅ [#255](https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/255) |
+| `web_search_chatbot/` | Agentic web-search tool use (DuckDuckGo, keyless) | LLM-calling | ✅ [#287](https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/287) |
 
 > † **`blog/` does not yet run via the copy-into-`src/` flow.** Unlike the
 > single-domain examples above, `blog/` still uses absolute intra-example

@@ -76,6 +76,7 @@ openai = ["openai>=1.0.0", "tiktoken>=0.7.0"]
 pydantic-ai = ["pydantic-ai-slim>=1.39.0", "tiktoken>=0.7.0"]
 pydantic-ai-anthropic = ["pydantic-ai-slim[anthropic]>=1.39.0"]
 pydantic-ai-google = ["pydantic-ai-slim[google]>=1.39.0"]
+pydantic-ai-duckduckgo = ["pydantic-ai-slim[duckduckgo]>=1.39.0"]
 otel = [
     "opentelemetry-api>=1.40.0",
     "opentelemetry-sdk>=1.40.0",

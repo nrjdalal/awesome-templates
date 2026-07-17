@@ -75,6 +75,7 @@ python run_server_local.py --env local
 | `pydantic-ai` | `pydantic-ai-slim` + `tiktoken` | `EMBEDDING_PROVIDER` / `LLM_PROVIDER` and any agent-based domain |
 | `pydantic-ai-anthropic` | Anthropic provider for PydanticAI | `LLM_PROVIDER=anthropic` |
 | `pydantic-ai-google` | Google provider for PydanticAI | `EMBEDDING_PROVIDER=google` / `LLM_PROVIDER=google` |
+| `pydantic-ai-duckduckgo` | DuckDuckGo search tool for PydanticAI (`ddgs`) | `examples/web_search_chatbot/` real search tool |
 
 Pass `--extra <name>` to `uv sync` for each capability you need. `make setup` pulls `--extra admin --extra aws` by default for full dev coverage; `make quickstart` only needs `--extra admin` (it runs on SQLite + InMemory broker). Every other extra opts in explicitly.
 
