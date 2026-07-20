@@ -298,7 +298,7 @@ for the live view.
 ### Phase 3 — Ecosystem
 
 - [ ] Test coverage expansion ([#2](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/2))
-- [ ] Performance testing — Locust ([#3](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/3))
+- [x] Performance testing — Locust ([#3](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/3))
 - [ ] Serverless deployment ([#6](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/6))
 - [ ] WebSocket documentation ([#1](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/1))
 

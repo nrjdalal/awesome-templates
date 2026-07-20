@@ -34,6 +34,7 @@ Quick index for the `docs/` folder.
 |---|---|
 | [operations/observability-otel.md](operations/observability-otel.md) | OpenTelemetry — Jaeger / Tempo / Phoenix setup |
 | [operations/observability-langfuse.md](operations/observability-langfuse.md) | Langfuse opt-in for LLM prompt tracing |
+| [operations/performance-locust.md](operations/performance-locust.md) | Locust performance-test harness — `make perf-test`, scenarios, reading output |
 
 ## Architecture decisions
 

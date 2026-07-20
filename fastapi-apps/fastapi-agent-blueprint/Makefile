@@ -1,4 +1,4 @@
-.PHONY: help setup quickstart demo demo-rag dev worker langfuse-env observability-langfuse observability-langfuse-down test lint format check check-core check-full check-minimal smoke-examples clean diagrams
+.PHONY: help setup quickstart demo demo-rag dev worker langfuse-env observability-langfuse observability-langfuse-down test lint format check check-core check-full check-minimal smoke-examples perf-test clean diagrams
 
 LANGFUSE_ENV_FILE := _env/langfuse.env
 MINIMAL_UV_ENV := /tmp/fastapi-agent-blueprint-minimal-venv
@@ -107,6 +107,26 @@ test-dynamo:
 ## Run tests with coverage
 test-cov:
 	uv run pytest tests/ -v --cov=src --cov-report=term-missing
+
+# Locust performance-test defaults — override per run, e.g.
+#   make perf-test PERF_USERS=50 PERF_RUN_TIME=2m
+PERF_HOST ?= http://127.0.0.1:8001
+PERF_USERS ?= 10
+PERF_SPAWN_RATE ?= 2
+PERF_RUN_TIME ?= 30s
+
+# Admin CRUD scenario needs LOCUST_ADMIN_USERNAME / LOCUST_ADMIN_PASSWORD —
+# see docs/operations/performance-locust.md. Numbers are illustrative only.
+## Headless Locust perf run against a local server (start `make quickstart` first)
+perf-test:
+	uv run locust \
+		-f tests/perf/locustfile.py \
+		--headless \
+		--host $(PERF_HOST) \
+		--users $(PERF_USERS) \
+		--spawn-rate $(PERF_SPAWN_RATE) \
+		--run-time $(PERF_RUN_TIME) \
+		--stop-timeout 10
 
 ## Run linter
 lint:

@@ -8,7 +8,10 @@ class ChatReply(BaseModel):
 
     reply: str = Field(..., description="The assistant response text")
     confidence: float = Field(
-        ..., description="The confidence score of the reply, between 0.0 and 1.0"
+        ...,
+        ge=0.0,
+        le=1.0,
+        description="The confidence score of the reply, between 0.0 and 1.0",
     )
 
 
@@ -40,6 +43,6 @@ class ConversationTurnDTO(BaseModel):
     session_id: str
     user_message: str
     assistant_reply: str
-    confidence: float
+    confidence: float = Field(..., ge=0.0, le=1.0)
     tokens_used: int
     created_at: datetime

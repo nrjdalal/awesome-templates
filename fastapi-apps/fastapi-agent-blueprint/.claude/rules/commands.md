@@ -1,6 +1,6 @@
 # Suggested Commands
 
-> Last synced: 2026-07-02 via #260 (added `make smoke-examples` — per-example cp→src boot smoke — and the `examples-copyflow` checker to Architecture Verification). Prior: 2026-06-10 (admin theme collapsed to a single Toss-style theme — removed the `ADMIN_THEME_PALETTE` env var/setting from the Admin Dashboard section).
+> Last synced: 2026-07-20 via #293 (added `make perf-test` — Locust performance-test harness; requires a running server, see `docs/operations/performance-locust.md` — to the Test section). Prior: 2026-07-02 via #260 (added `make smoke-examples` — per-example cp→src boot smoke — and the `examples-copyflow` checker to Architecture Verification).
 > Purpose: Quick reference for Claude Code when executing shell commands.
 > Also referenced when running Skills.
 > Default Flow context: see [`AGENTS.md` § Default Coding Flow](../../AGENTS.md#default-coding-flow). The commands below are consulted by the `implement` and `verify` steps; this file is **not** a primary entry point in the Default Flow.
@@ -40,6 +40,12 @@ make check-core    # lint + format check + core tests
 make check-full    # CI-parity checks; requires admin + aws extras and dynamodb-local
 make check-minimal # no-extra minimal-install regression
 make smoke-examples # copy-flow smoke: every example boots after cp-to-src (#260)
+
+# Locust performance-test harness (#3) — headless run against a LOCAL server.
+# Start `make quickstart` first; overridable via PERF_HOST / PERF_USERS /
+# PERF_SPAWN_RATE / PERF_RUN_TIME. Illustrative only, not wired into CI.
+# See docs/operations/performance-locust.md.
+make perf-test
 
 # Run against real PostgreSQL (docker-compose.local.yml postgres service)
 make test-pg
