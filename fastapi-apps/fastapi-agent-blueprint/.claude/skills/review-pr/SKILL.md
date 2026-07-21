@@ -19,7 +19,8 @@ Target: $ARGUMENTS (PR number, GitHub URL, or empty for current branch)
 
 ## Procedure Overview
 1. Resolve PR; collect diff + **intent** (PR body / issue / acceptance criteria) and load the
-   Review Protocol + its checklists (Phase 0)
+   Review Protocol + its checklists; on a re-review round, also extract prior rounds'
+   `Summary Finding Ledger` and diff every key against the new head (Phase 0)
 2. Review changed files against the protocol dimensions — `CORR / REG / STAB / CONTRACT /
    ARCH / SEC / GOV` (Phase 1)
 3. Determine `Drift Candidates` and whether `Sync Required` is `true` or `false` (Phase 2)

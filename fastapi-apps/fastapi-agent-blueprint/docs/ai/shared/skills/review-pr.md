@@ -49,6 +49,13 @@ audit-only (`Verdict: N/A`). See [Review Protocol §8](../review-protocol.md#8-s
    references — [`architecture-review-checklist.md`](../architecture-review-checklist.md) (ARCH),
    [`security-checklist.md`](../security-checklist.md) (SEC) — and `AGENTS.md` (incl. § Language
    Policy for `GOV`).
+5. **Re-review rounds — mandatory ledger diff (Review Protocol §5, ADR 055):** when the PR
+   already carries prior review rounds, fetch each prior round's summary body (e.g.
+   `gh api repos/{owner}/{repo}/pulls/{n}/reviews`) and extract its `Summary Finding Ledger`.
+   Diff every ledger key against the new head **before** any verdict: a key not verified fixed
+   (and not explicitly withdrawn) carries forward as `OPEN`. Skipping this step on a re-review
+   reproduces the #292 merge-gate bypass — resolved inline threads plus a silently dropped
+   summary finding.
 
 ## Phase 1: Review Changed Files Against the Protocol Dimensions
 
@@ -136,6 +143,7 @@ Next Actions
 
 Completion State
 - complete with findings; no inline threads posted yet
+- summary-ledger: clean
 
 Sync Required
 - true
@@ -143,7 +151,7 @@ Sync Required
 
 If nothing is open, still emit every section: `Findings: none`, `Coverage:` (the OK/SKIP records),
 `Verdict: PASS` (or `CANNOT CERTIFY` when intent evidence is missing), `Drift Candidates: none`,
-`Sync Required: false`.
+`Sync Required: false` — and `Completion State` still carries `summary-ledger: clean`.
 
 ## Phase 4: Post to GitHub (Optional)
 
@@ -151,12 +159,16 @@ Posting follows [Review Protocol §5](../review-protocol.md#5-github-posting--ve
 exactly — it is not re-decided here:
 
 - **Inline vs summary** — line-anchored findings inside the diff hunks post inline (reviews API,
-  `side:RIGHT`, head-SHA anchored, copy-paste `before → after`, English); cross-cutting / out-of-hunk
-  findings go in the summary; fallback to summary when an inline anchor cannot attach.
+  `side:RIGHT`, head-SHA anchored, copy-paste `before → after`, English); cross-cutting /
+  out-of-hunk findings go into the summary's `Summary Finding Ledger` (task-list checklist with
+  complete carry-forward each round); fallback to the ledger when an inline anchor cannot attach.
 - **Verdict → action** (first match wins) — `FAIL` → request changes; `CANNOT CERTIFY` → comment;
-  any remaining `OPEN` finding or `Sync Required: true` → comment; otherwise → approve.
+  any remaining `OPEN` finding (including a still-`OPEN` `Summary Finding Ledger` key) or
+  `Sync Required: true` → comment; otherwise → approve.
 - **Finding key + lifecycle** — reuse the same comment/thread for a still-open finding key, mark
-  vanished keys resolved, post new only for new keys.
+  vanished keys resolved, post new only for new keys; ledger items follow the same key lifecycle
+  (`OPEN` / `FIXED` + verification note / `OBSOLETE` + rationale), and the latest round's ledger
+  is the authoritative copy.
 
 Ask before posting. If `Sync Required: true`, do not treat the review as fully closed until the
 follow-up sync path is acknowledged.
@@ -203,11 +215,15 @@ Review Angles
    procedures, wrappers, and documented patterns?
 5. Volatile facts: are branch, PR number, changed-file counts, file paths, and line references
    verified from current evidence?
+6. Re-review ledger: if the PR had prior review rounds, were the prior rounds'
+   `Summary Finding Ledger` keys diffed against the new head, and does the verdict count every
+   still-`OPEN` ledger key (no unchecked item ignored)?
 
 Output format
 - Scope
 - Sources Loaded
-- Findings: OPEN issues only, each with severity, dimension ID, basis, file:line, impact, and fix
+- Findings: OPEN issues only, each with severity, dimension ID, basis, file:line (or
+  summary-target for cross-cutting findings), impact, and fix
 - Coverage: OK/SKIP records with evidence
 - Drift Candidates: target, reason, auto-fix, sync-required
 - R-points: every cross-review point closes as Fixed / Deferred-with-rationale / Rejected (the
@@ -239,6 +255,12 @@ findings as R-points with the AGENTS Guard G closure vocabulary
   ID + a `basis`; no unbased "taste" finding.
 - [ ] `Verdict` matches §4: `CANNOT CERTIFY` when no intent evidence exists; `FAIL` when an OPEN
   BLOCKING or intent/contract-breaking HIGH is present.
+
+**Summary Finding Ledger (`§5`, ADR 055)**
+- [ ] On a re-review round, every prior-round ledger key was re-verified against the new head and
+  carried forward as `OPEN`, `FIXED` (with verification note), or `OBSOLETE` (with rationale);
+  the verdict counts every still-`OPEN` key and `Completion State` carries the
+  `summary-ledger: clean | unresolved` line.
 
 **External contract (`CONTRACT`)**
 - [ ] API response shapes, OpenAPI spec, and `frontend-handoff.md` match the implementation.

@@ -62,6 +62,9 @@ Read top-to-bottom; each builds on the ones above it.
 | [050](050-midtask-scope-expansion-gate.md) | Mid-Task Scope-Expansion Gate | A capability gap discovered mid-task is new plan-class work; stage-based advisory reminder + Direction & Non-goals in `project-dna`. |
 | [052](052-native-execution-ledger-and-execute-plan.md) | Native Execution Ledger & Execute-Plan | The gitignored work-ledger state machine + `/execute-plan`; `/plan-feature` writes the plan, `/execute-plan` advances the Default-Flow stages. |
 | [053](053-shared-review-protocol.md) | Shared Review Protocol | One shared contract (dimensions / finding-basis / output / verdict / posting) for the three review skills; `review-pr` as the PR entry point. |
+| [054](054-plan-execute-boundary-hard-gate.md) | Plan→Execute Boundary Hard Gate | `/plan-feature` ends at the approved Execution Packet; implementing from the `planned` stage without `/execute-plan` or a waiver token is hard-blocked on Claude, advisory on Codex. |
+| [055](055-summary-finding-ledger.md) | Summary Finding Ledger | Out-of-diff review findings post as a task-list ledger with complete carry-forward per round; any `OPEN` ledger key blocks Approve and the completion gate (closes the #292 merge-gate bypass). |
+| [056](056-zero-downtime-migration-safety.md) | Zero-Downtime Migration Safety | No-downtime migration playbook (expand-contract + per-engine safe/unsafe DDL) + an advisory checker that scans Alembic revisions for unsafe DDL; advisory-first, plan-time data-model contracts explicitly out of scope. |
 
 ## Archive
 
@@ -76,7 +79,7 @@ the rationale behind each archival bucket.
 
 ## Writing a new ADR
 
-Numbering continues sequentially (next free number is 054). Only add a new
+Numbering continues sequentially (next free number is 057). Only add a new
 ADR when the decision is **load-bearing** — i.e. it constrains how future
 code will be written, not merely which tool was picked. Purely
 operational choices can be captured in `CHANGELOG.md` or a PR description.

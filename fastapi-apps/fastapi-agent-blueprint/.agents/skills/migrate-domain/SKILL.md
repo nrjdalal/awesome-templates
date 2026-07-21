@@ -18,4 +18,5 @@ metadata:
 3. Verify the target model change and environment configuration first.
 4. For `generate`, create the revision and review before applying.
 5. Treat autogenerate output as a draft: renames and destructive changes need manual review.
-6. Verify the resulting revision state and recommend integration tests.
+6. Run the zero-downtime safety review: `tools/check_migration_safety.py` (advisory, ADR 056) flags lock-taking / compatibility-breaking DDL against pre-existing tables; apply the safe alternative from `docs/operations/rdb-migrations.md`.
+7. Verify the resulting revision state and recommend integration tests.

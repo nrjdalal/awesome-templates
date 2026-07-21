@@ -40,12 +40,15 @@ Read CLAUDE.md and verify Claude-only guidance still matches the harness:
 ## 1C. `harness-asset-matrix.md` ↔ Filesystem Sync Check (ADR 045)
 
 - [ ] Enumerate actual filesystem assets in scope:
-  - Tier 0: `AGENTS.md`, `CLAUDE.md`, `.codex/config.toml`, `.codex/hooks.json`, `.claude/settings.json`, `.claude/settings.local.json`, `.gemini/settings.json`, `.antigravity/plugin.json`, `.antigravity/gemini-extension.json`, `.antigravity/mcp_config.json`, `.antigravity/permissions.json`, `.mcp.json`, plus every `docs/history/0XX-*.md` ADR (including ADR 045)
-  - Tier 1: every `docs/ai/shared/*.md` (parent folder only, not `skills/`)
+  - Tier 0: `AGENTS.md`, `CLAUDE.md`, `.codex/config.toml`, `.codex/hooks.json`, `.claude/settings.json`, `.claude/settings.local.json`, `.gemini/settings.json`, `.antigravity/plugin.json`, `.antigravity/gemini-extension.json`, `.antigravity/mcp_config.json`, `.antigravity/permissions.json`, `.mcp.json`, `.github/pull_request_template.md`, plus the ADR(s) the matrix carries as constitutional asset rows per the ADR inclusion rule below (currently `docs/history/045-hybrid-harness-target-architecture.md` only)
+  - Tier 1: every `docs/ai/shared/*.md` (parent folder only, not `skills/`), plus the non-`docs/ai/shared/` governor assets the matrix carries in Tier 1 — the `.agents/shared/governor/` package (one row), `tools/check_governor_footer.py`, and the frozen `docs/history/archive/governor-review-log/` directory (one row)
   - Tier 2: every skill triple — `docs/ai/shared/skills/{name}.md`, `.claude/skills/{name}/SKILL.md`, `.agents/skills/{name}/SKILL.md`
-  - Tier 3: every file under `.claude/hooks/`, `.codex/hooks/`, and `.antigravity/hooks/`
+  - Tier 3: every file under `.claude/hooks/`, `.codex/hooks/`, and `.antigravity/hooks/` (excluding `__pycache__/**` and `*.pyc` caches — same exclusion as the matrix Verification block's `find`)
   - Tier 4: every file under `.claude/rules/`, `.codex/rules/`, and `.antigravity/rules/`
-- [ ] Verify each enumerated asset has exactly one row in `docs/ai/shared/harness-asset-matrix.md`
+- [ ] **ADR inclusion rule.** The matrix is a *harness-asset* inventory, so it rows an ADR only when the ADR is itself a load-bearing harness asset — currently only `docs/history/045-*.md`, the constitutional navigator for the hybrid-harness initiative. Do **not** enumerate `docs/history/**` and require one matrix row per ADR: domain / runtime ADRs (e.g. 004, 011, 042) and pure-decision governor ADRs (e.g. 047, 048, 050, 052–055) are indexed by [`docs/history/README.md`](../../history/README.md), not rowed here. ADR coverage is therefore verified in two directions instead of a filesystem-wide per-ADR row requirement:
+  - Each matrix row whose Asset path matches `docs/history/NNN-*.md` still exists on disk and appears exactly once (matrix-internal consistency).
+  - `docs/history/README.md` indexes every top-level `docs/history/NNN-*.md` file (the ADR completeness backstop that replaces a matrix-side per-ADR check).
+- [ ] Verify each enumerated asset has exactly one row in `docs/ai/shared/harness-asset-matrix.md` (a Tier 2 skill triple maps to a single row covering all three wrapper layers). Historical `Drop` rows for files already removed from disk (e.g. `tools/check_g_closure.py`) are retained in the matrix by design and are exempt from this filesystem→row direction; validate them via the `Drop` bullet below.
 - [ ] Verify the Bucket Distribution Summary count equals the row count (subtracting `.gitignore`d entries from the share-percentage denominator)
 - [ ] Verify each row's `Bucket` is one of `Keep` / `Replace` / `Overlay` / `Drop` and matches the bucket definitions at the top of the matrix
 - [ ] For any asset classified `Drop`: verify with `rg <asset> .claude/ .codex/` that no harness component still references it

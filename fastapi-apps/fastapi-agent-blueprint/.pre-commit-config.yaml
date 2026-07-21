@@ -107,6 +107,21 @@ repos:
         pass_filenames: true
         files: '^examples/.*\.py$'
 
+      # Migration safety advisory (ADR 056):
+      # scans changed Alembic revisions for unsafe (non-zero-downtime) DDL —
+      # table-locking operations and app/schema compatibility breaks. Advisory
+      # only: `verbose: true` surfaces the warnings but the checker exits 0, so
+      # it never blocks a commit (ADR056-G1). `--strict` (exit 1) exists for
+      # opt-in CI hardening and is intentionally not used here.
+      # See docs/operations/rdb-migrations.md (## Zero-Downtime Migrations).
+      - id: migration-safety
+        name: "Migration safety: advisory unsafe-DDL scan (ADR 056)"
+        language: system
+        entry: python3 tools/check_migration_safety.py
+        pass_filenames: true
+        files: '^migrations/versions/.*\.py$'
+        verbose: true
+
       # State lifecycle health check (PR-A.3):
       # FAIL-HARD on git-tracked state files (.claude/state/, .codex/state/, .antigravity/state/).
       # WARN-ONLY (exit 0) when stale marker count exceeds threshold.

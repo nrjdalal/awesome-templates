@@ -87,7 +87,7 @@ Every review result emits these sections, in order. `review-pr`, `review-archite
   write `Effect Answer: N/A — process question`.
 - **`Sources Loaded`** — the exact shared rule sources + checklists actually used.
 - **`Findings`** — **OPEN issues only.** Each line:
-  `[OPEN][<SEVERITY>][<DIM-ID>] <file:line> — basis: <type> (<citation>)`
+  `[OPEN][<SEVERITY>][<DIM-ID>] <file:line | summary-target> — basis: <type> (<citation>)`
   then `Impact:` and `Recommended fix:` on following lines. For line-anchored code findings,
   `Recommended fix` includes a copy-paste `before → after` block (§5).
 - **`Coverage`** — the `OK` / `SKIP` records that used to be mixed into `Findings`. Each line:
@@ -98,7 +98,8 @@ Every review result emits these sections, in order. `review-pr`, `review-archite
 - **`Verdict`** — the intent/PASS decision (§4).
 - **`Next Actions`** — code fixes, `Question`s (unbased concerns), follow-up review, sync
   request, optional GitHub posting.
-- **`Completion State`** — concise closure status, including any unresolved review threads (§5).
+- **`Completion State`** — concise closure status, including any unresolved review threads and
+  any `OPEN` `Summary Finding Ledger` keys with a `summary-ledger: clean | unresolved` line (§5).
 - **`Sync Required`** — explicit `true` / `false`.
 
 ### Severity + review state
@@ -137,11 +138,44 @@ next.
   when it has a concrete `file:line` **that falls inside the PR diff hunks**. Inline comments
   include a copy-paste `before → after` block and are written in **English** (Tier-1 review
   surface), and state explicitly when something must **not** be changed.
-- A finding goes into the **summary** body when it is cross-cutting, whole-file, or references a
-  line **outside** the diff hunks.
+- A finding goes into the summary body's **`Summary Finding Ledger`** (below) when it is
+  cross-cutting, whole-file, or references a line **outside** the diff hunks. GitHub cannot
+  anchor a review thread — line- or file-level — to a path absent from the PR diff
+  (`subject_type: file` returns `422 pull_request_review_thread.path could not be resolved`;
+  verified live on PR #287), so for out-of-diff targets summary posting is the **only**
+  mechanism; cross-cutting / whole-file findings route here for determinism. The ledger
+  contract below compensates for the missing resolvable thread.
 - **Fallback:** if an inline anchor cannot attach (line not in the diff, API rejects the
-  position), demote the finding to the summary with the `file:line` quoted verbatim. Never drop
-  it.
+  position), demote the finding to the `Summary Finding Ledger` with the `file:line` quoted
+  verbatim. Never drop it.
+
+### Summary Finding Ledger (out-of-diff findings; issue #292, ADR 055)
+
+Summary-routed findings escape GitHub's resolvable-thread machinery — they are invisible to the
+`require_conversation_resolution` merge gate — so they get a ledger with the same deterministic
+identity as inline threads:
+
+- The review summary body carries a **`Summary Finding Ledger`** section: one GitHub task-list
+  item (`- [ ]`) per summary-routed finding, preserving the same content contract as an inline
+  comment — finding key, severity, dimension ID, `basis`, impact, and recommended fix.
+- **Anchor rule:** an out-of-hunk or fallback-demoted finding cites its `file:line` verbatim; a
+  cross-cutting / whole-file finding cites its normalized `summary-target` (path or section +
+  stable short title) instead. Never invent a pseudo line anchor for a finding that has no
+  single line.
+- **Item states:** unchecked `- [ ]` = `OPEN`; checked `- [x]` = `FIXED` (append a one-line
+  verification note); checked **and** struck through with the tag —
+  `- [x] ~~<item>~~ OBSOLETE: <rationale>` — = `OBSOLETE`. The strikethrough + `OBSOLETE:` tag
+  override the checkbox reading; only an unchecked, non-struck item is `OPEN`. Items are never
+  silently deleted.
+- **Authoritative copy:** the ledger in the **latest posted review round** is the single
+  authoritative state. Each re-review posts a **complete** ledger — every key from prior
+  rounds' ledgers carries forward as `OPEN` unless that round verifies it `FIXED` or withdraws
+  it as `OBSOLETE`. The verdict rules below judge only the latest ledger.
+- **Remediation (recommended, not enforceable):** when ledger findings target specific files,
+  recommend that the contributor pull those files into the PR diff; on re-review the findings
+  re-anchor as normal resolvable inline threads and their ledger items close as
+  `OBSOLETE (superseded by inline thread)`. The protocol cannot force this; the ledger remains
+  the tracking contract whenever it does not happen.
 
 ### Verdict → GitHub review action
 
@@ -151,8 +185,10 @@ state decide the action — never the reviewer's discretion):
 
 1. `Verdict: FAIL` → **Request changes**.
 2. `Verdict: CANNOT CERTIFY` → **Comment** (state the missing intent evidence; never Approve).
-3. Any `OPEN` finding remains, or `Sync Required: true` → **Comment**.
-4. No `OPEN` findings, `Sync Required: false`, and `Verdict` is `PASS` or `N/A` → **Approve**.
+3. Any `OPEN` finding remains — including any key still `OPEN` in the latest
+   `Summary Finding Ledger` — or `Sync Required: true` → **Comment**.
+4. No `OPEN` findings, no `OPEN` ledger key, `Sync Required: false`, and `Verdict` is `PASS` or
+   `N/A` → **Approve**.
 
 ### Comment lifecycle (deterministic identity)
 
@@ -162,6 +198,11 @@ state decide the action — never the reviewer's discretion):
   (never duplicate); a key that no longer appears → mark the thread **resolved/obsolete**; a new
   key → **new** comment. This identity rule is what makes the same PR reviewed twice produce the
   same comment set.
+- The same key lifecycle governs `Summary Finding Ledger` items: a still-open key carries
+  forward unchecked (text updated in place), a verified-fixed key is checked with its
+  verification note, and a withdrawn key is marked `OBSOLETE` with rationale. A re-review that
+  posts a new summary must reproduce the **full** ledger — the latest round's ledger is
+  authoritative (§ Summary Finding Ledger above).
 - Posting always requires user confirmation first (the review is produced first; publishing is a
   separate, explicit step). This protocol **reports** thread state; it does not auto-resolve or
   merge (out of scope).
@@ -169,8 +210,13 @@ state decide the action — never the reviewer's discretion):
 ### Merge-gate reality (report, do not automate)
 
 - The completion gate is **not** closed while `OPEN` `BLOCKING` inline threads remain unresolved,
-  or while branch protection (`require_conversation_resolution`) still blocks merge. Surface open
-  threads and blocked status in `Completion State`.
+  while any key in the latest `Summary Finding Ledger` is still `OPEN`, or while branch
+  protection (`require_conversation_resolution`) still blocks merge. Surface open threads,
+  `OPEN` ledger keys, and blocked status in `Completion State`, including a
+  `summary-ledger: clean | unresolved` line.
+- `require_conversation_resolution` sees only resolvable threads; ledger items are **invisible**
+  to it (the #292 bypass). The ledger rules above are the compensating control —
+  **human-applied procedure, not automation**.
 - This protocol **reports** merge-gate status; it does not auto-resolve threads or merge (out of
   scope).
 

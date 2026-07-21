@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-07-21
+
+The AI-collaboration harness grows from a two-tool model (Claude + Codex) to three:
+this release adds a repo-local **Antigravity 2.0 / Gemini CLI harness**, wired to the
+same shared governor policy as the others. Alongside it ship three new governance
+frameworks — a plan→execute hard gate (ADR 054), a review Summary Finding Ledger
+(ADR 055), and a zero-downtime migration safety checker (ADR 056) — plus a real
+web-search chatbot example and a Locust performance-test harness. There is **no `src/`
+runtime change**: this is a harness, examples, tooling, and docs release. The minor
+bump reflects the net-new Antigravity harness surface (a large asset that did not exist
+before), not a runtime API change.
+
+### Added
+
+- **Antigravity 2.0 / Gemini CLI harness** — a repo-local harness under `.gemini/` and `.antigravity/` wires Antigravity's hooks to the shared governor policy (prompt tokens, shell/code safety, verify logging, completion gate, sync + workflow advisories, stage gate), so the multi-tool harness model now spans Claude + Codex + Antigravity. Extends the language / state / hook-surface / governor-doctor / regression test suites and syncs the shared docs + harness-asset-matrix. Harness-only, no `src/` change. ([#285](https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/285), closes [#65](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/65))
+- **Plan→execute boundary hard gate (ADR 054)** — `/plan-feature` now ends at the approved Execution Packet, and an approved plan (`workflow.stage == "planned"`) can no longer slide into implementation without an explicit `/execute-plan`. On Claude it is a `PreToolUse` hard block on `.py` edits under `src/`/`examples/` (`pre_tool_stage_block.py`, exit 2); on Codex a Stop-time advisory. Released via `/execute-plan` or a `[trivial]`/`[hotfix]` token, and it ranks below the four precedence layers (sandbox / prefix rules / safety hooks / absolute prohibitions). ([#282](https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/282), closes [#281](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/281))
+- **Review Summary Finding Ledger (ADR 055)** — review-protocol §5 now posts summary-routed (out-of-diff) findings as a task-list ledger with `OPEN`/`FIXED`/`OBSOLETE` states, closing the merge-gate bypass where a finding routed to the review summary body — not a resolvable thread — escaped tracking. Any still-`OPEN` key blocks Approve and keeps the completion gate open; `review-pr` Phase 0 gains a mandatory prior-round ledger diff on re-reviews. ([#296](https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/296), closes [#292](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/292))
+- **Zero-downtime migration safety (ADR 056)** — adds a no-downtime migration playbook to `docs/operations/rdb-migrations.md` (expand-contract 3-stage + per-engine PostgreSQL/MySQL/SQLite safe/unsafe DDL table + backfill/rollback) and `tools/check_migration_safety.py`, an AST-based advisory checker that scans Alembic `upgrade()` bodies for lock-taking / compatibility-breaking DDL (add NOT NULL without a safe default, non-`CONCURRENTLY` index, drop/rename, type change, blocking constraint), skipping ops against tables created in the same revision. Wired as a `verbose` non-blocking `migration-safety` pre-commit hook and into the `migrate-domain` review step. Advisory-first (exit 0). ([#301](https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/301))
+- **`web_search_chatbot` example** (`examples/web_search_chatbot/`) — a PydanticAI agent using `duckduckgo_search_tool()` for real web search, with a keyless `StubChatbot` fallback. The DI selector keys off `settings.llm_model_name` alone (no new flag, matching the other chatbot examples), and a new `pydantic-ai-duckduckgo` extra is added. Unit tests cover the stub, offline `TestModel` structural, and offline `FunctionModel` tool-invocation flows, plus a copy-flow smoke case. Examples-only, no `src/` change. ([#287](https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/287), closes [#259](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/259)) — thanks @Diyaaa-12
+- **Locust performance-test harness** — `tests/perf/locustfile.py` + a `make perf-test` target, with an always-on customer auth flow, always-on concurrent `/health` + `/health/db` reads, and an env-gated (`LOCUST_ADMIN_*`) admin `/v1/user` CRUD flow. `docs/operations/performance-locust.md` documents running it, reading the output, and an illustrative local baseline. No new dependencies (locust already in the dev group); illustrative only, not wired into CI. ([#293](https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/293), closes [#3](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/3)) — thanks @Ayushhh26
+
+### Fixed
+
+- **Secret-check test-file path-traversal bypass closed** — the hardcoded-secret guard in `.agents/shared/governor/code_safety.py` could be evaded through a test-file path traversal; the check now resists it. ([#289](https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/289))
+- **Governor fail-open shims are mypy-clean** — an annotation-only pass so `pre-commit run --hook-stage manual mypy` is clean on the governor fail-open shims, with zero runtime change. ([#290](https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/290), closes [#283](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/283))
+- **OpenAI embedding tests guarded in minimal installs** — the `skipif` guard on `TestOpenAIBatchSplitting` now requires both `pydantic_ai` and `openai`, and a monkeypatch on a read-only property in the classification stub fallback is removed, fixing latent test failures. ([#291](https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/291), closes [#288](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/288)) — thanks @Diyaaa-12
+- **`ChatReply.confidence` bounded to `[0, 1]` across chatbot examples** — the PydanticAI agent output schema had no numeric constraint while the API response schema enforced `ge=0.0, le=1.0`, so a model could emit an out-of-range confidence that failed response validation; the agent schema now matches. ([#295](https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/295), closes [#294](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/294))
+
+### Docs
+
+- **`make perf-test` synced into `commands.md` and the project-status snapshot refreshed** — a follow-up to #293. ([#298](https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/298))
+- **Drift-checklist §1C reconciled with harness-asset-matrix practice** — the checklist required every `docs/history/0XX-*.md` ADR to have exactly one matrix row, but the matrix intentionally carries more rows than that; §1C now matches practice. ([#299](https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/299), closes [#297](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/297))
+- **Harness-asset-matrix bucket-distribution narrative reconciled with `Drop=1`** — surfaced by the #297 cross-review as a pre-existing, out-of-scope drift. ([#300](https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/300))
+- **`absolute-prohibitions` shared-rule-sources synced with `AGENTS.md`** — a drift that originated in the Antigravity 2.0 harness work (#65). ([#302](https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/302))
+
 ## [0.8.4] - 2026-07-05
 
 A patch on top of 0.8.3: the two-domain `blog` example now survives copy-into-`src/`,
@@ -395,7 +430,8 @@ Quality Gate review contract, `/plan-feature` Approach Options stage,
 - ADR documentation (001-013)
 - CONTRIBUTING guide and issue templates
 
-[Unreleased]: https://github.com/Mr-DooSun/fastapi-agent-blueprint/compare/v0.8.4...HEAD
+[Unreleased]: https://github.com/Mr-DooSun/fastapi-agent-blueprint/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/Mr-DooSun/fastapi-agent-blueprint/compare/v0.8.4...v0.9.0
 [0.8.4]: https://github.com/Mr-DooSun/fastapi-agent-blueprint/compare/v0.8.3...v0.8.4
 [0.8.3]: https://github.com/Mr-DooSun/fastapi-agent-blueprint/compare/v0.8.2...v0.8.3
 [0.8.2]: https://github.com/Mr-DooSun/fastapi-agent-blueprint/compare/v0.8.1...v0.8.2

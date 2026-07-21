@@ -4,6 +4,7 @@
 - Date: 2026-07-04
 - Related issue: #274 (PR #275)
 - Builds on (does not supersede): ADR [047](047-governor-review-provenance-consolidation.md) and ADR [048](048-independent-review-generalization.md). 047/048 generalize the review *modality and provenance* (Governor Footer, reviewer modes) of ADR [045](045-hybrid-harness-target-architecture.md) Pillar 2; **053 changes the review *substance/contract*** the skills apply. Related lineage, not a supersession.
+- Amended by: ADR [055](055-summary-finding-ledger.md) — adds the Summary Finding Ledger contract (out-of-diff finding tracking, complete carry-forward, verdict / completion-gate effects) to the protocol's §5 posting rules.
 - Note: this ADR records the decision behind `docs/ai/shared/review-protocol.md`. It documents *why* that protocol exists; it does **not** restate its rules.
 
 ## Summary

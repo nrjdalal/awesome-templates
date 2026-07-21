@@ -1,6 +1,6 @@
 # Suggested Commands
 
-> Last synced: 2026-07-20 via #293 (added `make perf-test` — Locust performance-test harness; requires a running server, see `docs/operations/performance-locust.md` — to the Test section). Prior: 2026-07-02 via #260 (added `make smoke-examples` — per-example cp→src boot smoke — and the `examples-copyflow` checker to Architecture Verification).
+> Last synced: 2026-07-20 via ADR 056 (added `tools/check_migration_safety.py` — advisory unsafe-DDL scan for zero-downtime migrations — to Architecture Verification + DB Migrations). Prior: 2026-07-20 via #293 (added `make perf-test` — Locust performance-test harness; requires a running server, see `docs/operations/performance-locust.md` — to the Test section). Prior: 2026-07-02 via #260 (added `make smoke-examples` — per-example cp→src boot smoke — and the `examples-copyflow` checker to Architecture Verification).
 > Purpose: Quick reference for Claude Code when executing shell commands.
 > Also referenced when running Skills.
 > Default Flow context: see [`AGENTS.md` § Default Coding Flow](../../AGENTS.md#default-coding-flow). The commands below are consulted by the `implement` and `verify` steps; this file is **not** a primary entry point in the Default Flow.
@@ -77,6 +77,10 @@ alembic upgrade head
 alembic downgrade -1
 alembic current
 alembic history
+
+# After autogenerate, scan the new revision for unsafe (non-zero-downtime) DDL.
+# Advisory only (ADR 056) — see docs/operations/rdb-migrations.md.
+uv run python tools/check_migration_safety.py migrations/versions/<rev>.py
 ```
 
 ## Package Management (uv)
@@ -123,6 +127,9 @@ grep -r "class.*Mapper" src/ --include="*.py"
 
 # Verify examples have no absolute examples.* imports (copy-flow guard, #260)
 uv run python tools/check_examples_copyflow.py
+
+# Scan Alembic revisions for unsafe (non-zero-downtime) DDL — advisory (ADR 056)
+uv run python tools/check_migration_safety.py
 ```
 
 ## DynamoDB Local
