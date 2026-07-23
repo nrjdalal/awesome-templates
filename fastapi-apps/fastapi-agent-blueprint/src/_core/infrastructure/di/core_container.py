@@ -56,6 +56,10 @@ def _llm_selector() -> str:
     return "enabled" if settings.llm_model_name else "disabled"
 
 
+def _notification_selector() -> str:
+    return "enabled" if settings.notification_webhook_url else "disabled"
+
+
 # ---------------------------------------------------------------------------
 # Lazy factories — imports happen inside so that uninstalling the matching
 # optional extra (aws, pydantic-ai, …) does not break import of this module.
@@ -189,6 +193,45 @@ def _build_llm_model(
         aws_region=aws_region,
     )
     return build_llm_model(llm_config=config)
+
+
+def _build_notification_client(
+    http_client: HttpClient, provider: str | None, webhook_url: str | None
+):
+    from src._core.infrastructure.notification.discord_notification_adapter import (
+        DiscordNotificationAdapter,
+    )
+    from src._core.infrastructure.notification.slack_notification_adapter import (
+        SlackNotificationAdapter,
+    )
+
+    if (provider or "").lower().strip() == "discord":
+        return DiscordNotificationAdapter(
+            http_client=http_client, webhook_url=webhook_url or ""
+        )
+    return SlackNotificationAdapter(
+        http_client=http_client, webhook_url=webhook_url or ""
+    )
+
+
+def _build_noop_notification_client():
+    from src._core.infrastructure.notification.noop_notification_client import (
+        NoopNotificationClient,
+    )
+
+    return NoopNotificationClient()
+
+
+def _build_error_notifier(
+    notification_client, severity_threshold: int, cooldown_seconds: int
+):
+    from src._core.infrastructure.notification.error_notifier import ErrorNotifier
+
+    return ErrorNotifier(
+        notification_client=notification_client,
+        severity_threshold=severity_threshold,
+        cooldown_seconds=cooldown_seconds,
+    )
 
 
 class CoreContainer(containers.DeclarativeContainer):
@@ -347,4 +390,28 @@ class CoreContainer(containers.DeclarativeContainer):
             aws_region=settings.llm_bedrock_region,
         ),
         disabled=providers.Singleton(_build_stub_llm_model),
+    )
+
+    #########################################################
+    # Error Notification (optional — NOTIFICATION_PROVIDER=slack|discord)
+    # Disabled → NoopNotificationClient so ErrorNotifier always has a
+    # client to call, regardless of whether Slack/Discord is configured.
+    #########################################################
+
+    notification_client = providers.Selector(
+        _notification_selector,
+        enabled=providers.Singleton(
+            _build_notification_client,
+            http_client=http_client,
+            provider=settings.notification_provider,
+            webhook_url=settings.notification_webhook_url,
+        ),
+        disabled=providers.Singleton(_build_noop_notification_client),
+    )
+
+    error_notifier = providers.Singleton(
+        _build_error_notifier,
+        notification_client=notification_client,
+        severity_threshold=settings.notification_severity_threshold,
+        cooldown_seconds=settings.notification_cooldown_seconds,
     )

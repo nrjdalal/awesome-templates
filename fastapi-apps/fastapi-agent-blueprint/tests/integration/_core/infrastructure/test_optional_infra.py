@@ -23,6 +23,9 @@ import pytest
 
 from src._core.config import settings
 from src._core.infrastructure.di.core_container import CoreContainer
+from src._core.infrastructure.notification.noop_notification_client import (
+    NoopNotificationClient,
+)
 from src._core.infrastructure.rag.stub_embedder import StubEmbedder
 
 _has_pydantic_ai = importlib.util.find_spec("pydantic_ai") is not None
@@ -44,6 +47,9 @@ def clean_optional_env(monkeypatch: pytest.MonkeyPatch) -> None:
         "llm_provider",
         "llm_model",
         "otel_exporter_otlp_endpoint",
+        "notification_provider",
+        "slack_webhook_url",
+        "discord_webhook_url",
     ):
         monkeypatch.setattr(settings, field, None)
     monkeypatch.setattr(settings, "broker_type", None)
@@ -67,6 +73,16 @@ class TestCoreContainerMinimalBoot:
     def test_embedding_client_returns_stub(self, clean_optional_env: None):
         container = CoreContainer()
         assert isinstance(container.embedding_client(), StubEmbedder)
+
+    def test_notification_client_returns_noop(self, clean_optional_env: None):
+        container = CoreContainer()
+        assert isinstance(container.notification_client(), NoopNotificationClient)
+
+    def test_error_notifier_wraps_noop_client(self, clean_optional_env: None):
+        from src._core.infrastructure.notification.error_notifier import ErrorNotifier
+
+        container = CoreContainer()
+        assert isinstance(container.error_notifier(), ErrorNotifier)
 
     def test_llm_model_returns_stub_when_disabled(self, clean_optional_env: None):
         """Disabled branch returns a PydanticAI ``TestModel`` when the
@@ -121,6 +137,15 @@ class TestCoreContainerEnabledBranches:
         monkeypatch.setattr(settings, "embedding_provider", "openai")
         monkeypatch.setattr(settings, "embedding_model", "text-embedding-3-small")
         assert _embedding_selector() == "enabled"
+
+    def test_notification_selector_enabled(self, monkeypatch: pytest.MonkeyPatch):
+        from src._core.infrastructure.di.core_container import _notification_selector
+
+        monkeypatch.setattr(settings, "notification_provider", "slack")
+        monkeypatch.setattr(
+            settings, "slack_webhook_url", "https://hooks.slack.com/services/T/B/X"
+        )
+        assert _notification_selector() == "enabled"
 
 
 class TestAppBootsWithoutOptionalInfra:

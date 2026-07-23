@@ -17,6 +17,7 @@ KNOWN_EMBEDDING_PROVIDERS = (
 )
 KNOWN_STORAGE_TYPES = ("s3", "minio")
 KNOWN_LLM_PROVIDERS = ("openai", "anthropic", "bedrock")
+KNOWN_NOTIFICATION_PROVIDERS = ("slack", "discord")
 STRICT_ENVS = frozenset({"stg", "prod"})
 
 _OPENAI_DIMENSIONS: dict[str, int] = {
@@ -362,6 +363,36 @@ class Settings(BaseSettings):
     )
     llm_bedrock_region: str | None = Field(
         default=None, validation_alias="LLM_BEDROCK_REGION"
+    )
+
+    # ----------------------------------------------------------------
+    # Error Notification (Optional — Slack/Discord webhook alerts fired
+    # from the exception middleware on 5xx-and-above errors, #17)
+    # ----------------------------------------------------------------
+    notification_provider: str | None = Field(
+        default=None, validation_alias="NOTIFICATION_PROVIDER"
+    )
+    slack_webhook_url: str | None = Field(
+        default=None, validation_alias="SLACK_WEBHOOK_URL"
+    )
+    discord_webhook_url: str | None = Field(
+        default=None, validation_alias="DISCORD_WEBHOOK_URL"
+    )
+    notification_severity_threshold: int = Field(
+        default=500,
+        validation_alias="NOTIFICATION_SEVERITY_THRESHOLD",
+        description=(
+            "Minimum HTTP status code that triggers a notification "
+            "(e.g. 500 notifies on server errors only)."
+        ),
+    )
+    notification_cooldown_seconds: int = Field(
+        default=60,
+        validation_alias="NOTIFICATION_COOLDOWN_SECONDS",
+        description=(
+            "Per-process, per-error_code cooldown between repeat "
+            "notifications, to prevent notification storms."
+        ),
     )
 
     # ----------------------------------------------------------------
@@ -721,6 +752,29 @@ class Settings(BaseSettings):
                     f"{', '.join(missing)} missing"
                 )
 
+        notification_provider = (self.notification_provider or "").lower().strip()
+        if (
+            notification_provider
+            and notification_provider not in KNOWN_NOTIFICATION_PROVIDERS
+        ):
+            errors.append(
+                f"[notification_provider] Unknown notification provider "
+                f"'{self.notification_provider}'. "
+                f"Expected one of: {', '.join(KNOWN_NOTIFICATION_PROVIDERS)}"
+            )
+
+        if notification_provider == "slack" and not self.slack_webhook_url:
+            errors.append(
+                "[Notification/Slack] NOTIFICATION_PROVIDER=slack requires: "
+                "slack_webhook_url missing"
+            )
+
+        if notification_provider == "discord" and not self.discord_webhook_url:
+            errors.append(
+                "[Notification/Discord] NOTIFICATION_PROVIDER=discord requires: "
+                "discord_webhook_url missing"
+            )
+
         if self.otel_enabled and not self.otel_exporter_otlp_endpoint:
             errors.append(
                 "[OTEL] OTEL_ENABLED=true requires: otel_exporter_otlp_endpoint missing"
@@ -875,6 +929,20 @@ class Settings(BaseSettings):
         if not provider or not model:
             return None
         return f"{provider}:{model}"
+
+    @property
+    def notification_webhook_url(self) -> str | None:
+        """Webhook URL for the configured NOTIFICATION_PROVIDER.
+
+        Returns ``None`` when notification is not configured — used as the
+        CoreContainer selector's enabled/disabled signal.
+        """
+        provider = (self.notification_provider or "").lower().strip()
+        if provider == "slack":
+            return self.slack_webhook_url
+        if provider == "discord":
+            return self.discord_webhook_url
+        return None
 
 
 settings = Settings()

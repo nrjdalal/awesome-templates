@@ -16,6 +16,7 @@ from src._core.infrastructure.di.core_container import (
     _dynamodb_selector,
     _embedding_selector,
     _llm_selector,
+    _notification_selector,
     _s3vector_selector,
     _storage_selector,
 )
@@ -88,3 +89,34 @@ class TestLLMSelector:
         monkeypatch.setattr(settings, "llm_provider", "openai")
         monkeypatch.setattr(settings, "llm_model", "gpt-4o-mini")
         assert _llm_selector() == "enabled"
+
+
+class TestNotificationSelector:
+    def test_disabled_when_provider_unset(self, monkeypatch: pytest.MonkeyPatch):
+        monkeypatch.setattr(settings, "notification_provider", None)
+        monkeypatch.setattr(settings, "slack_webhook_url", None)
+        monkeypatch.setattr(settings, "discord_webhook_url", None)
+        assert _notification_selector() == "disabled"
+
+    def test_disabled_when_provider_set_but_webhook_url_missing(
+        self, monkeypatch: pytest.MonkeyPatch
+    ):
+        monkeypatch.setattr(settings, "notification_provider", "slack")
+        monkeypatch.setattr(settings, "slack_webhook_url", None)
+        assert _notification_selector() == "disabled"
+
+    def test_enabled_when_slack_configured(self, monkeypatch: pytest.MonkeyPatch):
+        monkeypatch.setattr(settings, "notification_provider", "slack")
+        monkeypatch.setattr(
+            settings, "slack_webhook_url", "https://hooks.slack.com/services/T/B/X"
+        )
+        assert _notification_selector() == "enabled"
+
+    def test_enabled_when_discord_configured(self, monkeypatch: pytest.MonkeyPatch):
+        monkeypatch.setattr(settings, "notification_provider", "discord")
+        monkeypatch.setattr(
+            settings,
+            "discord_webhook_url",
+            "https://discord.com/api/webhooks/1/token",
+        )
+        assert _notification_selector() == "enabled"

@@ -852,3 +852,56 @@ class TestAdminRealmCollapseGuards:
             assert settings.admin_jwt_secret_key != settings.jwt_secret_key
             assert settings.admin_jwt_audience != settings.jwt_audience
             assert settings.admin_jwt_issuer != settings.jwt_issuer
+
+
+class TestNotificationConfig:
+    def test_no_notification_provider_accepted(self):
+        env = {"ENV": "local", **_REQUIRED_VARS}
+        with patch.dict(os.environ, env, clear=True):
+            s = _create_settings()
+            assert s.notification_provider is None
+            assert s.notification_webhook_url is None
+
+    def test_unknown_notification_provider_rejected(self):
+        env = {"ENV": "local", "NOTIFICATION_PROVIDER": "teams", **_REQUIRED_VARS}
+        with patch.dict(os.environ, env, clear=True):
+            with pytest.raises(ValidationError, match="Unknown notification provider"):
+                _create_settings()
+
+    def test_slack_without_webhook_url_rejected(self):
+        env = {"ENV": "local", "NOTIFICATION_PROVIDER": "slack", **_REQUIRED_VARS}
+        with patch.dict(os.environ, env, clear=True):
+            with pytest.raises(ValidationError, match=r"Notification/Slack.*missing"):
+                _create_settings()
+
+    def test_slack_with_webhook_url_accepted(self):
+        env = {
+            "ENV": "local",
+            "NOTIFICATION_PROVIDER": "slack",
+            "SLACK_WEBHOOK_URL": "https://hooks.slack.com/services/T/B/X",
+            **_REQUIRED_VARS,
+        }
+        with patch.dict(os.environ, env, clear=True):
+            s = _create_settings()
+            assert (
+                s.notification_webhook_url == "https://hooks.slack.com/services/T/B/X"
+            )
+
+    def test_discord_without_webhook_url_rejected(self):
+        env = {"ENV": "local", "NOTIFICATION_PROVIDER": "discord", **_REQUIRED_VARS}
+        with patch.dict(os.environ, env, clear=True):
+            with pytest.raises(ValidationError, match=r"Notification/Discord.*missing"):
+                _create_settings()
+
+    def test_discord_with_webhook_url_accepted(self):
+        env = {
+            "ENV": "local",
+            "NOTIFICATION_PROVIDER": "discord",
+            "DISCORD_WEBHOOK_URL": "https://discord.com/api/webhooks/1/token",
+            **_REQUIRED_VARS,
+        }
+        with patch.dict(os.environ, env, clear=True):
+            s = _create_settings()
+            assert (
+                s.notification_webhook_url == "https://discord.com/api/webhooks/1/token"
+            )

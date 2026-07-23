@@ -14,6 +14,29 @@ from src._core.exceptions.base_exception import BaseCustomException
 _logger = structlog.stdlib.get_logger("src._core.exceptions")
 
 
+def _dispatch_error_notification(
+    request: Request, *, status_code: int, error_code: str, message: str
+) -> None:
+    """Fire-and-forget Slack/Discord alert (#17).
+
+    Never raises — a failure here (missing container, disabled notifier,
+    webhook error) must not turn into a second error for the caller. The
+    actual severity/cooldown gating and non-blocking dispatch live in
+    ``ErrorNotifier``; this only has to find it.
+    """
+    try:
+        error_notifier = request.app.state.container.core_container().error_notifier()
+        error_notifier.maybe_dispatch(
+            status_code=status_code, error_code=error_code, message=message
+        )
+    except AttributeError:
+        # No app/container wired (e.g. handler invoked directly in a unit
+        # test) — nothing to notify through, not a real error.
+        return
+    except Exception:
+        _logger.warning("error_notifier_dispatch_failed", exc_info=True)
+
+
 async def validation_exception_handler(
     request: Request, exc: RequestValidationError
 ) -> JSONResponse:
@@ -58,6 +81,12 @@ async def custom_exception_handler(
             error_details=exc.details,
         )
     )
+    _dispatch_error_notification(
+        request,
+        status_code=exc.status_code,
+        error_code=exc.error_code,
+        message=str(exc),
+    )
     return JSONResponse(status_code=exc.status_code, content=content)
 
 
@@ -74,6 +103,12 @@ async def generic_exception_handler(request: Request, exc: Exception) -> JSONRes
                 error_code=mapped.error_code,
                 error_details=mapped.details,
             )
+        )
+        _dispatch_error_notification(
+            request,
+            status_code=mapped.status_code,
+            error_code=mapped.error_code,
+            message=str(mapped),
         )
         return JSONResponse(status_code=mapped.status_code, content=content)
 
@@ -95,5 +130,11 @@ async def generic_exception_handler(request: Request, exc: Exception) -> JSONRes
             error_code="INTERNAL_SERVER_ERROR",
             error_details=error_details,
         )
+    )
+    _dispatch_error_notification(
+        request,
+        status_code=500,
+        error_code="INTERNAL_SERVER_ERROR",
+        message=f"{type(exc).__name__}: {exc}",
     )
     return JSONResponse(status_code=500, content=content)
