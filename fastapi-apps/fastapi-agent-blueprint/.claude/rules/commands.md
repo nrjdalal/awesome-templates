@@ -1,6 +1,6 @@
 # Suggested Commands
 
-> Last synced: 2026-07-20 via ADR 056 (added `tools/check_migration_safety.py` — advisory unsafe-DDL scan for zero-downtime migrations — to Architecture Verification + DB Migrations). Prior: 2026-07-20 via #293 (added `make perf-test` — Locust performance-test harness; requires a running server, see `docs/operations/performance-locust.md` — to the Test section). Prior: 2026-07-02 via #260 (added `make smoke-examples` — per-example cp→src boot smoke — and the `examples-copyflow` checker to Architecture Verification).
+> Last synced: 2026-07-23 via #17/PR #304 (added the Error Notification section — `NOTIFICATION_*` env vars for Slack/Discord webhook alerts fired from the exception handlers). Prior: 2026-07-20 via ADR 056 (added `tools/check_migration_safety.py` — advisory unsafe-DDL scan for zero-downtime migrations — to Architecture Verification + DB Migrations). Prior: 2026-07-20 via #293 (added `make perf-test` — Locust performance-test harness — to the Test section).
 > Purpose: Quick reference for Claude Code when executing shell commands.
 > Also referenced when running Skills.
 > Default Flow context: see [`AGENTS.md` § Default Coding Flow](../../AGENTS.md#default-coding-flow). The commands below are consulted by the `implement` and `verify` steps; this file is **not** a primary entry point in the Default Flow.
@@ -153,6 +153,17 @@ BROKER_TYPE=rabbitmq RABBITMQ_URL=amqp://guest:guest@localhost:5672/ python run_
 STORAGE_TYPE=minio python run_server_local.py --env local
 STORAGE_TYPE=s3 python run_server_local.py --env local
 ```
+
+## Error Notification (#17)
+```bash
+# Slack/Discord webhook alerts fired from the global exception handlers (optional infra, ADR 042)
+NOTIFICATION_PROVIDER=slack SLACK_WEBHOOK_URL=https://hooks.slack.com/services/T/B/X python run_server_local.py --env local
+NOTIFICATION_PROVIDER=discord DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/<id>/<token> python run_server_local.py --env local
+```
+
+- Tuning: `NOTIFICATION_SEVERITY_THRESHOLD` (default 500 — 5xx only), `NOTIFICATION_COOLDOWN_SECONDS` (default 60; per-process, per-error_code)
+- Unset provider → `NoopNotificationClient` (one-time `notification_client_disabled` warning; no alerts delivered)
+- Webhook URLs are credentials — keep them in gitignored env files only
 
 ## Admin Dashboard
 ```bash

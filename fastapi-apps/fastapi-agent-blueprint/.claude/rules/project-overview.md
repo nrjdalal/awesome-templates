@@ -1,6 +1,7 @@
 # Project Overview
 
-> Last synced: 2026-06-10 (admin theme reworked to a **single Toss-style theme** — the multi-preset machinery `ADMIN_THEME_PALETTE`/`_PALETTES`/`palette_primary` was removed; the look is now two token dicts `_ROOT_TOKENS`/`_DARK_TOKENS` in `theme.py`. TDS grey palette + blue/green/red, light-mode chrome flip, 20px/pill rounding, dark-mode elevation ladder, per-mode login backdrop + login dark-mode toggle, global micro-interactions; plus an AG Grid `ag-delay-render` visibility fix). Prior: 2026-06-02 via #193 (admin UI/UX + design system). Admin shell is token-driven: `src/_core/infrastructure/admin/theme.py` (single theme + dark mode + Wanted Sans) + a `components/` builder library; pages compose builders (see `docs/ai/shared/admin-design-system.md`). Admin-shell settings in `config.py`: `ADMIN_DARK_MODE_DEFAULT` (None=follow OS), `ADMIN_BRAND_NAME`. Entrypoints unchanged.
+> Last synced: 2026-07-23 via #17/PR #304 (Error Notification optional infra — Slack/Discord webhook adapters + `NoopNotificationClient` fallback added to Infrastructure Options; `Notification (Slack/Discord)` added to partial config group validation).
+> Prior: 2026-06-10 (admin theme reworked to a **single Toss-style theme** — the multi-preset machinery `ADMIN_THEME_PALETTE`/`_PALETTES`/`palette_primary` was removed; the look is now two token dicts `_ROOT_TOKENS`/`_DARK_TOKENS` in `theme.py`. TDS grey palette + blue/green/red, light-mode chrome flip, 20px/pill rounding, dark-mode elevation ladder, per-mode login backdrop + login dark-mode toggle, global micro-interactions; plus an AG Grid `ag-delay-render` visibility fix). Prior: 2026-06-02 via #193 (admin UI/UX + design system). Admin shell is token-driven: `src/_core/infrastructure/admin/theme.py` (single theme + dark mode + Wanted Sans) + a `components/` builder library; pages compose builders (see `docs/ai/shared/admin-design-system.md`). Admin-shell settings in `config.py`: `ADMIN_DARK_MODE_DEFAULT` (None=follow OS), `ADMIN_BRAND_NAME`. Entrypoints unchanged.
 > Prior: 2026-06-01 via #218 (admin-identity realm separation; `ADMIN_JWT_*` settings + realm-collapse validation; admin login backed by `admin_identity`).
 > For tech stack, refer to project-dna.md §8; for layer structure, refer to §1.
 > For the Optional infra toggle surface (env var → disabled behavior per infra), see AGENTS.md "Optional Infrastructure Toggles" + [ADR 042](../../docs/history/042-optional-infrastructure-di-pattern.md).
@@ -26,13 +27,14 @@ Interface → Application → Domain ← Infrastructure
 - Embedding: Optional (EMBEDDING_PROVIDER env var, PydanticAIEmbeddingAdapter — OpenAI/Bedrock/Google/Ollama)
 - LLM: Optional (LLM_PROVIDER env var, build_llm_model() — OpenAI/Anthropic/Bedrock)
 - Message Broker: SQS/RabbitMQ/InMemory (BROKER_TYPE env var)
+- Error Notification: Optional (NOTIFICATION_PROVIDER env var, Slack/Discord webhook adapters via providers.Selector + NoopNotificationClient fallback; fired from the global exception handlers, #17)
 - Logging: structlog + asgi-correlation-id; default level INFO; controlled via `LOG_LEVEL` / `LOG_JSON_FORMAT` env vars (dev/local/quickstart → console, stg/prod → JSON, #9)
 
 ## Environment Config Validation
 - Settings (pydantic-settings) with model_validator
 - stg/prod: unsafe defaults blocked, broker required, partial config groups rejected
 - STORAGE_TYPE-driven validation: S3/MinIO config group required when set
-- Partial config group validation: S3, MinIO, DynamoDB, S3Vectors, SQS, Embedding (OpenAI/Bedrock), LLM (OpenAI/Anthropic/Bedrock)
+- Partial config group validation: S3, MinIO, DynamoDB, S3Vectors, SQS, Embedding (OpenAI/Bedrock), LLM (OpenAI/Anthropic/Bedrock), Notification (Slack/Discord)
 - Logging: `LOG_LEVEL` (DEBUG/INFO/WARNING/ERROR), `LOG_JSON_FORMAT` (None → derive from ENV; True/False to force-override)
 
 ## Key Value Objects

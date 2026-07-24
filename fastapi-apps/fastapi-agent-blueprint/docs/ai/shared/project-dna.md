@@ -6,7 +6,7 @@
 > This file is auto-extracted/updated from `src/user/` (reference domain) and `src/_core/` (Base classes)
 > when `/sync-guidelines` is run. **Run `/sync-guidelines` instead of editing manually.**
 >
-> Last updated: 2026-07-02 (#260 — `examples-copyflow` pre-commit guard added to §7 Architecture Violation Check). Prior: 2026-06-01 (#211 / #197 Phase 5 — guardrail observability ledger + red-team suite)
+> Last updated: 2026-07-23 (#17 / PR #304 — Error Notification optional infra added to §8 Active Features). Prior: 2026-07-02 (#260 — `examples-copyflow` pre-commit guard added to §7 Architecture Violation Check). Prior: 2026-06-01 (#211 / #197 Phase 5 — guardrail observability ledger + red-team suite)
 
 ## Section Index
 §0 Project Scale and Design Philosophy |
@@ -621,6 +621,7 @@ class {Name}Container(containers.DeclarativeContainer):
 | RBAC/Permissions | Active | Admin identity is a separate realm (`admin_identity`, #218/ADR 049 — see §17). Membership in `admin_identity` *is* admin status; the record's `permissions` (JSON) list controls which admin pages each admin can access. `/admin/accounts` UI manages accounts and per-page permission grants. Bootstrap one-time setup wizard creates the first real admin with all permissions. Server-route RBAC for `/v1/user` (reads + CUD) added in #199 via the `require_admin` interface dependency, re-pointed to the admin token realm in #218 (verifies admin-realm tokens against `admin_identity`, rejects bootstrap admins); non-user `/v1/*` route-level gating is not yet implemented. |
 | Rate Limiting (slowapi) | Not implemented | |
 | WebSocket | Not implemented | |
+| Error Notification (Slack/Discord webhooks) | Active | Optional infra (#17): `NOTIFICATION_PROVIDER` + `SLACK_WEBHOOK_URL`/`DISCORD_WEBHOOK_URL` enable it via `providers.Selector` → `NoopNotificationClient` fallback (ADR 042 pattern; `BaseNotificationProtocol` in `_core/domain/protocols/`). `ErrorNotifier` gates by `NOTIFICATION_SEVERITY_THRESHOLD` (default 500) + per-process, per-error_code `NOTIFICATION_COOLDOWN_SECONDS`; fire-and-forget dispatch from the global exception handlers via the shared `HttpClient` (webhook response bodies never JSON-parsed; send failures logged `exc_type`-only so the secret webhook URL never reaches logs). Channel routing is a follow-up (#286). |
 
 > Extras note (#104, ADR 042): `nicegui` belongs to the `admin` extra; `boto3` / `aioboto3` / `types-aiobotocore-*` belong to the `aws` extra. Deployments install only what they need — `uv sync --extra admin --extra aws`; `make setup` installs both by default. When an extra is missing, the corresponding Selector branch returns `None` / `StubEmbedder` / `TestModel` for graceful degradation.
 

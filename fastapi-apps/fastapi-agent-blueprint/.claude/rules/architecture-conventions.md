@@ -1,6 +1,6 @@
 # Architecture Conventions
 
-> Last synced: 2026-06-01 via #218 (admin-identity realm separation reviewed; the new `admin_identity` domain reuses the existing data flow / object roles / generic-signature patterns — BaseService/BaseRepository generics and conversion patterns are unchanged, so the body is unchanged. New realm invariants live in project-dna §17.)
+> Last synced: 2026-07-23 via #17/PR #304 (Error Notification webhook infra — new optional-infra section added below; existing data-flow / object-role / generic-signature patterns unchanged). Prior: 2026-06-01 via #218 (admin-identity realm separation reviewed; the new `admin_identity` domain reuses the existing data flow / object roles / generic-signature patterns — BaseService/BaseRepository generics and conversion patterns are unchanged. New realm invariants live in project-dna §17.)
 > For Absolute Prohibitions, Conversion Patterns, Write DTO criteria, Responsibility Matrix, Error Translation, Optional AI Infra (Protocol + Selector Pattern), Admin Service Contract, and **Default Coding Flow** (process layer, ADR 045), refer to AGENTS.md.
 > This file only contains **structural context** that supplements AGENTS.md for Claude.
 
@@ -69,6 +69,12 @@ Key differences from RDB/DynamoDB:
 - Domain services inject the Selector-resolved `llm_model` and create `Agent(model=llm_model)` at init; stub propagates transparently
 - Supports OpenAI, Anthropic, Bedrock providers via `model_name` prefix
 - Agents are reusable across requests (create once at service init)
+
+## Error Notification (Webhook)
+- `NOTIFICATION_PROVIDER` env var: Slack/Discord via `providers.Selector` in CoreContainer; disabled → `NoopNotificationClient` (ADR 042). `BaseNotificationProtocol` lives in `src/_core/domain/protocols/`
+- `ErrorNotifier` (Singleton) gates by `NOTIFICATION_SEVERITY_THRESHOLD` (default 500) + per-process, per-error_code `NOTIFICATION_COOLDOWN_SECONDS`; dispatch is fire-and-forget (`asyncio.create_task`, never awaited in the request path; send failures logged `exc_type`-only so the secret webhook URL never reaches logs)
+- Hooked from `custom_exception_handler` / `generic_exception_handler` through `app.state.container` at runtime — the exceptions module never imports notification infrastructure, and dispatch never raises into the response path
+- Adapters POST via the shared `HttpClient` and never JSON-parse webhook responses (Slack success body is plain-text `ok`; Discord returns `204 No Content`)
 
 ## Object Roles
 

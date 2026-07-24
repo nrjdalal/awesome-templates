@@ -268,6 +268,7 @@ Every non-DB infra in `CoreContainer` is optional — toggle via env vars, no co
 | Embedding | `EMBEDDING_PROVIDER` + `EMBEDDING_MODEL` both set | `embedding_client()` returns `StubEmbedder` (keyword bag-of-words) |
 | LLM | `LLM_PROVIDER` + `LLM_MODEL` both set | `llm_model()` returns PydanticAI `TestModel` via `build_stub_llm_model` when `pydantic-ai` is installed, `None` otherwise |
 | Broker | `BROKER_TYPE=sqs` / `rabbitmq` / `inmemory` | Defaults to `inmemory` — no external broker required |
+| Error Notification (Slack/Discord) | `NOTIFICATION_PROVIDER=slack` / `discord` + the matching `SLACK_WEBHOOK_URL` / `DISCORD_WEBHOOK_URL` | `notification_client()` returns `NoopNotificationClient` (one-time `notification_client_disabled` warning; `error_notifier()` still runs and suppresses sends) |
 
 **Consumer rule:** data-store clients (`None`-returning) require an explicit guard at the call site when your domain needs them; stub-returning infras just work (but signal "stub" via startup warning logs). Use `providers.Selector` in your domain container to branch between real and stub paths if needed — `src/docs/infrastructure/di/docs_container.py` is the reference pattern.
 
