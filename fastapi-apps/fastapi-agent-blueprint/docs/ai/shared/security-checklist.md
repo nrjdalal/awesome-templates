@@ -407,3 +407,40 @@ Check LLM model factory, configuration, and Agent-using services:
   - Grep: `LLMException` (and subclasses) wrap provider errors -> verify raw `error_message` is not surfaced in user-facing responses
   - Known exceptions (`LLMAuthenticationException`, `LLMRateLimitException`, `LLMModelNotFoundException`, `LLMContextLengthExceededException`) use sanitized messages
   - Stack traces / model identifiers / credentials never leaked to API responses or logs in stg/prod
+
+## 13. Error Notification Security (Slack/Discord webhooks)
+
+Check notification adapters, `ErrorNotifier`, the global exception handlers, and configuration files:
+
+### Webhook Credential Management
+- [ ] [When applicable][HIGH] Webhook URLs are loaded from Settings and never reach the log stream
+  - Detection condition: Check **project-dna.md section 8** "Error Notification (Slack/Discord webhooks)" status -> [SKIP] if "not implemented"
+  - Grep: `slack_webhook_url|discord_webhook_url` declared with `Field(validation_alias=...)` in `config.py` (not hardcoded string literals)
+  - Grep: `SlackNotificationAdapter\(|DiscordNotificationAdapter\(` **under `src/` only** -> the sole production construction site is `_build_notification_client` (`core_container.py`), which passes `settings.notification_webhook_url` through DI. Unit tests construct the adapters directly with synthetic URLs (`tests/unit/_core/infrastructure/notification/test_notification_adapters.py`) — that is expected and not a finding
+  - Grep: `exc_info` / `str(exc)` / `repr(exc)` absent from the **send-failure** path — `ErrorNotifier._safe_send` logs `exc_type=type(exc).__name__` only
+  - Not a finding: `_dispatch_error_notification` in `exception_handlers.py` logs with `exc_info=True`. That path wraps only the synchronous container lookup and `asyncio.create_task` call, so the exceptions it catches never carry the webhook URL — the network send fails inside the task and is handled by `_safe_send`
+  - Reason: a webhook URL is a bearer credential — possession alone authorizes posting to the channel. `aiohttp`'s `ClientResponseError` message embeds the request URL, so `exc_info=True` on a failed send writes the credential into the log stream (the leak fixed during PR #304 review). Section 5's secret-management greps key off `(SECRET|PASSWORD|TOKEN|AUTH|KEY)` and do not match `*_WEBHOOK_URL`
+
+### Committed Artefacts
+- [ ] [When applicable][MEDIUM] No working webhook URL is committed to env templates, compose files, or operations docs
+  - Detection condition: Same as above
+  - Grep: `(?:SLACK|DISCORD)_WEBHOOK_URL\s*[=:]\s*["']?https?://` in `_env/*.example`, `docker-compose*.yml`, and `docs/operations/`
+  - Both separators are required: env templates use `KEY=value`, while every compose file in this repo declares environment as a YAML map (`KEY: value`), so an `=`-only pattern silently misses a webhook URL committed into Compose
+  - Committed values must be obvious non-deployable placeholders (a truncated path such as `https://hooks.slack.com/services/...`, or `REPLACE_ME`), and the surrounding comment must state that real values are secrets — the same standard section 5 applies to secret-bearing env templates
+  - Reason: section 5's secret-bearing greps match `(SECRET|PASSWORD|TOKEN|AUTH|KEY)`, so a committed `SLACK_WEBHOOK_URL` / `DISCORD_WEBHOOK_URL` is invisible to them. Unlike an API key, a webhook URL carries no separate identifier to revoke against — leaking it means rotating the webhook itself
+
+### Notification Message Content
+- [ ] [When applicable][MEDIUM] The notification payload carries no more than the exception text — no request body, headers, or auth context
+  - Detection condition: Same as above
+  - Grep: `_dispatch_error_notification\(` call sites in `src/_core/exceptions/exception_handlers.py` -> inspect every `message=` argument. The three current call sites pass `str(exc)` (`custom_exception_handler`), `str(mapped)` (mapped provider errors), and `f"{type(exc).__name__}: {exc}"` (`generic_exception_handler`)
+  - Verify no call site widens that: `exc.details`, `request.body()`, `request.headers`, path/query parameters, or the authenticated principal must not reach `message=`
+  - Verify `ErrorNotifier.maybe_dispatch` still receives `message` as an already-rendered string and does not re-read the request
+  - Reason: the payload crosses the trust boundary to a third-party chat service whose audience and retention differ from the log aggregator. This item is the **regression guard** on payload width, which is what a reviewer can actually decide
+  - Accepted design property (not a per-review finding): the exception text itself is un-redacted, so an unhandled driver exception (e.g. SQLAlchemy `IntegrityError`) renders the failing statement and its bound parameters — a duplicate-email insert can carry that email to the channel. Treat this as a deployment decision to disclose to operators (tracked in #307), not as an `OPEN` finding on every audit. Raise it to `OPEN` only if a change *widens* the payload or the caveat stops being disclosed
+
+### Configuration Validation
+- [ ] [When applicable][MEDIUM] Notification provider configuration is validated as a complete group at startup
+  - Detection condition: Same as above
+  - Grep: `_validate_environment_safety` in `config.py` -> `notification_provider` checked against `KNOWN_NOTIFICATION_PROVIDERS`, and `slack` / `discord` each reject a missing matching `*_WEBHOOK_URL`
+  - Not a finding: an unset `NOTIFICATION_PROVIDER` is a designed fallback, not a misconfiguration — `_notification_selector` resolves to `NoopNotificationClient` when `settings.notification_webhook_url` is `None` (ADR 042 Protocol + Selector pattern), which is what keeps the zero-config quickstart booting
+  - Reason: an unknown provider, or a provider missing its URL, would otherwise surface at first-error dispatch — the moment the system is already failing — instead of at boot

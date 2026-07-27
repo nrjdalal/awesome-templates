@@ -18,7 +18,7 @@ Target: $ARGUMENTS (domain name, file path, or "all")
 
 ## Procedure Overview
 1. Resolve the audit scope and run the feature-detection / reference-freshness preflight (Phase 0)
-2. Audit the target against the 12 security checklist categories (Phase 1)
+2. Audit the target against the 13 security checklist categories (Phase 1)
 3. Determine stale-reference drift, other `Drift Candidates`, and whether `Sync Required` is `true` or `false` (Phase 2)
 4. Report using the protocol output contract — `Findings` (open) + `Coverage` (OK/SKIP) + `Verdict: N/A (audit-only scope)` (Phase 3)
 

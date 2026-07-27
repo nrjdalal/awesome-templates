@@ -16,7 +16,7 @@ metadata:
 1. Read `AGENTS.md` and `docs/ai/shared/skills/security-review.md` for the full procedure.
 2. Read `docs/ai/shared/security-checklist.md` and `docs/ai/shared/project-dna.md` as the shared security rule sources.
 3. Resolve the audit scope and run the feature-detection / reference-freshness preflight (Phase 0).
-4. Audit the target against the 12 security checklist categories using the shared applicability rules (Phase 1).
+4. Audit the target against the 13 security checklist categories using the shared applicability rules (Phase 1).
 5. Determine stale-reference drift, other `Drift Candidates`, and whether `Sync Required` is `true` or `false` (Phase 2).
 6. Report using the protocol output contract: `Scope`, `Effect Answer`, `Sources Loaded`, `Findings` (open only), `Coverage` (OK/SKIP), `Drift Candidates`, `Verdict: N/A (audit-only scope)`, `Next Actions`, `Completion State`, `Sync Required` (Phase 3). `Effect Answer` is mandatory — see `docs/ai/shared/review-protocol.md` §3 for the contract and Guard H context.
 

@@ -86,7 +86,7 @@
 | Test generation | `/test-domain` | `{domain} generate` | baseline + conditional test files (see `docs/ai/shared/test-files.md`) |
 | Test execution | `/test-domain` | `{domain} run` | unit + integration + e2e |
 | Architecture verification | `/review-architecture` | `{domain}` or `all` | 10 categories, severity-tagged architecture audit |
-| Security audit | `/security-review` | `{domain}`, `{file}`, or `all` | 12 categories, feature-freshness preflight, stale-drift detection |
+| Security audit | `/security-review` | `{domain}`, `{file}`, or `all` | 13 categories, feature-freshness preflight, stale-drift detection |
 | Guideline sync | `/sync-guidelines` | (none) | Close the quality gate after design changes or review drift |
 | Approved plan execution | `/execute-plan` / `$execute-plan` | `{Execution Packet or plan ref}` | Native execution workflow for complex, architecture-changing, governor-changing, or multi-task plans |
 | Bug fix | `/fix-bug` | `"{description}"` | Reproduce -> Trace -> Fix -> Verify |

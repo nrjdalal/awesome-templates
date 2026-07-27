@@ -233,7 +233,7 @@ rather than primary entry points (`Overlay`).
 
 ### `security-checklist.md`
 
-- **Current role**: 369-line OWASP-aligned security review reference. Surface for `/security-review`.
+- **Current role**: 446-line OWASP-aligned security review reference (13 categories; §13 Error Notification Security added by #305). Surface for `/security-review`.
 - **Why it exists**: Project-specific security stance (auth, OWASP Top 10, key-rotation rules).
 - **Replacement feasibility**: None.
 - **Final location**: unchanged.

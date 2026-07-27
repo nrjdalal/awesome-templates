@@ -37,7 +37,7 @@ This audit emits the shared [Review Protocol §3 output contract](../review-prot
 `Scope`, `Effect Answer`, `Sources Loaded`, `Findings` (OPEN only), `Coverage` (OK/SKIP),
 `Drift Candidates`, `Verdict`, `Next Actions`, `Completion State`, `Sync Required`.
 
-- This skill applies the **`SEC` dimension** ([Review Protocol §1](../review-protocol.md#1-review-dimensions-concern-based-stable-ids)) in depth via the 12-category checklist below; every `SEC` finding is `rule-source`-based and cites its checklist category ([Finding Basis §2](../review-protocol.md#2-finding-basis-anti-hallucination-rule)).
+- This skill applies the **`SEC` dimension** ([Review Protocol §1](../review-protocol.md#1-review-dimensions-concern-based-stable-ids)) in depth via the 13-category checklist below; every `SEC` finding is `rule-source`-based and cites its checklist category ([Finding Basis §2](../review-protocol.md#2-finding-basis-anti-hallucination-rule)).
 - `Verdict` is **`N/A (audit-only scope)`** — a security audit, not a behavior PASS/FAIL ([Review Protocol §4](../review-protocol.md#4-intent--pass-state)).
 - `Effect Answer` is required (Guard H); security questions are almost always effect-type, so "I ran the checklist" is a process answer, not an effect answer. Write `Effect Answer: N/A — process question` only for checklist-only process queries.
 
@@ -54,7 +54,7 @@ review state `OPEN` / `OK` / `SKIP`; severity `BLOCKING` / `HIGH` / `MEDIUM` / `
 
 ## Category Coverage
 
-Inspect the 12 security checklist categories defined in
+Inspect the 13 security checklist categories defined in
 `docs/ai/shared/security-checklist.md`.
 
 1. Injection Prevention
@@ -69,6 +69,7 @@ Inspect the 12 security checklist categories defined in
 10. S3 Vectors Security
 11. Embedding API Security
 12. LLM API Security
+13. Error Notification Security (Slack/Discord webhooks)
 
 ## Phase 0: Feature Detection and Reference Freshness Preflight
 
@@ -94,7 +95,7 @@ Before the main audit, compare shared references against live code.
 Live code is authoritative. `project-dna` is a cached shared reference, not the
 final source of truth.
 
-## Phase 1: Run the 12-Category Audit
+## Phase 1: Run the 13-Category Audit
 
 Each checklist item is either `Always` or `When applicable`.
 

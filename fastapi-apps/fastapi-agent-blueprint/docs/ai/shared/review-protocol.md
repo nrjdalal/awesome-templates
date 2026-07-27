@@ -35,7 +35,7 @@ reviewing against?" — they replace the old file-location categories (`domain/`
 | `STAB` | Stability | Error handling, boundary/empty/None cases, exception translation, concurrency, resource cleanup, timeouts. | evidence (diff / runtime) |
 | `CONTRACT` | External contract | API request/response shapes, OpenAPI, status codes, event/task payloads, DB schema/migration compatibility. | evidence (contract / diff) |
 | `ARCH` | Architecture compliance | Layering, conversion patterns, DTO/VO/Model roles, DI, bootstrap, naming. | [`architecture-review-checklist.md`](architecture-review-checklist.md) (10 categories) |
-| `SEC` | Security | AuthN/Z, secrets, input validation, sensitive-data exposure, logging, storage, worker, AI provider. | [`security-checklist.md`](security-checklist.md) (12 categories) |
+| `SEC` | Security | AuthN/Z, secrets, input validation, sensitive-data exposure, logging, storage, worker, AI provider, outbound notification. | [`security-checklist.md`](security-checklist.md) (13 categories) |
 | `GOV` | Governance / process | Tier-1 language policy, governor-path drift, edits to shared rule sources, review-process rules. | [`AGENTS.md`](../../../AGENTS.md) + [`governor-paths.md`](governor-paths.md) |
 
 - `ARCH`, `SEC`, and `GOV` are **rule-grounded**: they exist only to apply a shared rule source
