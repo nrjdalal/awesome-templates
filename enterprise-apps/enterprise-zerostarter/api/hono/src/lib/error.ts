@@ -10,6 +10,7 @@ import { z } from "zod"
 export const ERROR_CODES = [
   "AGENT_LOGIN_FAILED",
   "BAD_REQUEST",
+  "CONFLICT",
   "ERROR",
   "FORBIDDEN",
   "INTERNAL_SERVER_ERROR",
@@ -85,10 +86,10 @@ export const errorEnvelope = z.object({
 const validationErrorEnvelope = z.object({
   error: z.object({
     code: z.enum(ERROR_CODES),
-    message: z.string(),
     issues: z
-      .array(z.object({ path: z.array(z.union([z.string(), z.number()])), message: z.string() }))
+      .array(z.object({ message: z.string(), path: z.array(z.union([z.string(), z.number()])) }))
       .optional(),
+    message: z.string(),
   }),
 })
 
@@ -113,12 +114,16 @@ export const globalErrorResponses: ResponsesWithResolver = {
 export const authErrorResponses: ResponsesWithResolver = {
   401: errorResponse("UNAUTHORIZED", "Unauthorized"),
 }
-
-// Add to routes behind adminMiddleware, the only thing that returns 403.
+export const conflictErrorResponses: ResponsesWithResolver = {
+  409: errorResponse("CONFLICT", "The value already exists"),
+}
+// Add to routes behind the console gate, the only thing that returns 403.
 export const forbiddenErrorResponses: ResponsesWithResolver = {
   403: errorResponse("FORBIDDEN", "Forbidden"),
 }
-
+export const notFoundErrorResponses: ResponsesWithResolver = {
+  404: errorResponse("NOT_FOUND", "Not found"),
+}
 // Add to routes with a request validator, the only thing that returns 400; the 400 also carries the per-field issues.
 export const validationErrorResponses: ResponsesWithResolver = {
   400: {
@@ -129,8 +134,8 @@ export const validationErrorResponses: ResponsesWithResolver = {
         example: {
           error: {
             code: "VALIDATION_ERROR",
+            issues: [{ message: "Invalid email address", path: ["email"] }],
             message: "Invalid request payload",
-            issues: [{ path: ["email"], message: "Invalid email address" }],
           },
         },
       },
