@@ -32,6 +32,8 @@ Quick index for the `docs/` folder.
 
 | Page | What it covers |
 |---|---|
+| [operations/rdb-migrations.md](operations/rdb-migrations.md) | Alembic rollout, rollback, and the zero-downtime expand-contract playbook |
+| [operations/error-notifications.md](operations/error-notifications.md) | Slack / Discord error alerts — setup, coverage limits, cooldown and payload caveats |
 | [operations/observability-otel.md](operations/observability-otel.md) | OpenTelemetry — Jaeger / Tempo / Phoenix setup |
 | [operations/observability-langfuse.md](operations/observability-langfuse.md) | Langfuse opt-in for LLM prompt tracing |
 | [operations/performance-locust.md](operations/performance-locust.md) | Locust performance-test harness — `make perf-test`, scenarios, reading output |

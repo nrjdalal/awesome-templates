@@ -1,6 +1,6 @@
 # Suggested Commands
 
-> Last synced: 2026-07-23 via #17/PR #304 (added the Error Notification section — `NOTIFICATION_*` env vars for Slack/Discord webhook alerts fired from the exception handlers). Prior: 2026-07-20 via ADR 056 (added `tools/check_migration_safety.py` — advisory unsafe-DDL scan for zero-downtime migrations — to Architecture Verification + DB Migrations). Prior: 2026-07-20 via #293 (added `make perf-test` — Locust performance-test harness — to the Test section).
+> Last synced: 2026-07-27 via #307/PR #311 (Error Notification section — runbook pointer, server-only dispatch scope, first-dispatch disabled warning). Prior: 2026-07-23 via #17/PR #304 (added the Error Notification section — `NOTIFICATION_*` env vars for Slack/Discord webhook alerts fired from the exception handlers). Prior: 2026-07-20 via ADR 056 (added `tools/check_migration_safety.py` — advisory unsafe-DDL scan for zero-downtime migrations — to Architecture Verification + DB Migrations). Prior: 2026-07-20 via #293 (added `make perf-test` — Locust performance-test harness — to the Test section).
 > Purpose: Quick reference for Claude Code when executing shell commands.
 > Also referenced when running Skills.
 > Default Flow context: see [`AGENTS.md` § Default Coding Flow](../../AGENTS.md#default-coding-flow). The commands below are consulted by the `implement` and `verify` steps; this file is **not** a primary entry point in the Default Flow.
@@ -162,8 +162,10 @@ NOTIFICATION_PROVIDER=discord DISCORD_WEBHOOK_URL=https://discord.com/api/webhoo
 ```
 
 - Tuning: `NOTIFICATION_SEVERITY_THRESHOLD` (default 500 — 5xx only), `NOTIFICATION_COOLDOWN_SECONDS` (default 60; per-process, per-error_code)
-- Unset provider → `NoopNotificationClient` (one-time `notification_client_disabled` warning; no alerts delivered)
+- Unset provider → `NoopNotificationClient` (one-time `notification_client_disabled` warning, logged at the first dispatch attempt rather than at boot; no alerts delivered)
 - Webhook URLs are credentials — keep them in gitignored env files only
+- Server-only: worker task failures and admin exceptions never alert (#310). `validation_exception_handler` (422) and `http_exception_handler` do not dispatch
+- Operator runbook (setup, coverage limits, cooldown/payload caveats, local-sink verification): [`docs/operations/error-notifications.md`](../../docs/operations/error-notifications.md)
 
 ## Admin Dashboard
 ```bash

@@ -1,6 +1,6 @@
 # Architecture Conventions
 
-> Last synced: 2026-07-23 via #17/PR #304 (Error Notification webhook infra — new optional-infra section added below; existing data-flow / object-role / generic-signature patterns unchanged). Prior: 2026-06-01 via #218 (admin-identity realm separation reviewed; the new `admin_identity` domain reuses the existing data flow / object roles / generic-signature patterns — BaseService/BaseRepository generics and conversion patterns are unchanged. New realm invariants live in project-dna §17.)
+> Last synced: 2026-07-27 via #307/PR #311 (Error Notification runbook — added the server-only dispatch scope to the optional-infra section below; data-flow / object-role / generic-signature patterns unchanged). Prior: 2026-07-23 via #17/PR #304 (Error Notification webhook infra — new optional-infra section added below; existing data-flow / object-role / generic-signature patterns unchanged). Prior: 2026-06-01 via #218 (admin-identity realm separation reviewed; the new `admin_identity` domain reuses the existing data flow / object roles / generic-signature patterns — BaseService/BaseRepository generics and conversion patterns are unchanged. New realm invariants live in project-dna §17.)
 > For Absolute Prohibitions, Conversion Patterns, Write DTO criteria, Responsibility Matrix, Error Translation, Optional AI Infra (Protocol + Selector Pattern), Admin Service Contract, and **Default Coding Flow** (process layer, ADR 045), refer to AGENTS.md.
 > This file only contains **structural context** that supplements AGENTS.md for Claude.
 
@@ -74,6 +74,7 @@ Key differences from RDB/DynamoDB:
 - `NOTIFICATION_PROVIDER` env var: Slack/Discord via `providers.Selector` in CoreContainer; disabled → `NoopNotificationClient` (ADR 042). `BaseNotificationProtocol` lives in `src/_core/domain/protocols/`
 - `ErrorNotifier` (Singleton) gates by `NOTIFICATION_SEVERITY_THRESHOLD` (default 500) + per-process, per-error_code `NOTIFICATION_COOLDOWN_SECONDS`; dispatch is fire-and-forget (`asyncio.create_task`, never awaited in the request path; send failures logged `exc_type`-only so the secret webhook URL never reaches logs)
 - Hooked from `custom_exception_handler` / `generic_exception_handler` through `app.state.container` at runtime — the exceptions module never imports notification infrastructure, and dispatch never raises into the response path
+- **Server-only dispatch**: all three `maybe_dispatch` call sites live in `_core/exceptions/exception_handlers.py`. `validation_exception_handler` (422) and `http_exception_handler` do **not** dispatch, and neither the Taskiq worker (logging + retry middleware only) nor the NiceGUI admin exception hook (log-only) alerts. Extending coverage is open in #310; operator-facing writeup in [`docs/operations/error-notifications.md`](../../docs/operations/error-notifications.md)
 - Adapters POST via the shared `HttpClient` and never JSON-parse webhook responses (Slack success body is plain-text `ok`; Discord returns `204 No Content`)
 
 ## Object Roles

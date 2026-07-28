@@ -1,6 +1,6 @@
 # Project Status
 
-> Last synced: 2026-07-23 via /sync-guidelines after #17 (PR #304 — Error Notification webhooks, external contributor; first post-v0.9.0 feature. Review-detected drift closed: AGENTS.md Optional Infrastructure Toggles row, project-dna §8 row, `.claude/rules` files, `_env/*.example` NOTIFICATION_* blocks, `docs/reference.md` checkbox). Also reflects **v0.9.0 released** (2026-07-21 — Antigravity 2.0 harness, governance frameworks ADR 054/055/056, `web_search_chatbot` example, Locust perf harness; see CHANGELOG); the 15 pre-v0.9.0 rows are archived per the PR-B.1 pattern. Prior: 2026-07-20 via ADR 056 (Zero-Downtime Migration Safety). Prior: 2026-07-20 via #292 (Summary Finding Ledger).
+> Last synced: 2026-07-27 via /sync-guidelines after #307 (PR #311 — Error Notification operator runbook). Review-detected drift closed: `security-checklist.md` §13 cited an unreachable exposure example (duplicate-email insert is wrapped to a curated 400 by `Database.session()`, below the default threshold), `_env/local.env.example` called the disabled warning a "startup warning" (it fires at first dispatch), and project-dna §8 did not record that dispatch is server-only. New follow-up #310 (worker/admin alert coverage undecided). Prior: 2026-07-23 via /sync-guidelines after #17 (PR #304 — Error Notification webhooks, external contributor; first post-v0.9.0 feature. Review-detected drift closed: AGENTS.md Optional Infrastructure Toggles row, project-dna §8 row, `.claude/rules` files, `_env/*.example` NOTIFICATION_* blocks, `docs/reference.md` checkbox). Also reflects **v0.9.0 released** (2026-07-21 — Antigravity 2.0 harness, governance frameworks ADR 054/055/056, `web_search_chatbot` example, Locust perf harness; see CHANGELOG); the 15 pre-v0.9.0 rows are archived per the PR-B.1 pattern. Prior: 2026-07-20 via ADR 056 (Zero-Downtime Migration Safety). Prior: 2026-07-20 via #292 (Summary Finding Ledger).
 
 ## Current Version Context
 - Latest release: v0.9.0 (2026-07-21)
@@ -25,6 +25,7 @@
 - Server-route RBAC for non-user `/v1/*` routes (admin-realm `require_admin` gates `/v1/user` reads + CUD via #199, re-pointed to the admin token realm in #218; admin-realm gating for other domains' `/v1/*` routes is still a follow-up)
 - External admin IdP / SSO / MFA / SCIM and a physically separate admin database (documented extension point in ADR 049 / project-dna §17 IC-218-7, not implemented)
 - Notification channel routing by severity — critical → #alerts, warnings → #monitoring (#286, follow-up split from #17)
+- Error-notification coverage for the worker and admin surfaces — dispatch is server-only (all three `maybe_dispatch` call sites are in `_core/exceptions/exception_handlers.py`), so Taskiq task failures and NiceGUI admin exceptions never alert; whether to extend coverage or keep it HTTP-only by design is undecided (#310, discovered during PR #311 review)
 - File Upload (UploadFile)
 - Rate Limiting (slowapi)
 - WebSocket
