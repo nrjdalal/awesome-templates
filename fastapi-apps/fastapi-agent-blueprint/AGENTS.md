@@ -268,7 +268,14 @@ Every non-DB infra in `CoreContainer` is optional — toggle via env vars, no co
 | Embedding | `EMBEDDING_PROVIDER` + `EMBEDDING_MODEL` both set | `embedding_client()` returns `StubEmbedder` (keyword bag-of-words) |
 | LLM | `LLM_PROVIDER` + `LLM_MODEL` both set | `llm_model()` returns PydanticAI `TestModel` via `build_stub_llm_model` when `pydantic-ai` is installed, `None` otherwise |
 | Broker | `BROKER_TYPE=sqs` / `rabbitmq` / `inmemory` | Defaults to `inmemory` — no external broker required |
-| Error Notification (Slack/Discord) | `NOTIFICATION_PROVIDER=slack` / `discord` + the matching `SLACK_WEBHOOK_URL` / `DISCORD_WEBHOOK_URL` | `notification_client()` returns `NoopNotificationClient` (one-time `notification_client_disabled` warning; `error_notifier()` still runs and suppresses sends) |
+| Error Notification (Slack/Discord) | `NOTIFICATION_PROVIDER=slack` / `discord` + the matching `SLACK_WEBHOOK_URL` / `DISCORD_WEBHOOK_URL` | `notification_client()` returns `NoopNotificationClient` (one-time `notification_client_disabled` warning, emitted at the first dispatch attempt rather than at boot because the Singleton resolves lazily; `error_notifier()` still runs and suppresses sends) |
+
+**Error-notification dispatch surface (#17, #310).** Two surfaces dispatch, and the boundary is a decision rather than an accident:
+
+- **HTTP** — `custom_exception_handler` and `generic_exception_handler` (`src/_core/exceptions/exception_handlers.py`). `validation_exception_handler` (422) and `http_exception_handler` (including a hand-raised `HTTPException(500)`) deliberately do **not**; negative tests in `tests/unit/_core/exceptions/test_exception_handlers_notification.py` pin that.
+- **Taskiq worker** — `TaskFailureNotificationMiddleware` (`src/_core/infrastructure/notification/taskiq_middleware.py`). A task has no HTTP status, so severity is synthesised (`BaseCustomException` keeps its own `status_code`, everything else is 500) and the cooldown key is scoped `{task_name}:{error_code}` so one noisy task cannot mute the rest. Alerts fire once per incident, on the terminal failure — permanent errors immediately, retryable ones after the last attempt.
+
+**Non-goal: operator-facing admin failures do not alert.** A NiceGUI admin exception reaching `AdminErrorHandler` already surfaces to the operator as a toast or the `/admin/error` page, so a webhook would page someone about a failure a human is looking at. `handle_uncaught_admin_exception` stays log-only. This is scoped deliberately: the same handler also fires *outside* a client/slot context (post-success `refresh`, timers), where nothing reaches the UI — those are the log aggregator's job, not a second alerting path. Revisit only with evidence that unattended admin failures are being missed in practice.
 
 **Consumer rule:** data-store clients (`None`-returning) require an explicit guard at the call site when your domain needs them; stub-returning infras just work (but signal "stub" via startup warning logs). Use `providers.Selector` in your domain container to branch between real and stub paths if needed — `src/docs/infrastructure/di/docs_container.py` is the reference pattern.
 

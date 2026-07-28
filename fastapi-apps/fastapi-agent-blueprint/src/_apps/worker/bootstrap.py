@@ -28,6 +28,9 @@ from src._core.infrastructure.logging.taskiq_middleware import (
     StructlogContextMiddleware,
     TaskErrorLoggingMiddleware,
 )
+from src._core.infrastructure.notification.taskiq_middleware import (
+    TaskFailureNotificationMiddleware,
+)
 
 _logger = structlog.stdlib.get_logger("src._apps.worker.bootstrap")
 
@@ -53,11 +56,31 @@ def _configure_logging_pipeline() -> None:
 
 
 def _install_middleware(app: AsyncBroker) -> None:
-    """Bind task context, log failures, and retry transient task errors."""
+    """Bind task context, log failures, retry transient errors, and alert (#310).
+
+    Registration order is a behavioural contract, not a style choice. Taskiq
+    runs ``on_error`` over ``reversed(broker.middlewares)``, and
+    ``SmartRetryMiddleware`` re-kicks through an ``AsyncKicker`` that holds
+    ``message.labels`` **by reference** — so its ``with_labels(_retries=...)``
+    mutates the very dict the notifier reads. Registering
+    ``TaskFailureNotificationMiddleware`` LAST makes its ``on_error`` run
+    FIRST, before ``_retries`` is incremented. Move it any earlier and the
+    final-attempt check silently reads an already-bumped counter, shifting
+    every alert one attempt early. Pinned by
+    ``tests/unit/_core/infrastructure/notification/test_task_failure_notification_middleware.py::TestMiddlewareOrderingContract``.
+
+    The retry middleware is constructed once and shared: the notifier reads its
+    retry defaults so the two cannot disagree about what "final attempt" means.
+    """
+    retry_middleware = PermanentAwareSmartRetryMiddleware()
     app.add_middlewares(
         StructlogContextMiddleware(),
-        PermanentAwareSmartRetryMiddleware(),
+        retry_middleware,
         TaskErrorLoggingMiddleware(),
+        TaskFailureNotificationMiddleware(
+            error_notifier_provider=container.error_notifier,
+            retry_middleware=retry_middleware,
+        ),
     )
 
 

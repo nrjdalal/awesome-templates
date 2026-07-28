@@ -6,6 +6,9 @@ from src._core.infrastructure.logging.taskiq_middleware import (
     StructlogContextMiddleware,
     TaskErrorLoggingMiddleware,
 )
+from src._core.infrastructure.notification.taskiq_middleware import (
+    TaskFailureNotificationMiddleware,
+)
 
 
 def _middleware_index(
@@ -30,4 +33,12 @@ def test_install_middleware_registers_taskiq_error_handling_order() -> None:
         PermanentAwareSmartRetryMiddleware,
     )
     logging_index = _middleware_index(broker.middlewares, TaskErrorLoggingMiddleware)
-    assert structlog_index < retry_index < logging_index
+    notifier_index = _middleware_index(
+        broker.middlewares,
+        TaskFailureNotificationMiddleware,
+    )
+    # The notifier goes LAST so taskiq's reversed() on_error fan-out runs it
+    # FIRST — before the retry middleware increments message.labels["_retries"]
+    # in place. Its final-attempt gating reads that counter, so an earlier
+    # position silently shifts every worker alert one attempt early (#310).
+    assert structlog_index < retry_index < logging_index < notifier_index

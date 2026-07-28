@@ -292,7 +292,7 @@ for the live view.
 ### Phase 2 — Production readiness
 
 - [x] Structured logging — structlog ([#9](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/9))
-- [x] Error notifications ([#17](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/17)) — [runbook](operations/error-notifications.md)
+- [x] Error notifications ([#17](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/17), worker coverage [#310](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/310)) — [runbook](operations/error-notifications.md)
 - [ ] CRUD data validation ([#10](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/10))
 
 ### Phase 3 — Ecosystem

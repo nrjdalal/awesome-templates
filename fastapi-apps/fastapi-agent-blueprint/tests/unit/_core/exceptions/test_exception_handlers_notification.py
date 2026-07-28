@@ -9,10 +9,16 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock
 
+import pytest
+from fastapi.exceptions import RequestValidationError
+from starlette.exceptions import HTTPException as StarletteHTTPException
+
 from src._core.exceptions.base_exception import BaseCustomException
 from src._core.exceptions.exception_handlers import (
     custom_exception_handler,
     generic_exception_handler,
+    http_exception_handler,
+    validation_exception_handler,
 )
 
 
@@ -85,3 +91,46 @@ class TestGenericExceptionHandlerNotification:
             exc=ValueError("boom"),
         )
         assert response.status_code == 500
+
+
+class TestNonDispatchingHandlers:
+    """Pin the handlers that deliberately never alert (#310, closing #311 R4).
+
+    ``docs/operations/error-notifications.md`` § "What does NOT get alerted"
+    promises operators that request-validation failures and ``HTTPException``
+    are silent regardless of threshold. Nothing enforced that promise, so
+    adding a ``_dispatch_error_notification`` call to either handler would have
+    turned a documented guarantee into a lie with no test failing. These are
+    negative tests: they assert *absence* of dispatch.
+    """
+
+    async def test_validation_errors_never_dispatch(self):
+        error_notifier = FakeErrorNotifier()
+        request = _make_request(error_notifier)
+        exc = RequestValidationError(
+            [
+                {
+                    "loc": ("body", "email"),
+                    "msg": "field required",
+                    "type": "missing",
+                }
+            ]
+        )
+
+        response = await validation_exception_handler(request=request, exc=exc)
+
+        assert response.status_code == 422
+        assert error_notifier.calls == []
+
+    @pytest.mark.parametrize("status_code", [404, 500, 503])
+    async def test_http_exception_never_dispatches_at_any_status(self, status_code):
+        """Including 500 — a ``raise HTTPException(500)`` is silent by design."""
+        error_notifier = FakeErrorNotifier()
+        request = _make_request(error_notifier)
+
+        response = await http_exception_handler(
+            request=request, exc=StarletteHTTPException(status_code=status_code)
+        )
+
+        assert response.status_code == status_code
+        assert error_notifier.calls == []

@@ -2,7 +2,9 @@
 
 This document covers how to enable and operate the error-notification webhook
 feature ([#17](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/17)):
-Slack or Discord alerts fired from the FastAPI global exception handlers.
+Slack or Discord alerts fired from the FastAPI global exception handlers and
+from Taskiq worker task failures
+([#310](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/310)).
 
 Like every non-DB infrastructure in this blueprint it is **optional** — unset
 means `NoopNotificationClient` and the zero-config quickstart boots unchanged
@@ -15,16 +17,19 @@ means `NoopNotificationClient` and the zero-config quickstart boots unchanged
 
 ## What gets alerted
 
-Three call sites dispatch, all in
-[`src/_core/exceptions/exception_handlers.py`](../../src/_core/exceptions/exception_handlers.py):
+Four call sites dispatch. Three are HTTP, in
+[`src/_core/exceptions/exception_handlers.py`](../../src/_core/exceptions/exception_handlers.py);
+the fourth is the worker middleware covered in
+[Worker task failures](#worker-task-failures):
 
 | Source | Status used for gating | Message sent to the channel |
 |---|---|---|
 | `custom_exception_handler` — any `BaseCustomException` | `exc.status_code` | `str(exc)` → `"{status} [{ERROR_CODE}]: {message}"` |
 | `generic_exception_handler` — mapped LLM/provider error | the mapped status | same `"{status} [{ERROR_CODE}]: {message}"` format |
 | `generic_exception_handler` — unhandled exception | hard-coded `500` | `f"{type(exc).__name__}: {exc}"` |
+| `TaskFailureNotificationMiddleware` — terminal task failure | `exc.status_code` for `BaseCustomException`, otherwise `500` | `f"Task '{task_name}' failed: {type(exc).__name__}: {exc}"` |
 
-A delivered alert therefore looks like this in the channel:
+A delivered HTTP alert therefore looks like this in the channel:
 
 ```text
 500 [DB_INTERNAL_ERROR]: Internal database error
@@ -33,21 +38,70 @@ A delivered alert therefore looks like this in the channel:
 ## What does NOT get alerted
 
 This is the part that surprises operators. Coverage is **narrower than "all
-errors"** — it is specifically the two dispatching FastAPI handlers above.
+errors"** — it is the two dispatching FastAPI handlers above plus the worker
+middleware described in [Worker task failures](#worker-task-failures).
 
 | Surface | Why no alert |
 |---|---|
 | Request validation failures (422) | `validation_exception_handler` never dispatches — regardless of threshold |
 | `raise HTTPException(...)`, incl. `status_code=500` | `http_exception_handler` never dispatches — a 500 raised this way is silent |
-| **Taskiq worker task failures** | the worker installs logging + retry middleware only ([`src/_apps/worker/bootstrap.py`](../../src/_apps/worker/bootstrap.py)) — no notifier is wired |
-| **NiceGUI admin page / callback exceptions** | `handle_uncaught_admin_exception` is log-only by design ([`src/_core/infrastructure/admin/error_handler.py`](../../src/_core/infrastructure/admin/error_handler.py)) |
+| **NiceGUI admin page / callback exceptions** | `handle_uncaught_admin_exception` is log-only **by decision**, not by omission — see below |
 | Anything below `NOTIFICATION_SEVERITY_THRESHOLD` | gated in `ErrorNotifier._should_notify` |
 
-If background job failures matter to you, alerting on them is a **separate
-integration** — the exception handlers are HTTP-request-scoped and never run in
-the worker process. Treat the log aggregator as the primary signal for worker
-and admin failures. Whether the worker should dispatch too is open in
-[#310](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/310).
+The first two are pinned by negative tests
+(`tests/unit/_core/exceptions/test_exception_handlers_notification.py`), so they
+are guarantees rather than current behaviour.
+
+**Why admin exceptions stay silent.** An admin error that reaches
+`AdminErrorHandler` already surfaces to the operator — a toast, or a redirect to
+`/admin/error` with the correlation id. Alerting would page someone about a
+failure a human is actively looking at. The same handler does also fire outside
+a client/slot context (a post-success `refresh`, a timer), where nothing reaches
+the UI; those are left to the log aggregator deliberately rather than justifying
+a second alerting path. Decided in
+[#310](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/310) and
+recorded in `AGENTS.md` § Optional Infrastructure Toggles.
+
+## Worker task failures
+
+Taskiq task failures **do** alert, through
+`TaskFailureNotificationMiddleware`
+([`src/_core/infrastructure/notification/taskiq_middleware.py`](../../src/_core/infrastructure/notification/taskiq_middleware.py)),
+registered in [`src/_apps/worker/bootstrap.py`](../../src/_apps/worker/bootstrap.py).
+No extra configuration — the same `NOTIFICATION_*` variables apply.
+
+A task has no HTTP request and no status code, so three things differ from the
+HTTP path:
+
+| | Behaviour |
+|---|---|
+| **Severity** | Synthesised. A `BaseCustomException` keeps its own `status_code`; anything else counts as **500**. So `NOTIFICATION_SEVERITY_THRESHOLD` still applies — raising it above 500 silences task failures too |
+| **Cooldown key** | `{task_name}:{error_code}`, not the bare `error_code` used on the HTTP path. Without the task prefix one repeatedly-failing task would suppress every other task's alert for the whole window |
+| **Timing** | One alert per incident, on the **terminal** failure. Permanent errors (`BaseCustomException`, `ValueError`, `TypeError`, Pydantic `ValidationError`) are never retried and alert immediately; retryable ones alert only after the final attempt fails |
+
+The message format is:
+
+```text
+Task 'src.docs.tasks.reindex' failed: ConnectionResetError: [Errno 54] Connection reset by peer
+```
+
+Two consequences worth planning for:
+
+- **A transient failure is reported late.** With the default 3 attempts and
+  exponential backoff, the alert lands after the retries are exhausted — tens of
+  seconds, not instantly. That is the trade for not alerting three times per
+  incident. The `taskiq_task_failed` log line still fires on *every* attempt, so
+  the log aggregator remains the low-latency signal.
+- **The worker is a separate process**, so it keeps its own cooldown windows,
+  independent of the server's — see
+  [the per-process caveat](#cooldown--and-its-per-process-caveat).
+
+> **Payload caution.** The alert embeds `str(exception)`, and a task's exception
+> text can carry its arguments — a task taking an email or an account id may put
+> that value into a third-party chat channel. This is the same un-redacted-text
+> property the HTTP path has, but task payloads are internal data that never
+> passed through a Response-level `exclude`, so review what your tasks raise
+> before enabling this in production.
 
 ## Setup
 
@@ -127,6 +181,9 @@ which makes it per-process, not per-deployment:
 4 uvicorn workers x 3 replicas = 12 independent cooldown windows
 → up to 12 alerts per window for the same error_code, not 1
 ```
+
+Count your Taskiq worker processes too — each one holds its own `ErrorNotifier`
+and its own window, separate from every server process.
 
 Size the cooldown against your process count, not against your alert tolerance.
 There is no shared store (Redis, DB) behind this — cross-process deduplication
@@ -287,7 +344,9 @@ value in step 2 and watch the channel. Revert the threshold to `500` afterwards.
 | No alerts, no notification logs at all | errors are below the threshold, or the failing surface does not dispatch | check [What does NOT get alerted](#what-does-not-get-alerted) |
 | A `raise HTTPException(status_code=500)` produces no alert | `http_exception_handler` does not dispatch | raise a `BaseCustomException` subclass instead |
 | `error_notification_send_failed` with `exc_type` only | the webhook POST failed — status and URL are deliberately not logged | `curl` the webhook URL directly to see the real response |
-| Worker task failed, no alert | the worker never dispatches | expected — alert from the log aggregator |
+| Worker task failed, no alert yet | retryable failures alert only after the final attempt | wait out the retries, or check `taskiq_task_failed` in the log for per-attempt detail |
+| Worker task failed, never any alert | the failure is below the synthetic severity — a `BaseCustomException` with a 4xx `status_code` | lower `NOTIFICATION_SEVERITY_THRESHOLD`, or raise a 5xx-status exception |
+| Admin page error, no alert | admin exceptions are log-only by decision | expected — see [What does NOT get alerted](#what-does-not-get-alerted) |
 | Same error alerted N times within the cooldown | N processes, N cooldown windows | see [the per-process caveat](#cooldown--and-its-per-process-caveat) |
 | Alert delivered but nothing in the logs | a successful send logs nothing by design | confirm in the channel, not the log |
 
@@ -304,7 +363,8 @@ credential into the log stream. Only the exception class name is recorded.
   channel routing by severity (critical → `#alerts`, warnings → `#monitoring`),
   a follow-up
 - [#310](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/310) —
-  whether worker task failures and admin exceptions should alert, a follow-up
+  extended dispatch to worker task failures and recorded operator-facing admin
+  failures as an explicit non-goal
 - [ADR 042](../history/042-optional-infrastructure-di-pattern.md) — the
   Protocol + Selector pattern behind the optional/disabled split
 - `docs/ai/shared/security-checklist.md` §13 — the reviewer-facing counterpart to
