@@ -60,6 +60,26 @@ def _notification_selector() -> str:
     return "enabled" if settings.notification_webhook_url else "disabled"
 
 
+def _notification_critical_selector() -> str:
+    return "enabled" if settings.notification_critical_target else "disabled"
+
+
+def _notification_warning_selector() -> str:
+    return "enabled" if settings.notification_warning_target else "disabled"
+
+
+def _notification_routing_selector() -> str:
+    """#286 severity routing is opt-in: only wire a NotificationRouter into
+    ErrorNotifier when NOTIFICATION_WARNING_THRESHOLD is actually set.
+    Otherwise notification_router stays None and ErrorNotifier's original
+    #17 single-target path (self._client) is the one actually taken —
+    matching the PR's stated "unset, byte-for-byte identical to #17"
+    contract in production, not just in tests that bypass the container."""
+    return (
+        "enabled" if settings.notification_warning_threshold is not None else "disabled"
+    )
+
+
 # ---------------------------------------------------------------------------
 # Lazy factories — imports happen inside so that uninstalling the matching
 # optional extra (aws, pydantic-ai, …) does not break import of this module.
@@ -222,8 +242,29 @@ def _build_noop_notification_client():
     return NoopNotificationClient()
 
 
+def _build_notification_router(
+    critical_client,
+    warning_client,
+    severity_threshold: int,
+    warning_threshold: int | None,
+):
+    from src._core.infrastructure.notification.notification_router import (
+        NotificationRouter,
+    )
+
+    return NotificationRouter(
+        critical_client=critical_client,
+        warning_client=warning_client,
+        severity_threshold=severity_threshold,
+        warning_threshold=warning_threshold,
+    )
+
+
 def _build_error_notifier(
-    notification_client, severity_threshold: int, cooldown_seconds: int
+    notification_client,
+    severity_threshold: int,
+    cooldown_seconds: int,
+    notification_router=None,
 ):
     from src._core.infrastructure.notification.error_notifier import ErrorNotifier
 
@@ -231,6 +272,7 @@ def _build_error_notifier(
         notification_client=notification_client,
         severity_threshold=severity_threshold,
         cooldown_seconds=cooldown_seconds,
+        notification_router=notification_router,
     )
 
 
@@ -398,6 +440,13 @@ class CoreContainer(containers.DeclarativeContainer):
     # client to call, regardless of whether Slack/Discord is configured.
     #########################################################
 
+    # Shared across all three notification Selectors below: NoopNotification
+    # Client logs its "disabled" warning from __init__, so a separate
+    # Singleton per Selector means a separate log line per Selector too.
+    # One shared instance -> one warning, regardless of how many tiers are
+    # wired (#313 review).
+    _noop_notification_client = providers.Singleton(_build_noop_notification_client)
+
     notification_client = providers.Selector(
         _notification_selector,
         enabled=providers.Singleton(
@@ -406,7 +455,52 @@ class CoreContainer(containers.DeclarativeContainer):
             provider=settings.notification_provider,
             webhook_url=settings.notification_webhook_url,
         ),
-        disabled=providers.Singleton(_build_noop_notification_client),
+        disabled=_noop_notification_client,
+    )
+
+    #########################################################
+    # Severity-based channel routing (optional — #286, on top of #17).
+    # Each tier resolves its own target (falling back to the single
+    # notification_client webhook above when no override is set), so an
+    # unmapped deployment behaves exactly like #17.
+    #########################################################
+
+    notification_critical_client = providers.Selector(
+        _notification_critical_selector,
+        enabled=providers.Singleton(
+            _build_notification_client,
+            http_client=http_client,
+            provider=settings.notification_provider,
+            webhook_url=settings.notification_critical_target,
+        ),
+        disabled=_noop_notification_client,
+    )
+
+    notification_warning_client = providers.Selector(
+        _notification_warning_selector,
+        enabled=providers.Singleton(
+            _build_notification_client,
+            http_client=http_client,
+            provider=settings.notification_provider,
+            webhook_url=settings.notification_warning_target,
+        ),
+        disabled=_noop_notification_client,
+    )
+
+    # Only wired when NOTIFICATION_WARNING_THRESHOLD is set (#313 review,
+    # option A) — otherwise notification_router stays None and
+    # error_notifier's `notification_client` (the single-target base
+    # client, unchanged from #17) is the one actually sent through.
+    notification_router = providers.Selector(
+        _notification_routing_selector,
+        enabled=providers.Singleton(
+            _build_notification_router,
+            critical_client=notification_critical_client,
+            warning_client=notification_warning_client,
+            severity_threshold=settings.notification_severity_threshold,
+            warning_threshold=settings.notification_warning_threshold,
+        ),
+        disabled=providers.Object(None),
     )
 
     error_notifier = providers.Singleton(
@@ -414,4 +508,5 @@ class CoreContainer(containers.DeclarativeContainer):
         notification_client=notification_client,
         severity_threshold=settings.notification_severity_threshold,
         cooldown_seconds=settings.notification_cooldown_seconds,
+        notification_router=notification_router,
     )

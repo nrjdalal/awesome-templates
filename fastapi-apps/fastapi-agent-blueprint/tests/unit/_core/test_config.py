@@ -905,3 +905,113 @@ class TestNotificationConfig:
             assert (
                 s.notification_webhook_url == "https://discord.com/api/webhooks/1/token"
             )
+
+
+class TestNotificationRoutingConfig:
+    """#286: severity-based channel routing on top of TestNotificationConfig."""
+
+    def test_no_routing_configured_targets_fall_back_to_single_webhook(self):
+        env = {
+            "ENV": "local",
+            "NOTIFICATION_PROVIDER": "slack",
+            "SLACK_WEBHOOK_URL": "https://hooks.slack.com/services/T/B/X",
+            **_REQUIRED_VARS,
+        }
+        with patch.dict(os.environ, env, clear=True):
+            s = _create_settings()
+            assert s.notification_warning_threshold is None
+            assert (
+                s.notification_critical_target
+                == "https://hooks.slack.com/services/T/B/X"
+            )
+            assert (
+                s.notification_warning_target
+                == "https://hooks.slack.com/services/T/B/X"
+            )
+
+    def test_warning_threshold_equal_to_severity_threshold_rejected(self):
+        env = {
+            "ENV": "local",
+            "NOTIFICATION_PROVIDER": "slack",
+            "SLACK_WEBHOOK_URL": "https://hooks.slack.com/services/T/B/X",
+            "NOTIFICATION_WARNING_THRESHOLD": "500",
+            **_REQUIRED_VARS,
+        }
+        with patch.dict(os.environ, env, clear=True):
+            with pytest.raises(ValidationError, match="NOTIFICATION_WARNING_THRESHOLD"):
+                _create_settings()
+
+    def test_warning_threshold_above_severity_threshold_rejected(self):
+        env = {
+            "ENV": "local",
+            "NOTIFICATION_PROVIDER": "slack",
+            "SLACK_WEBHOOK_URL": "https://hooks.slack.com/services/T/B/X",
+            "NOTIFICATION_WARNING_THRESHOLD": "550",
+            **_REQUIRED_VARS,
+        }
+        with patch.dict(os.environ, env, clear=True):
+            with pytest.raises(ValidationError, match="NOTIFICATION_WARNING_THRESHOLD"):
+                _create_settings()
+
+    def test_warning_threshold_below_severity_threshold_accepted(self):
+        env = {
+            "ENV": "local",
+            "NOTIFICATION_PROVIDER": "slack",
+            "SLACK_WEBHOOK_URL": "https://hooks.slack.com/services/T/B/X",
+            "NOTIFICATION_WARNING_THRESHOLD": "400",
+            **_REQUIRED_VARS,
+        }
+        with patch.dict(os.environ, env, clear=True):
+            s = _create_settings()
+            assert s.notification_warning_threshold == 400
+
+    def test_per_tier_webhook_overrides_take_priority_over_fallback(self):
+        env = {
+            "ENV": "local",
+            "NOTIFICATION_PROVIDER": "slack",
+            "SLACK_WEBHOOK_URL": "https://hooks.slack.com/services/T/B/BASE",
+            "NOTIFICATION_WARNING_THRESHOLD": "400",
+            "NOTIFICATION_CRITICAL_WEBHOOK_URL": "https://hooks.slack.com/services/T/B/ALERTS",
+            "NOTIFICATION_WARNING_WEBHOOK_URL": "https://hooks.slack.com/services/T/B/MONITORING",
+            **_REQUIRED_VARS,
+        }
+        with patch.dict(os.environ, env, clear=True):
+            s = _create_settings()
+            assert (
+                s.notification_critical_target
+                == "https://hooks.slack.com/services/T/B/ALERTS"
+            )
+            assert (
+                s.notification_warning_target
+                == "https://hooks.slack.com/services/T/B/MONITORING"
+            )
+
+    def test_partial_override_falls_back_for_unset_tier(self):
+        env = {
+            "ENV": "local",
+            "NOTIFICATION_PROVIDER": "slack",
+            "SLACK_WEBHOOK_URL": "https://hooks.slack.com/services/T/B/BASE",
+            "NOTIFICATION_WARNING_THRESHOLD": "400",
+            "NOTIFICATION_CRITICAL_WEBHOOK_URL": "https://hooks.slack.com/services/T/B/ALERTS",
+            **_REQUIRED_VARS,
+        }
+        with patch.dict(os.environ, env, clear=True):
+            s = _create_settings()
+            assert (
+                s.notification_critical_target
+                == "https://hooks.slack.com/services/T/B/ALERTS"
+            )
+            assert (
+                s.notification_warning_target
+                == "https://hooks.slack.com/services/T/B/BASE"
+            )
+
+    def test_routing_webhook_without_provider_rejected(self):
+        env = {
+            "ENV": "local",
+            "NOTIFICATION_CRITICAL_WEBHOOK_URL": "https://hooks.slack.com/services/T/B/ALERTS",
+            **_REQUIRED_VARS,
+        }
+        with patch.dict(os.environ, env, clear=True):
+            with pytest.raises(ValidationError, match="Notification/Routing"):
+                _create_settings()

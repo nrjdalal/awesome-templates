@@ -394,6 +394,40 @@ class Settings(BaseSettings):
             "notifications, to prevent notification storms."
         ),
     )
+    # Severity-based channel routing (Optional, #286, on top of #17).
+    # Unset by default: the single NOTIFICATION_PROVIDER + webhook target
+    # above is preserved unchanged with no routing whatsoever.
+    notification_warning_threshold: int | None = Field(
+        default=None,
+        validation_alias="NOTIFICATION_WARNING_THRESHOLD",
+        description=(
+            "Optional lower status-code band routed to the warning "
+            "channel (e.g. 400 to also notify on 4xx responses). Must be "
+            "less than notification_severity_threshold. Unset (default) "
+            "disables the warning band entirely - only "
+            "notification_severity_threshold and above notify, sent to "
+            "the single configured target, unchanged from #17."
+        ),
+    )
+    notification_critical_webhook_url: str | None = Field(
+        default=None,
+        validation_alias="NOTIFICATION_CRITICAL_WEBHOOK_URL",
+        description=(
+            "Webhook target for critical-tier (>= notification_severity_"
+            "threshold) alerts. Falls back to the single-target webhook "
+            "(SLACK_WEBHOOK_URL / DISCORD_WEBHOOK_URL) when unset."
+        ),
+    )
+    notification_warning_webhook_url: str | None = Field(
+        default=None,
+        validation_alias="NOTIFICATION_WARNING_WEBHOOK_URL",
+        description=(
+            "Webhook target for warning-tier (>= notification_warning_"
+            "threshold, < notification_severity_threshold) alerts. Falls "
+            "back to the single-target webhook when unset. Only takes "
+            "effect when notification_warning_threshold is set."
+        ),
+    )
 
     # ----------------------------------------------------------------
     # Observability (OpenTelemetry — Optional)
@@ -775,6 +809,29 @@ class Settings(BaseSettings):
                 "discord_webhook_url missing"
             )
 
+        if (
+            self.notification_warning_threshold is not None
+            and self.notification_warning_threshold
+            >= self.notification_severity_threshold
+        ):
+            errors.append(
+                "[Notification/Routing] NOTIFICATION_WARNING_THRESHOLD "
+                f"({self.notification_warning_threshold}) must be less than "
+                "NOTIFICATION_SEVERITY_THRESHOLD "
+                f"({self.notification_severity_threshold})"
+            )
+
+        if (
+            self.notification_critical_webhook_url
+            or self.notification_warning_webhook_url
+        ) and not notification_provider:
+            errors.append(
+                "[Notification/Routing] NOTIFICATION_CRITICAL_WEBHOOK_URL / "
+                "NOTIFICATION_WARNING_WEBHOOK_URL require NOTIFICATION_PROVIDER "
+                "to be set (they select a channel within that provider, not a "
+                "transport of their own)"
+            )
+
         if self.otel_enabled and not self.otel_exporter_otlp_endpoint:
             errors.append(
                 "[OTEL] OTEL_ENABLED=true requires: otel_exporter_otlp_endpoint missing"
@@ -943,6 +1000,26 @@ class Settings(BaseSettings):
         if provider == "discord":
             return self.discord_webhook_url
         return None
+
+    @property
+    def notification_critical_target(self) -> str | None:
+        """Webhook URL for critical-tier routed notifications (#286).
+
+        Falls back to the single-target notification_webhook_url when
+        no per-severity override is configured, so the default (unmapped)
+        case behaves exactly like #17.
+        """
+        return self.notification_critical_webhook_url or self.notification_webhook_url
+
+    @property
+    def notification_warning_target(self) -> str | None:
+        """Webhook URL for warning-tier routed notifications (#286).
+
+        Falls back to the single-target notification_webhook_url when
+        no per-severity override is configured. Only reachable when
+        notification_warning_threshold is also set.
+        """
+        return self.notification_warning_webhook_url or self.notification_webhook_url
 
 
 settings = Settings()

@@ -16,9 +16,13 @@ V1 validates block shape only:
 - Enum vocabularies for ``trigger`` and ``final-verdict`` match exactly.
 - Integer fields parse as non-negative ints; ``rounds: 0`` is rejected when
   ``trigger: yes``.
-- ``touched-adr-consequences`` entries match ``ADR\\d{3}-G\\d+`` or are the
-  literal ``none``.
-- ``links`` accepts URLs or the literal ``n/a``.
+- ``touched-adr-consequences`` is either the literal ``none`` as the **whole**
+  value, or a comma-separated list of ``ADR\\d{3}-G\\d+`` IDs.
+- ``links`` is a comma-separated list of http(s) URLs in which ``n/a`` is also
+  valid as an **individual entry**, so the template's documented
+  ``<PR url>, <prior-log url or "n/a">`` shape passes (#314). The asymmetry with
+  ``touched-adr-consequences`` above is deliberate: a PR always has at least one
+  real link, so the placeholder is only ever needed for a trailing slot.
 
 Does NOT validate: that touched-adr-consequences IDs actually exist in any
 ADR (semantic check); round count consistency with R-points totals.
@@ -180,21 +184,24 @@ def _validate_value(
                         Violation(
                             source,
                             lineno,
-                            f"touched-adr-consequences entry must match ADR\\d{{3}}-G\\d+ or 'none', got {entry!r}",
+                            f"touched-adr-consequences must be the literal 'none' or a comma-separated list of ADR\\d{{3}}-G\\d+ IDs, got entry {entry!r}",
                         )
                     )
     elif field == "links":
-        if value != "n/a":
-            entries = [v.strip() for v in value.split(",")]
-            for entry in entries:
-                if not URL_RE.match(entry):
-                    violations.append(
-                        Violation(
-                            source,
-                            lineno,
-                            f"links entry must be an http(s) URL or 'n/a', got {entry!r}",
-                        )
+        # 'n/a' is valid per entry, not only as the whole value (#314): the
+        # template's documented shape is `<PR url>, <prior-log url or "n/a">`,
+        # and a first-round PR has no prior log. Contrast
+        # touched-adr-consequences above, whose 'none' stays whole-value only.
+        entries = [v.strip() for v in value.split(",")]
+        for entry in entries:
+            if entry != "n/a" and not URL_RE.match(entry):
+                violations.append(
+                    Violation(
+                        source,
+                        lineno,
+                        f"links entry must be an http(s) URL or 'n/a', got {entry!r}",
                     )
+                )
     return violations
 
 

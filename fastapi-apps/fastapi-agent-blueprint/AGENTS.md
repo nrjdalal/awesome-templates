@@ -269,6 +269,7 @@ Every non-DB infra in `CoreContainer` is optional — toggle via env vars, no co
 | LLM | `LLM_PROVIDER` + `LLM_MODEL` both set | `llm_model()` returns PydanticAI `TestModel` via `build_stub_llm_model` when `pydantic-ai` is installed, `None` otherwise |
 | Broker | `BROKER_TYPE=sqs` / `rabbitmq` / `inmemory` | Defaults to `inmemory` — no external broker required |
 | Error Notification (Slack/Discord) | `NOTIFICATION_PROVIDER=slack` / `discord` + the matching `SLACK_WEBHOOK_URL` / `DISCORD_WEBHOOK_URL` | `notification_client()` returns `NoopNotificationClient` (one-time `notification_client_disabled` warning, emitted at the first dispatch attempt rather than at boot because the Singleton resolves lazily; `error_notifier()` still runs and suppresses sends) |
+| Error Notification channel routing (#286) | `NOTIFICATION_WARNING_THRESHOLD` (below `NOTIFICATION_SEVERITY_THRESHOLD`) + optional `NOTIFICATION_CRITICAL_WEBHOOK_URL` / `NOTIFICATION_WARNING_WEBHOOK_URL` per-tier overrides | Unset -> `notification_router()` only ever resolves the critical tier, at the single target above, identical to pre-#286 behavior. Either webhook override left unset falls back to the single target rather than dropping that tier. |
 
 **Error-notification dispatch surface (#17, #310).** Two surfaces dispatch, and the boundary is a decision rather than an accident:
 

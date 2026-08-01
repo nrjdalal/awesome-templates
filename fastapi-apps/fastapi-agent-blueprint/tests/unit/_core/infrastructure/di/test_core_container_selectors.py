@@ -16,7 +16,10 @@ from src._core.infrastructure.di.core_container import (
     _dynamodb_selector,
     _embedding_selector,
     _llm_selector,
+    _notification_critical_selector,
+    _notification_routing_selector,
     _notification_selector,
+    _notification_warning_selector,
     _s3vector_selector,
     _storage_selector,
 )
@@ -120,3 +123,77 @@ class TestNotificationSelector:
             "https://discord.com/api/webhooks/1/token",
         )
         assert _notification_selector() == "enabled"
+
+
+class TestNotificationCriticalSelector:
+    """#286: falls back to the base notification target when no
+    per-severity override is configured, so it tracks _notification_selector
+    exactly in the unmapped (default) case."""
+
+    def test_disabled_when_nothing_configured(self, monkeypatch: pytest.MonkeyPatch):
+        monkeypatch.setattr(settings, "notification_provider", None)
+        monkeypatch.setattr(settings, "slack_webhook_url", None)
+        monkeypatch.setattr(settings, "discord_webhook_url", None)
+        monkeypatch.setattr(settings, "notification_critical_webhook_url", None)
+        assert _notification_critical_selector() == "disabled"
+
+    def test_enabled_via_fallback_to_base_target(self, monkeypatch: pytest.MonkeyPatch):
+        monkeypatch.setattr(settings, "notification_provider", "slack")
+        monkeypatch.setattr(
+            settings, "slack_webhook_url", "https://hooks.slack.com/services/T/B/X"
+        )
+        monkeypatch.setattr(settings, "notification_critical_webhook_url", None)
+        assert _notification_critical_selector() == "enabled"
+
+    def test_enabled_via_explicit_override(self, monkeypatch: pytest.MonkeyPatch):
+        monkeypatch.setattr(settings, "notification_provider", "slack")
+        monkeypatch.setattr(settings, "slack_webhook_url", None)
+        monkeypatch.setattr(
+            settings,
+            "notification_critical_webhook_url",
+            "https://hooks.slack.com/services/T/B/ALERTS",
+        )
+        assert _notification_critical_selector() == "enabled"
+
+
+class TestNotificationWarningSelector:
+    def test_disabled_when_nothing_configured(self, monkeypatch: pytest.MonkeyPatch):
+        monkeypatch.setattr(settings, "notification_provider", None)
+        monkeypatch.setattr(settings, "slack_webhook_url", None)
+        monkeypatch.setattr(settings, "discord_webhook_url", None)
+        monkeypatch.setattr(settings, "notification_warning_webhook_url", None)
+        assert _notification_warning_selector() == "disabled"
+
+    def test_enabled_via_fallback_to_base_target(self, monkeypatch: pytest.MonkeyPatch):
+        monkeypatch.setattr(settings, "notification_provider", "slack")
+        monkeypatch.setattr(
+            settings, "slack_webhook_url", "https://hooks.slack.com/services/T/B/X"
+        )
+        monkeypatch.setattr(settings, "notification_warning_webhook_url", None)
+        assert _notification_warning_selector() == "enabled"
+
+    def test_enabled_via_explicit_override(self, monkeypatch: pytest.MonkeyPatch):
+        monkeypatch.setattr(settings, "notification_provider", "slack")
+        monkeypatch.setattr(settings, "slack_webhook_url", None)
+        monkeypatch.setattr(
+            settings,
+            "notification_warning_webhook_url",
+            "https://hooks.slack.com/services/T/B/MONITORING",
+        )
+        assert _notification_warning_selector() == "enabled"
+
+
+class TestNotificationRoutingSelector:
+    """#313 review (MEDIUM finding): the router provider itself must stay
+    opt-in — gated on NOTIFICATION_WARNING_THRESHOLD, not on whether a
+    webhook target happens to resolve truthy via fallback."""
+
+    def test_disabled_when_warning_threshold_unset(
+        self, monkeypatch: pytest.MonkeyPatch
+    ):
+        monkeypatch.setattr(settings, "notification_warning_threshold", None)
+        assert _notification_routing_selector() == "disabled"
+
+    def test_enabled_when_warning_threshold_set(self, monkeypatch: pytest.MonkeyPatch):
+        monkeypatch.setattr(settings, "notification_warning_threshold", 400)
+        assert _notification_routing_selector() == "enabled"

@@ -50,6 +50,9 @@ def clean_optional_env(monkeypatch: pytest.MonkeyPatch) -> None:
         "notification_provider",
         "slack_webhook_url",
         "discord_webhook_url",
+        "notification_warning_threshold",
+        "notification_critical_webhook_url",
+        "notification_warning_webhook_url",
     ):
         monkeypatch.setattr(settings, field, None)
     monkeypatch.setattr(settings, "broker_type", None)
@@ -83,6 +86,49 @@ class TestCoreContainerMinimalBoot:
 
         container = CoreContainer()
         assert isinstance(container.error_notifier(), ErrorNotifier)
+
+    def test_notification_router_is_none_when_routing_unconfigured(
+        self, clean_optional_env: None
+    ):
+        """#313 review (MEDIUM finding): the router must NOT be wired when
+        NOTIFICATION_WARNING_THRESHOLD is unset — otherwise ErrorNotifier's
+        `else self._client` branch (the #17 single-target path) is dead code
+        in every production deployment that never opts into routing, even
+        though the PR's own tests (which construct ErrorNotifier directly)
+        stay green regardless.
+
+        Note: the "warning_threshold set -> router wired" side of this is
+        covered at the selector-function level by
+        TestNotificationRoutingSelector in test_core_container_selectors.py,
+        not here — CoreContainer's provider kwargs that read `settings.*`
+        directly (e.g. `warning_threshold=settings.notification_warning_
+        threshold`) are fixed at container-class import time, matching how
+        production reads env vars once at boot; monkeypatching settings
+        after import does not change an already-built provider's captured
+        value, only what a *selector function* re-reads on each call.
+        """
+        container = CoreContainer()
+        assert container.notification_router() is None
+
+    def test_noop_notification_client_disabled_warning_emitted_once(
+        self, clean_optional_env: None
+    ):
+        """#313 review (HIGH finding): three independent Selectors each
+        wrapping their own ``providers.Singleton(_build_noop_notification_client)``
+        meant three NoopNotificationClient instances on the fully-disabled
+        path — and since the warning logs from ``__init__``, three log lines
+        per process instead of one. Must stay at exactly one shared instance
+        regardless of how many Selectors reference it."""
+        from structlog.testing import capture_logs
+
+        container = CoreContainer()
+        with capture_logs() as logs:
+            container.error_notifier()
+
+        disabled_warnings = [
+            log for log in logs if log.get("event") == "notification_client_disabled"
+        ]
+        assert len(disabled_warnings) == 1
 
     def test_llm_model_returns_stub_when_disabled(self, clean_optional_env: None):
         """Disabled branch returns a PydanticAI ``TestModel`` when the

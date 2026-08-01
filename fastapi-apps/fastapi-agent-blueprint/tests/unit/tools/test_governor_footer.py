@@ -192,6 +192,64 @@ def test_links_na_passes():
     assert violations == []
 
 
+def test_links_url_then_na_entry_passes():
+    """#314: the PR template prescribes `<PR url>, <prior-log url or "n/a">`.
+    A first-round PR has no prior log, so `n/a` must be valid as a trailing
+    list entry — not only as the entire value."""
+    good = VALID_FOOTER.replace(
+        "https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/158",
+        "https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/158, n/a",
+    )
+    body = _wrap_body(good)
+    violations = cgf.check_body(
+        body, source="t", require_governor_footer=False, changed_files=[]
+    )
+    assert violations == []
+
+
+def test_links_template_literal_example_passes():
+    """Pins the exact shape `.github/pull_request_template.md` documents, so the
+    template and the checker cannot drift apart again (#314)."""
+    template = (REPO_ROOT / ".github" / "pull_request_template.md").read_text(
+        encoding="utf-8"
+    )
+    assert '- links: <PR url>, <prior-log url or "n/a">' in template, (
+        "template links shape changed — update this test and the checker together"
+    )
+    good = VALID_FOOTER.replace(
+        "https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/158",
+        "https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/313, n/a",
+    )
+    violations = cgf.check_body(
+        _wrap_body(good), source="t", require_governor_footer=False, changed_files=[]
+    )
+    assert violations == []
+
+
+@pytest.mark.parametrize("bad_entry", ["N/A", "TBD", "none", ""])
+def test_links_rejects_non_url_non_na_entries(bad_entry):
+    """Loosening `n/a` must not loosen anything else — `n/a` is case-sensitive
+    and is the only accepted non-URL entry."""
+    bad = VALID_FOOTER.replace(
+        "https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/158",
+        f"https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/158, {bad_entry}",
+    )
+    violations = cgf.check_body(
+        _wrap_body(bad), source="t", require_governor_footer=False, changed_files=[]
+    )
+    assert any("http(s) URL or 'n/a'" in v.reason for v in violations)
+
+
+def test_touched_adr_none_as_list_entry_still_fails():
+    """The `n/a`-per-entry affordance is deliberately NOT mirrored onto
+    touched-adr-consequences, whose `none` stays whole-value only."""
+    bad = VALID_FOOTER.replace("ADR047-G3, ADR047-G24", "ADR047-G3, none")
+    violations = cgf.check_body(
+        _wrap_body(bad), source="t", require_governor_footer=False, changed_files=[]
+    )
+    assert any("touched-adr-consequences" in v.reason for v in violations)
+
+
 def test_omitted_footer_passes_without_require_flag():
     body = "# PR description\n\nNo footer here.\n"
     violations = cgf.check_body(
