@@ -46,7 +46,7 @@ middleware described in [Worker task failures](#worker-task-failures).
 | Request validation failures (422) | `validation_exception_handler` never dispatches — regardless of threshold |
 | `raise HTTPException(...)`, incl. `status_code=500` | `http_exception_handler` never dispatches — a 500 raised this way is silent |
 | **NiceGUI admin page / callback exceptions** | `handle_uncaught_admin_exception` is log-only **by decision**, not by omission — see below |
-| Anything below `NOTIFICATION_SEVERITY_THRESHOLD` | gated in `ErrorNotifier._should_notify` |
+| Anything below the alerting floor | gated in `ErrorNotifier._should_notify`. The floor is `NOTIFICATION_SEVERITY_THRESHOLD`, or `min(severity, NOTIFICATION_WARNING_THRESHOLD)` once [channel routing](#severity-based-channel-routing) is enabled |
 
 The first two are pinned by negative tests
 (`tests/unit/_core/exceptions/test_exception_handlers_notification.py`), so they
@@ -75,8 +75,8 @@ HTTP path:
 
 | | Behaviour |
 |---|---|
-| **Severity** | Synthesised. A `BaseCustomException` keeps its own `status_code`; anything else counts as **500**. So `NOTIFICATION_SEVERITY_THRESHOLD` still applies — raising it above 500 silences task failures too |
-| **Cooldown key** | `{task_name}:{error_code}`, not the bare `error_code` used on the HTTP path. Without the task prefix one repeatedly-failing task would suppress every other task's alert for the whole window |
+| **Severity** | Synthesised. A `BaseCustomException` keeps its own `status_code`; anything else counts as **500**. So the same alerting floor applies. Without routing, raising `NOTIFICATION_SEVERITY_THRESHOLD` above 500 silences ordinary task failures too. With routing the floor is `min(severity, warning)` and the tier depends on both boundaries: a synthetic 500 is **critical** while `NOTIFICATION_SEVERITY_THRESHOLD <= 500`; it lands in the **warning** tier only when the severity threshold is above 500 *and* `NOTIFICATION_WARNING_THRESHOLD` is at or below **500** — raise both above 500 (e.g. `600` / `550`) and the failure clears neither band, so it alerts nowhere |
+| **Cooldown key** | `{task_name}:{error_code}`, not the bare `error_code` used on the HTTP path. Without the task prefix one repeatedly-failing task would suppress every other task's alert for the whole window. With [channel routing](#severity-based-channel-routing) enabled the two scopings compose, giving `{tier}:{task_name}:{error_code}` |
 | **Timing** | One alert per incident, on the **terminal** failure. Permanent errors (`BaseCustomException`, `ValueError`, `TypeError`, Pydantic `ValidationError`) are never retried and alert immediately; retryable ones alert only after the final attempt fails |
 
 The message format is:
@@ -139,10 +139,19 @@ Commented blocks are already in `_env/local.env.example` and
 `_env/quickstart.env.example` — uncomment and fill in the real value in your
 gitignored `_env/*.env`.
 
-Configuration is validated as a **complete group at boot**: an unknown provider,
-or a provider whose matching `*_WEBHOOK_URL` is missing, fails startup rather
-than surfacing at first-error dispatch — the moment the system is already
-failing.
+Configuration is validated as a **complete group at boot** rather than surfacing
+at first-error dispatch — the moment the system is already failing. Five
+conditions fail startup:
+
+- an unknown `NOTIFICATION_PROVIDER`;
+- a provider whose matching `*_WEBHOOK_URL` is missing;
+- `NOTIFICATION_WARNING_THRESHOLD` at or above `NOTIFICATION_SEVERITY_THRESHOLD`;
+- a per-tier `*_WEBHOOK_URL` without `NOTIFICATION_PROVIDER`;
+- a per-tier `*_WEBHOOK_URL` without `NOTIFICATION_WARNING_THRESHOLD` — that
+  setting is what wires the router, so the URLs would otherwise be silently
+  ignored.
+
+The last three are tagged `[Notification/Routing]` in the failure message.
 
 ## Configuration reference
 
@@ -151,8 +160,11 @@ failing.
 | `NOTIFICATION_PROVIDER` | unset | `slack` or `discord`. Unset → notifications disabled |
 | `SLACK_WEBHOOK_URL` | unset | Required when provider is `slack` |
 | `DISCORD_WEBHOOK_URL` | unset | Required when provider is `discord` |
-| `NOTIFICATION_SEVERITY_THRESHOLD` | `500` | Minimum status code that alerts. `500` = server errors only |
-| `NOTIFICATION_COOLDOWN_SECONDS` | `60` | Per-process, per-`error_code` quiet window between repeat alerts |
+| `NOTIFICATION_SEVERITY_THRESHOLD` | `500` | Status code at or above which an alert is sent. `500` = server errors only. Without routing this is also the alerting floor; with routing it becomes the **critical-tier boundary** and the floor drops to the warning threshold |
+| `NOTIFICATION_COOLDOWN_SECONDS` | `60` | Per-process quiet window between repeat alerts. Keyed by `error_code`; `{tier}:{error_code}` under routing, and task-scoped on the worker |
+| `NOTIFICATION_WARNING_THRESHOLD` | unset | **The routing switch.** Set it below `NOTIFICATION_SEVERITY_THRESHOLD` to also alert on a lower band and send that band to the warning channel. Unset → no routing at all |
+| `NOTIFICATION_CRITICAL_WEBHOOK_URL` | unset | Target for the critical tier. Falls back to the single provider webhook. Requires `NOTIFICATION_WARNING_THRESHOLD` |
+| `NOTIFICATION_WARNING_WEBHOOK_URL` | unset | Target for the warning tier. Falls back to the single provider webhook. Requires `NOTIFICATION_WARNING_THRESHOLD` |
 
 ## Behaviour details
 
@@ -161,25 +173,73 @@ failing.
 Gating compares the response status against the threshold, so the default `500`
 means 4xx client errors never alert.
 
-**Do not lower this to a 4xx value in a deployed environment.** Routine client
-errors are alert-worthy to nobody: with `NOTIFICATION_SEVERITY_THRESHOLD=401`,
-three ordinary unauthenticated requests — a wrong password, an expired token, a
-missing token — produce three alerts. It is a useful *local test* setting (see
-[Verify locally](#verify-locally)) and a channel-flooding mistake in production.
+**Do not lower `NOTIFICATION_SEVERITY_THRESHOLD` to a 4xx value in a deployed
+environment.** It is the *critical* boundary, so lowering it reclassifies routine
+client errors as incidents and sends them to whichever channel your on-call
+watches: with `NOTIFICATION_SEVERITY_THRESHOLD=401`, three ordinary
+unauthenticated requests — a wrong password, an expired token, a missing token —
+produce three critical alerts. It remains a useful *local test* setting (see
+[Verify locally](#verify-locally)).
+
+**If you do want 4xx visibility, that is what channel routing is for.** Set
+`NOTIFICATION_WARNING_THRESHOLD=400` and leave the severity threshold at `500`:
+the 4xx band then alerts into a separate low-noise channel while genuine 5xx
+incidents keep their own. See
+[Severity-based channel routing](#severity-based-channel-routing).
+
+### Severity-based channel routing
+
+Optional, off by default (#286). `NOTIFICATION_WARNING_THRESHOLD` is the only
+switch — set it below `NOTIFICATION_SEVERITY_THRESHOLD` and two things change:
+
+- **The alerting floor drops** to `min(severity, warning)`, so a band that never
+  alerted before now does.
+- **Each band gets its own target.** `>= NOTIFICATION_SEVERITY_THRESHOLD` goes to
+  `NOTIFICATION_CRITICAL_WEBHOOK_URL`; the band between the two thresholds goes
+  to `NOTIFICATION_WARNING_WEBHOOK_URL`. Either override left unset falls back to
+  the single provider webhook, so a partial mapping degrades to a shared channel
+  rather than dropping a tier.
+
+```text
+NOTIFICATION_SEVERITY_THRESHOLD=500   NOTIFICATION_WARNING_THRESHOLD=400
+
+  399 →  no alert
+  404 →  warning channel
+  499 →  warning channel
+  500 →  critical channel
+  503 →  critical channel
+```
+
+The per-tier URLs are **not** switches. Setting one without
+`NOTIFICATION_WARNING_THRESHOLD` fails at boot (#315) — without the threshold no
+router is wired at all, so both URLs would be silently ignored while every alert
+went to the single provider webhook.
+
+**The cooldown key becomes tier-scoped** in this mode. That is not cosmetic:
+`BaseCustomException` takes `status_code` and `error_code` as per-instance
+arguments, so a 404 and a 500 can share an `error_code` with no subclass
+involved. On a bare key the 404 would consume the 500's quiet window and swallow
+the incident alert. Tier-prefixing keeps the two windows separate; on the worker
+path the two scopings compose to `{tier}:{task_name}:{error_code}`.
+
+Unset, every one of these reduces to the #17 single-target behaviour: no router,
+floor at `NOTIFICATION_SEVERITY_THRESHOLD`, bare `error_code` key.
 
 ### Cooldown — and its per-process caveat
 
-`ErrorNotifier` keeps an in-memory dict keyed by `error_code`
+`ErrorNotifier` keeps an in-memory dict keyed by a **cooldown key**
 ([`error_notifier.py`](../../src/_core/infrastructure/notification/error_notifier.py)),
-so within the cooldown window a repeated `error_code` is suppressed while a
-*different* `error_code` alerts immediately.
+so within the cooldown window a repeated key is suppressed while a *different*
+key alerts immediately. The key is the bare `error_code` by default; the worker
+path prefixes the task name (#310), and channel routing prefixes the severity
+tier (#286), so the widest form is `{tier}:{task_name}:{error_code}`.
 
 That dict lives in **one process**. `ErrorNotifier` is a container Singleton,
 which makes it per-process, not per-deployment:
 
 ```text
 4 uvicorn workers x 3 replicas = 12 independent cooldown windows
-→ up to 12 alerts per window for the same error_code, not 1
+→ up to 12 alerts per window for the same cooldown key, not 1
 ```
 
 Count your Taskiq worker processes too — each one holds its own `ErrorNotifier`
@@ -269,6 +329,19 @@ Mitigations that need no code change:
 - **Keep the default threshold (`500`).** Curated domain exceptions cluster in
   4xx; the un-redacted risk is concentrated in unhandled 500s, and lowering the
   threshold adds volume without adding signal.
+- **Give the warning channel the same treatment as the critical one.** Opening a
+  warning band with `NOTIFICATION_WARNING_THRESHOLD` normally admits only curated
+  `BaseCustomException` text — `__str__` renders `status_code`, `error_code` and
+  `message`, and deliberately omits `details`. Both un-redacted paths
+  (`generic_exception_handler`, and the worker's synthetic status for a
+  non-`BaseCustomException`) are scored **500**, so on the default
+  `NOTIFICATION_SEVERITY_THRESHOLD=500` they resolve *critical* and never reach
+  the warning channel. **That stops being true if you raise the severity
+  threshold above 500** — with `severity=600, warning=400`, a 500 falls into the
+  warning band and the un-redacted text goes there. Either keep the severity
+  threshold at or below 500, or treat the warning channel as receiving the same
+  data class as the critical one: same restriction, environment scoping, and
+  retention/access review.
 - **Restrict the channel.** A private channel with need-to-know membership, not a
   broad `#engineering`.
 - **Scope by environment.** Enable it in stg first and see what real payloads look
@@ -334,18 +407,47 @@ Two further probes worth running while you are set up:
 To validate a real webhook URL instead, swap `SLACK_WEBHOOK_URL` for the real
 value in step 2 and watch the channel. Revert the threshold to `500` afterwards.
 
+### Two-sink variant — proving channel routing
+
+The recipe above lowers `NOTIFICATION_SEVERITY_THRESHOLD` because it predates
+#286. To exercise routing instead, run a **second** sink on port `9098` (same
+script, different port) and keep the severity threshold at its default:
+
+```bash
+NOTIFICATION_PROVIDER=slack \
+SLACK_WEBHOOK_URL=http://127.0.0.1:9099/base \
+NOTIFICATION_WARNING_THRESHOLD=401 \
+NOTIFICATION_CRITICAL_WEBHOOK_URL=http://127.0.0.1:9099/alerts \
+NOTIFICATION_WARNING_WEBHOOK_URL=http://127.0.0.1:9098/monitoring \
+uv run python run_server_local.py --env quickstart
+```
+
+The 401 from step 3 now arrives on port `9098` (warning), while a 5xx arrives on
+`9099` (critical) — and the base URL receives nothing. This is also the cheapest
+regression probe for two behaviours worth keeping honest:
+
+- **Drop `NOTIFICATION_WARNING_THRESHOLD`** from the block above and the server
+  refuses to boot, rather than silently routing everything to `/base` (#315).
+- **Tier-scoped cooldown.** Raise a `BaseCustomException(status_code=404)` and a
+  `BaseCustomException(status_code=500)` back to back; both use the default
+  `error_code` of `CUSTOM_ERROR`, and both must deliver — the 4xx must not
+  consume the 5xx's cooldown window.
+
 ## Troubleshooting
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
 | Boot fails: `[Notification/Slack] ... slack_webhook_url missing` | provider set without its URL | set the matching `*_WEBHOOK_URL`, or unset the provider |
 | Boot fails: `Unknown notification provider` | typo in `NOTIFICATION_PROVIDER` | use `slack` or `discord` |
+| Boot fails: `[Notification/Routing] ... must be less than NOTIFICATION_SEVERITY_THRESHOLD` | warning threshold at or above the severity threshold — the bands would overlap | lower `NOTIFICATION_WARNING_THRESHOLD`, or raise the severity threshold |
+| Boot fails: `[Notification/Routing] ... require NOTIFICATION_PROVIDER` | per-tier URL set with no provider — the URLs select a channel *within* a provider, not a transport | set `NOTIFICATION_PROVIDER` |
+| Boot fails: `[Notification/Routing] ... require NOTIFICATION_WARNING_THRESHOLD` | per-tier URL set without the routing switch, so no router would be wired and both URLs would be ignored | set `NOTIFICATION_WARNING_THRESHOLD` below the severity threshold, or remove the per-tier URLs |
 | No alerts, `notification_client_disabled` in logs | provider unset → Noop client | set `NOTIFICATION_PROVIDER` + the matching URL |
 | No alerts, no notification logs at all | errors are below the threshold, or the failing surface does not dispatch | check [What does NOT get alerted](#what-does-not-get-alerted) |
 | A `raise HTTPException(status_code=500)` produces no alert | `http_exception_handler` does not dispatch | raise a `BaseCustomException` subclass instead |
 | `error_notification_send_failed` with `exc_type` only | the webhook POST failed — status and URL are deliberately not logged | `curl` the webhook URL directly to see the real response |
 | Worker task failed, no alert yet | retryable failures alert only after the final attempt | wait out the retries, or check `taskiq_task_failed` in the log for per-attempt detail |
-| Worker task failed, never any alert | the failure is below the synthetic severity — a `BaseCustomException` with a 4xx `status_code` | lower `NOTIFICATION_SEVERITY_THRESHOLD`, or raise a 5xx-status exception |
+| Worker task failed, never any alert | the failure is below the alerting floor — a `BaseCustomException` with a 4xx `status_code` | set `NOTIFICATION_WARNING_THRESHOLD` below that status so it alerts into the warning channel (preferred), or raise a 5xx-status exception. Lowering `NOTIFICATION_SEVERITY_THRESHOLD` also works but reclassifies the failure as critical |
 | Admin page error, no alert | admin exceptions are log-only by decision | expected — see [What does NOT get alerted](#what-does-not-get-alerted) |
 | Same error alerted N times within the cooldown | N processes, N cooldown windows | see [the per-process caveat](#cooldown--and-its-per-process-caveat) |
 | Alert delivered but nothing in the logs | a successful send logs nothing by design | confirm in the channel, not the log |
@@ -359,12 +461,16 @@ credential into the log stream. Only the exception class name is recorded.
 - [#17](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/17) /
   [PR #304](https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/304) — the
   feature
-- [#286](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/286) —
-  channel routing by severity (critical → `#alerts`, warnings → `#monitoring`),
-  a follow-up
 - [#310](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/310) —
   extended dispatch to worker task failures and recorded operator-facing admin
   failures as an explicit non-goal
+- [#286](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/286) /
+  [PR #313](https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/313) —
+  [severity-based channel routing](#severity-based-channel-routing) (critical →
+  `#alerts`, warnings → `#monitoring`)
+- [#315](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/315) —
+  made a per-tier webhook URL without `NOTIFICATION_WARNING_THRESHOLD` a boot
+  failure instead of a silently ignored setting
 - [ADR 042](../history/042-optional-infrastructure-di-pattern.md) — the
   Protocol + Selector pattern behind the optional/disabled split
 - `docs/ai/shared/security-checklist.md` §13 — the reviewer-facing counterpart to

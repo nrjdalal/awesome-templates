@@ -1015,3 +1015,66 @@ class TestNotificationRoutingConfig:
         with patch.dict(os.environ, env, clear=True):
             with pytest.raises(ValidationError, match="Notification/Routing"):
                 _create_settings()
+
+    @pytest.mark.parametrize(
+        "tier_var",
+        ["NOTIFICATION_CRITICAL_WEBHOOK_URL", "NOTIFICATION_WARNING_WEBHOOK_URL"],
+    )
+    def test_per_tier_webhook_without_warning_threshold_rejected(self, tier_var):
+        """#315: a per-tier webhook URL is inert unless
+        NOTIFICATION_WARNING_THRESHOLD is set — _notification_routing_selector
+        gates the router on the threshold alone, so without it
+        notification_router() is None and every alert goes to the single base
+        webhook. Accepting that config at boot means silently delivering
+        incidents to the wrong channel, so reject it instead."""
+        env = {
+            "ENV": "local",
+            "NOTIFICATION_PROVIDER": "slack",
+            "SLACK_WEBHOOK_URL": "https://hooks.slack.com/services/T/B/BASE",
+            tier_var: "https://hooks.slack.com/services/T/B/ALERTS",
+            **_REQUIRED_VARS,
+        }
+        with patch.dict(os.environ, env, clear=True):
+            with pytest.raises(ValidationError, match="NOTIFICATION_WARNING_THRESHOLD"):
+                _create_settings()
+
+    def test_per_tier_webhook_with_warning_threshold_accepted(self):
+        """The corrected form of the config rejected above: adding the
+        threshold is what actually wires the router."""
+        env = {
+            "ENV": "local",
+            "NOTIFICATION_PROVIDER": "slack",
+            "SLACK_WEBHOOK_URL": "https://hooks.slack.com/services/T/B/BASE",
+            "NOTIFICATION_WARNING_THRESHOLD": "400",
+            "NOTIFICATION_CRITICAL_WEBHOOK_URL": "https://hooks.slack.com/services/T/B/ALERTS",
+            **_REQUIRED_VARS,
+        }
+        with patch.dict(os.environ, env, clear=True):
+            s = _create_settings()
+            assert s.notification_warning_threshold == 400
+            assert (
+                s.notification_critical_target
+                == "https://hooks.slack.com/services/T/B/ALERTS"
+            )
+
+    def test_warning_threshold_alone_still_accepted(self):
+        """The threshold on its own stays valid — both tiers then resolve to
+        the single base webhook, which is the documented degradation and not a
+        misconfiguration."""
+        env = {
+            "ENV": "local",
+            "NOTIFICATION_PROVIDER": "slack",
+            "SLACK_WEBHOOK_URL": "https://hooks.slack.com/services/T/B/BASE",
+            "NOTIFICATION_WARNING_THRESHOLD": "400",
+            **_REQUIRED_VARS,
+        }
+        with patch.dict(os.environ, env, clear=True):
+            s = _create_settings()
+            assert (
+                s.notification_critical_target
+                == "https://hooks.slack.com/services/T/B/BASE"
+            )
+            assert (
+                s.notification_warning_target
+                == "https://hooks.slack.com/services/T/B/BASE"
+            )

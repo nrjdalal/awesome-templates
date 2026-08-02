@@ -11,10 +11,12 @@ needs while reusing the same gating knobs:
   introducing a second severity model (the alternative #310 weighed and
   rejected: bypassing the threshold would leave operators no off switch short
   of unsetting the provider).
-- **Task-scoped cooldown key** — ``ErrorNotifier`` dedupes on ``error_code``
-  alone. A bare code would let one noisy task suppress every other task's
-  alert for the whole cooldown window, so the key is
-  ``{task_name}:{error_code}``.
+- **Task-scoped cooldown key** — a bare code would let one noisy task suppress
+  every other task's alert for the whole cooldown window, so this middleware
+  passes ``{task_name}:{error_code}``. ``ErrorNotifier`` then applies its own
+  scoping on top: without severity routing the key is used as given, and with
+  routing enabled it is tier-prefixed (#286), making the effective worker key
+  ``{tier}:{task_name}:{error_code}``.
 - **Final-attempt gating** — ``PermanentAwareSmartRetryMiddleware`` retries
   transient failures, so dispatching on every attempt would alert up to
   ``max_retries`` times for a single incident. Permanent errors are never

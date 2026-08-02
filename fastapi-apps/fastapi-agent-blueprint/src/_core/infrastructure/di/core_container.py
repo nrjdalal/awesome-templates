@@ -69,12 +69,16 @@ def _notification_warning_selector() -> str:
 
 
 def _notification_routing_selector() -> str:
-    """#286 severity routing is opt-in: only wire a NotificationRouter into
-    ErrorNotifier when NOTIFICATION_WARNING_THRESHOLD is actually set.
-    Otherwise notification_router stays None and ErrorNotifier's original
-    #17 single-target path (self._client) is the one actually taken —
-    matching the PR's stated "unset, byte-for-byte identical to #17"
-    contract in production, not just in tests that bypass the container."""
+    """#286 severity routing is opt-in, and NOTIFICATION_WARNING_THRESHOLD is
+    the only switch: a per-tier webhook URL does not enable routing on its own
+    (that combination is rejected at boot — see the [Notification/Routing]
+    checks in ``config.py``, #315).
+
+    With the threshold unset, ``notification_router`` resolves to ``None`` and
+    ``ErrorNotifier`` takes its ``else self._client`` branch — the #17
+    single-target path, gated at NOTIFICATION_SEVERITY_THRESHOLD with the
+    cooldown keyed on the bare ``error_code``. That path stays live in
+    production, not only in tests that construct ``ErrorNotifier`` directly."""
     return (
         "enabled" if settings.notification_warning_threshold is not None else "disabled"
     )
@@ -460,9 +464,11 @@ class CoreContainer(containers.DeclarativeContainer):
 
     #########################################################
     # Severity-based channel routing (optional — #286, on top of #17).
-    # Each tier resolves its own target (falling back to the single
-    # notification_client webhook above when no override is set), so an
-    # unmapped deployment behaves exactly like #17.
+    # Each tier resolves its own target, falling back to the single
+    # notification_client webhook above when no override is set.
+    # These two providers are consumed only by notification_router below,
+    # which is itself gated on NOTIFICATION_WARNING_THRESHOLD — so with
+    # routing off they are declared but never resolved.
     #########################################################
 
     notification_critical_client = providers.Selector(
@@ -487,10 +493,12 @@ class CoreContainer(containers.DeclarativeContainer):
         disabled=_noop_notification_client,
     )
 
-    # Only wired when NOTIFICATION_WARNING_THRESHOLD is set (#313 review,
-    # option A) — otherwise notification_router stays None and
-    # error_notifier's `notification_client` (the single-target base
-    # client, unchanged from #17) is the one actually sent through.
+    # Only wired when NOTIFICATION_WARNING_THRESHOLD is set — otherwise
+    # notification_router stays None and error_notifier's
+    # `notification_client` (the single-target base client, unchanged from
+    # #17) is the one actually sent through. See
+    # _notification_routing_selector for why the per-tier URLs cannot enable
+    # routing by themselves.
     notification_router = providers.Selector(
         _notification_routing_selector,
         enabled=providers.Singleton(

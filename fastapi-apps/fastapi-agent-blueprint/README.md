@@ -126,7 +126,7 @@ Full integration walkthrough (auth · RBAC · worker · admin · RAG · OTEL): [
 - **Agent backend surfaces** — REST API, async worker, admin UI, and a planned MCP interface over the same domain logic
 - **Pluggable infra** — PostgreSQL / MySQL / SQLite · DynamoDB · S3 / MinIO · S3 Vectors · SQS / RabbitMQ · OpenAI / Bedrock
 - **OpenTelemetry** — `[otel]` extra, `OTEL_ENABLED` env flag, Jaeger/Tempo/Phoenix recipe
-- **Error notifications** — optional Slack/Discord webhook alerts from the exception handlers and from worker task failures, severity + cooldown gated ([runbook](docs/operations/error-notifications.md))
+- **Error notifications** — optional Slack/Discord webhook alerts from the exception handlers and from worker task failures, severity + cooldown gated, with optional per-severity channel routing ([runbook](docs/operations/error-notifications.md))
 - **JWT + RBAC** — HS256 auth domain, DB-backed refresh rotation, `User.role` admin gating
 - **AI Usage Ledger** — per-call LLM accounting, `ai_usage` domain, admin + API surfaces
 - **Taskiq smart retry** — task-scoped structured logging, permanent-aware retry policy

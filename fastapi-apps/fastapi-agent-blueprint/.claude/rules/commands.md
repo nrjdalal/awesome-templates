@@ -1,6 +1,6 @@
 # Suggested Commands
 
-> Last synced: 2026-07-28 via #310 (Error Notification — dispatch extended to Taskiq worker task failures; the server-only scope note from PR #311 is superseded). Prior: 2026-07-27 via #307/PR #311 (Error Notification section — runbook pointer, server-only dispatch scope, first-dispatch disabled warning). Prior: 2026-07-23 via #17/PR #304 (added the Error Notification section — `NOTIFICATION_*` env vars for Slack/Discord webhook alerts fired from the exception handlers). Prior: 2026-07-20 via ADR 056 (added `tools/check_migration_safety.py` — advisory unsafe-DDL scan for zero-downtime migrations — to Architecture Verification + DB Migrations). Prior: 2026-07-20 via #293 (added `make perf-test` — Locust performance-test harness — to the Test section).
+> Last synced: 2026-08-01 via #286/PR #313 + #315/PR #319 (Error Notification — severity channel routing section and example added; `:159` corrected, it had contradicted the Coverage bullet in the same block since #310). Prior: 2026-07-28 via #310 (Error Notification — dispatch extended to Taskiq worker task failures; the server-only scope note from PR #311 is superseded). Prior: 2026-07-27 via #307/PR #311 (Error Notification section — runbook pointer, server-only dispatch scope, first-dispatch disabled warning). Prior: 2026-07-23 via #17/PR #304 (added the Error Notification section — `NOTIFICATION_*` env vars for Slack/Discord webhook alerts fired from the exception handlers). Prior: 2026-07-20 via ADR 056 (added `tools/check_migration_safety.py` — advisory unsafe-DDL scan for zero-downtime migrations — to Architecture Verification + DB Migrations). Prior: 2026-07-20 via #293 (added `make perf-test` — Locust performance-test harness — to the Test section).
 > Purpose: Quick reference for Claude Code when executing shell commands.
 > Also referenced when running Skills.
 > Default Flow context: see [`AGENTS.md` § Default Coding Flow](../../AGENTS.md#default-coding-flow). The commands below are consulted by the `implement` and `verify` steps; this file is **not** a primary entry point in the Default Flow.
@@ -154,14 +154,22 @@ STORAGE_TYPE=minio python run_server_local.py --env local
 STORAGE_TYPE=s3 python run_server_local.py --env local
 ```
 
-## Error Notification (#17)
+## Error Notification (#17, #310, #286)
 ```bash
-# Slack/Discord webhook alerts fired from the global exception handlers (optional infra, ADR 042)
+# Slack/Discord webhook alerts fired from the HTTP exception handlers and Taskiq worker task failures (optional infra, ADR 042)
 NOTIFICATION_PROVIDER=slack SLACK_WEBHOOK_URL=https://hooks.slack.com/services/T/B/X python run_server_local.py --env local
 NOTIFICATION_PROVIDER=discord DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/<id>/<token> python run_server_local.py --env local
+
+# Severity channel routing (#286) — the threshold is the switch; the two URLs alone are rejected at boot
+NOTIFICATION_PROVIDER=slack SLACK_WEBHOOK_URL=https://hooks.slack.com/services/T/B/BASE \
+  NOTIFICATION_WARNING_THRESHOLD=400 \
+  NOTIFICATION_CRITICAL_WEBHOOK_URL=https://hooks.slack.com/services/T/B/ALERTS \
+  NOTIFICATION_WARNING_WEBHOOK_URL=https://hooks.slack.com/services/T/B/MONITORING \
+  python run_server_local.py --env local
 ```
 
-- Tuning: `NOTIFICATION_SEVERITY_THRESHOLD` (default 500 — 5xx only), `NOTIFICATION_COOLDOWN_SECONDS` (default 60; per-process, per-error_code)
+- Tuning: `NOTIFICATION_SEVERITY_THRESHOLD` (default 500 — 5xx only, and the critical-tier boundary once routing is on), `NOTIFICATION_COOLDOWN_SECONDS` (default 60; per-process, keyed on `error_code` — `{tier}:{error_code}` under routing, `{tier}:{task_name}:{error_code}` on the worker)
+- Channel routing (#286): `NOTIFICATION_WARNING_THRESHOLD` (unset by default) is the **sole switch** — it lowers the alerting floor to `min(severity, warning)` and routes that band to `NOTIFICATION_WARNING_WEBHOOK_URL`. Each per-tier URL falls back to the single provider webhook when unset, and setting one *without* the threshold fails at boot (#315)
 - Unset provider → `NoopNotificationClient` (one-time `notification_client_disabled` warning, logged at the first dispatch attempt rather than at boot; no alerts delivered)
 - Webhook URLs are credentials — keep them in gitignored env files only
 - Coverage: HTTP exception handlers + Taskiq worker task failures (#310). Worker alerts fire once per incident on the terminal failure — permanent errors immediately, retryable ones after the last attempt

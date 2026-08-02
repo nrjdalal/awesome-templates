@@ -366,8 +366,11 @@ class Settings(BaseSettings):
     )
 
     # ----------------------------------------------------------------
-    # Error Notification (Optional — Slack/Discord webhook alerts fired
-    # from the exception middleware on 5xx-and-above errors, #17)
+    # Error Notification (Optional — Slack/Discord webhook alerts, #17).
+    # Dispatched from the global exception handlers (#17) and from Taskiq
+    # worker task failures (#310). The alerting floor is
+    # NOTIFICATION_SEVERITY_THRESHOLD by default, and drops to
+    # NOTIFICATION_WARNING_THRESHOLD once severity routing is enabled (#286).
     # ----------------------------------------------------------------
     notification_provider: str | None = Field(
         default=None, validation_alias="NOTIFICATION_PROVIDER"
@@ -382,16 +385,23 @@ class Settings(BaseSettings):
         default=500,
         validation_alias="NOTIFICATION_SEVERITY_THRESHOLD",
         description=(
-            "Minimum HTTP status code that triggers a notification "
-            "(e.g. 500 notifies on server errors only)."
+            "Status code at or above which a notification is sent "
+            "(e.g. 500 notifies on server errors only). On the worker path "
+            "the code is synthesised, so this applies there too. Without "
+            "severity routing this is also the alerting floor; with "
+            "notification_warning_threshold set it becomes the critical-tier "
+            "boundary and the floor drops to that threshold (#286)."
         ),
     )
     notification_cooldown_seconds: int = Field(
         default=60,
         validation_alias="NOTIFICATION_COOLDOWN_SECONDS",
         description=(
-            "Per-process, per-error_code cooldown between repeat "
-            "notifications, to prevent notification storms."
+            "Per-process cooldown between repeat notifications, to prevent "
+            "notification storms. Keyed by error_code; scoped to "
+            "{tier}:{error_code} when severity routing is enabled (#286) so "
+            "a warning-tier 4xx cannot mute a critical-tier 5xx, and further "
+            "scoped by task name on the worker path (#310)."
         ),
     )
     # Severity-based channel routing (Optional, #286, on top of #17).
@@ -415,7 +425,10 @@ class Settings(BaseSettings):
         description=(
             "Webhook target for critical-tier (>= notification_severity_"
             "threshold) alerts. Falls back to the single-target webhook "
-            "(SLACK_WEBHOOK_URL / DISCORD_WEBHOOK_URL) when unset."
+            "(SLACK_WEBHOOK_URL / DISCORD_WEBHOOK_URL) when unset. "
+            "Requires notification_warning_threshold - that setting is what "
+            "wires the router, so this URL alone would be ignored and is "
+            "rejected at boot instead (#315)."
         ),
     )
     notification_warning_webhook_url: str | None = Field(
@@ -424,8 +437,9 @@ class Settings(BaseSettings):
         description=(
             "Webhook target for warning-tier (>= notification_warning_"
             "threshold, < notification_severity_threshold) alerts. Falls "
-            "back to the single-target webhook when unset. Only takes "
-            "effect when notification_warning_threshold is set."
+            "back to the single-target webhook when unset. Requires "
+            "notification_warning_threshold - rejected at boot without it "
+            "(#315)."
         ),
     )
 
@@ -832,6 +846,20 @@ class Settings(BaseSettings):
                 "transport of their own)"
             )
 
+        if (
+            self.notification_critical_webhook_url
+            or self.notification_warning_webhook_url
+        ) and self.notification_warning_threshold is None:
+            errors.append(
+                "[Notification/Routing] NOTIFICATION_CRITICAL_WEBHOOK_URL / "
+                "NOTIFICATION_WARNING_WEBHOOK_URL require "
+                "NOTIFICATION_WARNING_THRESHOLD to be set — it is the switch "
+                "that wires the router. Without it no router exists and every "
+                "alert goes to the single SLACK_WEBHOOK_URL / "
+                "DISCORD_WEBHOOK_URL target, silently ignoring both per-tier "
+                "URLs"
+            )
+
         if self.otel_enabled and not self.otel_exporter_otlp_endpoint:
             errors.append(
                 "[OTEL] OTEL_ENABLED=true requires: otel_exporter_otlp_endpoint missing"
@@ -1005,9 +1033,12 @@ class Settings(BaseSettings):
     def notification_critical_target(self) -> str | None:
         """Webhook URL for critical-tier routed notifications (#286).
 
-        Falls back to the single-target notification_webhook_url when
-        no per-severity override is configured, so the default (unmapped)
-        case behaves exactly like #17.
+        Falls back to the single-target notification_webhook_url when no
+        per-severity override is configured. Only consumed once routing is
+        active — see ``_notification_routing_selector``, which gates the
+        router on notification_warning_threshold. Note that with the
+        threshold set and no overrides, both tiers share this target but the
+        gate and the cooldown key are *not* #17's.
         """
         return self.notification_critical_webhook_url or self.notification_webhook_url
 

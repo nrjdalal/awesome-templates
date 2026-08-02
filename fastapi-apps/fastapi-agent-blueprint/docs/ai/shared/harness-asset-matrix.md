@@ -203,7 +203,7 @@ rather than primary entry points (`Overlay`).
 
 ### `project-dna.md`
 
-- **Current role**: 976-line canonical pattern catalogue auto-extracted from the codebase. Sections §0~§14 cover directory structure, base classes, generics, CRUD, DI, conversions, security, features, routers, exception, admin, vector, embedding, LLM.
+- **Current role**: 1084-line canonical pattern catalogue auto-extracted from the codebase. Sections §0~§17 cover directory structure, base classes, generics, CRUD, DI, conversions, security, features, routers, exception, admin, vector, embedding, LLM.
 - **Why it exists**: Adopted as part of the Hybrid C harness so that Claude, Codex, and Antigravity read identical architecture references.
 - **Replacement feasibility**: None — superpowers carries no project-specific architecture.
 - **Final location**: unchanged.
@@ -233,7 +233,7 @@ rather than primary entry points (`Overlay`).
 
 ### `security-checklist.md`
 
-- **Current role**: 446-line OWASP-aligned security review reference (13 categories; §13 Error Notification Security added by #305). Surface for `/security-review`.
+- **Current role**: 468-line OWASP-aligned security review reference (13 categories; §13 Error Notification Security added by #305). Surface for `/security-review`.
 - **Why it exists**: Project-specific security stance (auth, OWASP Top 10, key-rotation rules).
 - **Replacement feasibility**: None.
 - **Final location**: unchanged.
@@ -273,7 +273,7 @@ rather than primary entry points (`Overlay`).
 
 ### `ai-infrastructure-overview.md`
 
-- **Current role**: 162-line overview of LLM / Embedding / RAG / Vector / Classifier patterns (includes OTEL backend comparison matrix, ADR 046).
+- **Current role**: 160-line overview of LLM / Embedding / RAG / Vector / Classifier patterns (includes OTEL backend comparison matrix, ADR 046).
 - **Why it exists**: New-contributor orientation to the AI infra layer.
 - **Replacement feasibility**: None.
 - **Final location**: unchanged.
@@ -303,7 +303,7 @@ rather than primary entry points (`Overlay`).
 
 ### `planning-checklists.md`
 
-- **Current role**: 211-line planning checklist for feature work (Requirements, Data Model, Business Rules, Security, Tasks). Currently consulted by `/plan-feature` only.
+- **Current role**: 251-line planning checklist for feature work (Requirements, Data Model, Business Rules, Security, Tasks). Currently consulted by `/plan-feature` only.
 - **Why it exists**: Prevent planning omissions in implementation work.
 - **Replacement feasibility**: Partial. Default Flow's `framing` and `plan` steps now route to a *subset* of these questions automatically; the full checklist remains as the deep-dive reference.
 - **Bucket: Overlay** because the canonical entry point shifts from "user invokes `/plan-feature`" to "Default Flow routes the user through framing → plan, which references this checklist". The file content stays.
@@ -314,7 +314,7 @@ rather than primary entry points (`Overlay`).
 
 ### `drift-checklist.md`
 
-- **Current role**: 220-line drift-detection items consumed by `/sync-guidelines`.
+- **Current role**: 258-line drift-detection items consumed by `/sync-guidelines`.
 - **Why it exists**: Code ↔ shared docs ↔ tool harness alignment.
 - **Replacement feasibility**: Partial. Drift-detection becomes a `completion gate` activity in the Default Flow instead of a free-standing skill the user invokes.
 - **Bucket: Overlay** for the same reason as planning-checklists.
@@ -412,7 +412,7 @@ rather than primary entry points (`Overlay`).
 - **Final location**: `tools/check_governor_footer.py`.
 - **Migration risk**: Low. Scope bounded to the PR description body (CI fetches via `gh pr view`). V1 does not validate ADR slot existence, count consistency with R-points, or reviewer vocabulary.
 - **Stability impact**: High. Without it, removing `check_g_closure.py` would leave Guard G as text-only enforcement — codex design review flagged this as the single biggest risk of the ADR 047 rollout.
-- **Notes**: Wired in CI via `.github/workflows/governor-footer-lint.yml` (event triggers `opened` / `synchronize` / `reopened` / `edited`; sticky comment on failure; `[skip-governor-footer]` token bypass — non-governor-changing PRs only; governor-changing use is a hard CI failure per ADR 048-G1). Regression-covered by `tests/unit/tools/test_governor_footer.py` (31 cases).
+- **Notes**: Wired in CI via `.github/workflows/governor-footer-lint.yml` (event triggers `opened` / `synchronize` / `reopened` / `edited`; sticky comment on failure; `[skip-governor-footer]` token bypass — non-governor-changing PRs only; governor-changing use is a hard CI failure per ADR 048-G1). Regression-covered by `tests/unit/tools/test_governor_footer.py` (36 test functions / 39 collected cases).
 
 ---
 
@@ -580,7 +580,7 @@ Bucket guideline:
 - **Bucket: Overlay** — kept on disk, but Default Flow does not invoke it during normal coding.
 - **Final location**: unchanged.
 - **Phase 1 edit**: Add Default Flow Position section that clarifies "session-start only; not a coding-flow skill".
-- **Notes**: Largest skill body (317 lines shared procedure); could be a future Drop candidate after a few revisions of usage data.
+- **Notes**: Largest skill body (328 lines shared procedure); could be a future Drop candidate after a few revisions of usage data.
 
 ---
 

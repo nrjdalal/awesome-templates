@@ -16,10 +16,12 @@ class NotificationRouter:
       ``< severity_threshold``, only when ``warning_threshold`` is set →
       ``warning_client``.
 
-    When ``warning_threshold`` is ``None`` (the default), :meth:`resolve`
-    only ever returns ``critical_client`` (or ``None`` below it) — matching
-    #17's single-target behavior exactly, so severity routing is strictly
-    opt-in and never changes what gets notified unless configured.
+    ``warning_threshold=None`` degenerates to critical-only resolution, but
+    ``CoreContainer`` never builds a router in that state — with
+    NOTIFICATION_WARNING_THRESHOLD unset, ``notification_router()`` resolves
+    to ``None`` instead and ``ErrorNotifier`` keeps its #17 single-target
+    path (see ``_notification_routing_selector``). The ``None`` branch is
+    retained as a defensive unit-level contract, not as a production state.
 
     ``critical_client`` and ``warning_client`` are independently resolved
     by ``CoreContainer`` from ``NOTIFICATION_CRITICAL_WEBHOOK_URL`` /
