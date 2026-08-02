@@ -1,7 +1,7 @@
 import structlog
 from pydantic import BaseModel, Field
 
-from src._core.common.security import hash_password
+from src._core.common.security import hash_password_async
 from src._core.domain.services.base_service import BaseService
 from src._core.domain.validation import collect_unique_field_errors
 from src.admin_identity.domain.dtos.admin_identity_dto import (
@@ -79,7 +79,7 @@ class AdminIdentityService(
             updated = await self._admin_repository.update_data_by_data_id(
                 data_id=existing.id,
                 entity=_BootstrapPasswordUpdateDTO(
-                    password=hash_password(entity.password)
+                    password=await hash_password_async(entity.password)
                 ),
             )
             _logger.info(
@@ -94,7 +94,7 @@ class AdminIdentityService(
                 username=entity.username,
                 full_name=entity.full_name,
                 email=str(entity.email),
-                password=hash_password(entity.password),
+                password=await hash_password_async(entity.password),
             )
         )
         _logger.info(
@@ -141,7 +141,7 @@ class AdminIdentityService(
                 username=dto.username,
                 full_name=dto.full_name,
                 email=str(dto.email),
-                password=hash_password(temp_password),
+                password=await hash_password_async(temp_password),
                 permissions=dto.permissions,
             )
         )
@@ -151,5 +151,7 @@ class AdminIdentityService(
     ) -> AdminIdentityDTO:
         return await self._admin_repository.update_data_by_data_id(
             data_id=admin_id,
-            entity=_PasswordChangeClearTempDTO(password=hash_password(new_password)),
+            entity=_PasswordChangeClearTempDTO(
+                password=await hash_password_async(new_password)
+            ),
         )

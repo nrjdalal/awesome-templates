@@ -1,5 +1,8 @@
+from typing import Annotated
+
 from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, Query
+from pydantic import Field
 
 from src._core.application.dtos.base_response import SuccessResponse
 from src.admin_identity.interface.server.dependencies.admin_auth_dependencies import (
@@ -17,6 +20,14 @@ from src.user.interface.server.schemas.user_schema import (
 # exposes other users' PII. Self-service profile reads use /v1/auth/me.
 # New routes added to this router inherit the admin gate by default (default-deny).
 router = APIRouter(dependencies=[Depends(require_admin)])
+
+# Collection bounds (#322). Batch create is the sharp one: every element costs a
+# bcrypt round (~220 ms), so an unbounded list is one request holding a worker
+# thread for N x that. Bounding at the schema layer rejects it with a 422 before
+# any hashing starts. by-ids is bounded for the same reason a page size is —
+# it expands straight into an IN (...) clause.
+MAX_BATCH_SIZE = 100
+MAX_IDS_PER_QUERY = 100
 
 
 # ==========================================================================================
@@ -48,7 +59,7 @@ async def create_user(
 )
 @inject
 async def create_users(
-    items: list[CreateUserRequest],
+    items: Annotated[list[CreateUserRequest], Field(max_length=MAX_BATCH_SIZE)],
     user_service: UserService = Depends(Provide[UserContainer.user_service]),
 ) -> SuccessResponse[list[UserResponse]]:
     datas = await user_service.create_datas(entities=items)
@@ -90,7 +101,9 @@ async def get_user(
 @inject
 async def get_user_by_ids(
     ids: list[int] = Query(
-        ..., description="Comma-separated list of IDs (e.g., 0,1,2)"
+        ...,
+        description="Comma-separated list of IDs (e.g., 0,1,2)",
+        max_length=MAX_IDS_PER_QUERY,
     ),
     user_service: UserService = Depends(Provide[UserContainer.user_service]),
 ) -> SuccessResponse[list[UserResponse]]:

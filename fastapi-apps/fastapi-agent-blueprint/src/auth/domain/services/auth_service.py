@@ -12,7 +12,7 @@ from src._core.common.jwt_codec import (
     JwtTokenCodec,
     TokenExpiredError,
 )
-from src._core.common.security import verify_password
+from src._core.common.security import verify_or_dummy
 from src._core.exceptions.base_exception import BaseCustomException
 from src.auth.domain.dtos.auth_dto import (
     AuthTokenConfig,
@@ -46,7 +46,13 @@ class AuthService:
 
     async def verify_credentials(self, username: str, password: str) -> UserDTO:
         user = await self._user_repository.select_data_by_username(username)
-        if user is None or not verify_password(password, user.password):
+        # Await unconditionally, then branch: verify_or_dummy runs one bcrypt
+        # round even when the user is absent, so an unknown username cannot be
+        # told from a wrong password by timing. Keeping `user is None` in the
+        # branch (rather than folding it into the call) is what lets the type
+        # checker see that the returned value is non-None.
+        matched = await verify_or_dummy(password, user.password if user else None)
+        if user is None or not matched:
             raise InvalidCredentialsException()
         return user
 

@@ -4,7 +4,7 @@ import secrets
 
 import structlog
 
-from src._core.common.security import verify_password
+from src._core.common.security import verify_password_async
 from src._core.infrastructure.admin.permission_registry import AdminPermissionRegistry
 from src.admin_identity.domain.dtos.admin_identity_dto import (
     AdminIdentityDTO,
@@ -157,7 +157,7 @@ class AdminAccountUseCase:
     ) -> None:
         """Change an admin's password, clear the temp flag, revoke refresh tokens."""
         admin = await self._admin_auth_service.get_admin_by_id(admin_id)
-        if not verify_password(current_password, admin.password):
+        if not await verify_password_async(current_password, admin.password):
             raise AdminInvalidCredentialsException()
 
         await self._admin_identity_service.change_admin_password(admin_id, new_password)

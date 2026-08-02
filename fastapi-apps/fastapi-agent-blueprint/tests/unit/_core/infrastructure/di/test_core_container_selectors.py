@@ -146,8 +146,13 @@ class TestNotificationCriticalSelector:
         assert _notification_critical_selector() == "enabled"
 
     def test_enabled_via_explicit_override(self, monkeypatch: pytest.MonkeyPatch):
+        # A real deployment always has the base webhook set — boot validation
+        # rejects a provider without one. Modelling a bootable config here keeps
+        # the fixture honest; the override is still what the assertion is about.
         monkeypatch.setattr(settings, "notification_provider", "slack")
-        monkeypatch.setattr(settings, "slack_webhook_url", None)
+        monkeypatch.setattr(
+            settings, "slack_webhook_url", "https://hooks.slack.com/services/T/B/BASE"
+        )
         monkeypatch.setattr(
             settings,
             "notification_critical_webhook_url",
@@ -173,8 +178,13 @@ class TestNotificationWarningSelector:
         assert _notification_warning_selector() == "enabled"
 
     def test_enabled_via_explicit_override(self, monkeypatch: pytest.MonkeyPatch):
+        # A real deployment always has the base webhook set — boot validation
+        # rejects a provider without one. Modelling a bootable config here keeps
+        # the fixture honest; the override is still what the assertion is about.
         monkeypatch.setattr(settings, "notification_provider", "slack")
-        monkeypatch.setattr(settings, "slack_webhook_url", None)
+        monkeypatch.setattr(
+            settings, "slack_webhook_url", "https://hooks.slack.com/services/T/B/BASE"
+        )
         monkeypatch.setattr(
             settings,
             "notification_warning_webhook_url",

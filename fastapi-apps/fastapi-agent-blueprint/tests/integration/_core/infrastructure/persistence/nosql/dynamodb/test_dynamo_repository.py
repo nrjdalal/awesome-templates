@@ -31,6 +31,40 @@ DYNAMODB_ENDPOINT = "http://localhost:8000"
 TABLE_NAME = "test_integration_notes"
 
 
+def _dynamodb_local_is_up() -> bool:
+    """Is a dynamodb-local instance listening?
+
+    Without this, all 10 tests in this module ERROR rather than skip whenever the
+    container is not running — which is the default for anyone running the
+    documented `pytest tests/ -v`. An error reads as "the suite is broken"; a skip
+    reads as "this needs infra", which is the truth. See `make test-dynamo`.
+    """
+    import socket
+    from urllib.parse import urlparse
+
+    parsed = urlparse(DYNAMODB_ENDPOINT)
+    try:
+        with socket.create_connection(
+            (parsed.hostname, parsed.port or 8000), timeout=0.5
+        ):
+            return True
+    except OSError:
+        return False
+
+
+pytestmark = [
+    pytest.mark.dynamodb,
+    pytest.mark.skipif(
+        not _dynamodb_local_is_up(),
+        reason=(
+            f"dynamodb-local not reachable at {DYNAMODB_ENDPOINT} — "
+            "start it with `make test-dynamo` or "
+            "`docker run -d -p 8000:8000 amazon/dynamodb-local`"
+        ),
+    ),
+]
+
+
 # ── Model / DTO / Repository ──────────────────────────────────
 
 

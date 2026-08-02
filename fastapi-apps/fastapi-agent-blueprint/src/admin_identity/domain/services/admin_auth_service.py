@@ -12,7 +12,7 @@ from src._core.common.jwt_codec import (
     JwtTokenCodec,
     TokenExpiredError,
 )
-from src._core.common.security import verify_password
+from src._core.common.security import verify_or_dummy
 from src._core.exceptions.base_exception import BaseCustomException
 from src.admin_identity.domain.dtos.admin_identity_dto import (
     AdminIdentityDTO,
@@ -55,7 +55,9 @@ class AdminAuthService:
         self, username: str, password: str
     ) -> AdminIdentityDTO:
         admin = await self._admin_repository.select_data_by_username(username)
-        if admin is None or not verify_password(password, admin.password):
+        # Same constant-work contract as the customer realm — see verify_or_dummy.
+        matched = await verify_or_dummy(password, admin.password if admin else None)
+        if admin is None or not matched:
             raise AdminInvalidCredentialsException()
         return admin
 
