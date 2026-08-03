@@ -1,0 +1,50 @@
+# gitleaks configuration (#320)
+#
+# Purpose: close the Discord webhook gap in the shipped default ruleset.
+#
+# `slack-webhook-url` matches the whole URL with no variable-name anchor, so a
+# real Slack webhook is blocked under any variable name. Discord has no
+# equivalent: `discord-api-token` (hex-64), `discord-client-id` (18 digits) and
+# `discord-client-secret` (32 alphanumerics) are all GenerateSemiGenericRegex
+# shapes, and in a webhook URL the text after `discord` is `.com/api/webhooks/`
+# — `/` falls outside both the keyword-tail and separator character classes. So
+# a committed Discord webhook had zero automated coverage, with only the manual
+# grep in docs/ai/shared/security-checklist.md §13 standing in its way.
+#
+# A webhook URL is a bearer credential: possession alone authorizes posting to
+# the channel, and there is no separate identifier to revoke against — leaking
+# one means rotating the webhook itself.
+
+# REQUIRED. Without this, a .gitleaks.toml *replaces* the built-in ruleset
+# instead of extending it, silently dropping `slack-webhook-url` and every other
+# default rule. That failure mode is why this is not a one-line change; the
+# regression test in tests/unit/tools/test_gitleaks_config.py pins it.
+[extend]
+useDefault = true
+
+[[rules]]
+id = "discord-webhook-url"
+description = "Discord webhook URL (bearer credential — possession authorizes posting)"
+# Anchored on host + path + the id/token pair, NOT on the scheme.
+#
+# The leaked credential is the `{id}/{token}` pair; the scheme is decoration. A
+# first version of this rule required a literal `https://` and was case
+# sensitive, which a self-check showed missed three realistic shapes:
+#
+#     http://discord.com/api/webhooks/<id>/<token>     -> missed
+#     https://DISCORD.COM/api/webhooks/<id>/<token>    -> missed
+#     discord.com/api/webhooks/<id>/<token>            -> missed
+#
+# The last is the one that matters: a value pasted into an env file or a comment
+# without its scheme is still a complete, usable credential.
+#
+# Covers ptb./canary. hosts, the legacy discordapp.com domain, and the optional
+# /api/v10/ version segment. Discord's `/slack` and `/github` execution suffixes
+# and a `?wait=true` query need no special handling — the pattern is unanchored
+# at the end, so it matches the credential inside them.
+#
+# `\d+/[\w-]+` is specific enough to need no entropy floor, and specific enough
+# that this repo's `webhooks/...` and `webhooks/<id>/<token>` placeholders cannot
+# match — which is why this rule carries no allowlist.
+regex = '''(?i)(?:https?://)?(?:ptb\.|canary\.)?discord(?:app)?\.com/api/(?:v\d+/)?webhooks/\d+/[\w-]+'''
+tags = ["webhook", "discord", "credential"]
