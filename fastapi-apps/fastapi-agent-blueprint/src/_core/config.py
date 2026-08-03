@@ -505,6 +505,16 @@ class Settings(BaseSettings):
         default=["*"],
         validation_alias="ALLOW_ORIGINS",
     )
+    # Upper bound on a request body, enforced by BodySizeLimitMiddleware before
+    # the app reads it (#322). 10 MB is deliberately generous: the RAG document
+    # endpoint accepts long content, and a limit that rejects realistic JSON
+    # would be turned off rather than tuned. Set to 0 to disable enforcement —
+    # appropriate only when a reverse proxy already bounds it.
+    max_request_body_bytes: int = Field(
+        default=10 * 1024 * 1024,
+        ge=0,
+        validation_alias="MAX_REQUEST_BODY_BYTES",
+    )
 
     # ----------------------------------------------------------------
     # Logging (structlog)
@@ -822,6 +832,48 @@ class Settings(BaseSettings):
                 "[Notification/Discord] NOTIFICATION_PROVIDER=discord requires: "
                 "discord_webhook_url missing"
             )
+
+        # The mirror of the two checks above, and the likelier operator error:
+        # pasting the webhook and forgetting the provider (#327 F9). The validator
+        # already rejects a provider with no URL on the grounds that the other half
+        # "would otherwise be silently ignored" — that reasoning was never applied
+        # upward, so three combinations booted with the alert path fully inert.
+        # Measured in a valid prod env before this change, all three ACCEPTED:
+        #   SLACK_WEBHOOK_URL alone            -> NoopNotificationClient
+        #   NOTIFICATION_WARNING_THRESHOLD     -> live NotificationRouter into Noop
+        #   severity / cooldown tuned          -> NoopNotificationClient
+        # Unconditional rather than strict-env-only, matching the checks above,
+        # which reject in local too.
+        if not notification_provider:
+            if self.slack_webhook_url or self.discord_webhook_url:
+                errors.append(
+                    "[Notification] SLACK_WEBHOOK_URL / DISCORD_WEBHOOK_URL are "
+                    "set but NOTIFICATION_PROVIDER is not, so no client is built "
+                    "and the URL is silently ignored. Set "
+                    "NOTIFICATION_PROVIDER=slack|discord, or remove the URL"
+                )
+
+            if self.notification_warning_threshold is not None:
+                errors.append(
+                    "[Notification/Routing] NOTIFICATION_WARNING_THRESHOLD is set "
+                    "but NOTIFICATION_PROVIDER is not. The threshold is the switch "
+                    "that wires the router, so a live NotificationRouter is built "
+                    "and every tier resolves to the disabled no-op client. Set "
+                    "NOTIFICATION_PROVIDER, or remove the threshold"
+                )
+
+            # NOT rejected here, though #327 F9 listed it: NOTIFICATION_SEVERITY_
+            # THRESHOLD and NOTIFICATION_COOLDOWN_SECONDS with no provider. A review
+            # showed the premise ("nothing consumes them") is false — `ErrorNotifier`
+            # is built regardless of provider and both settings are live on the
+            # disabled path, gating the `notification_suppressed` log. Measured with
+            # a NoopNotificationClient:
+            #   severity=500 -> 404:0 500:1     severity=400 -> 404:1 500:1
+            #   cooldown=60, 500 x3 -> 1 log    cooldown=0 -> 3 logs
+            # So a deployment that keeps delivery off but tunes the volume of that
+            # log is a legitimate configuration, and rejecting it would be a
+            # regression. The two checks above stay because a webhook URL and the
+            # routing switch have no effect at all without a provider.
 
         if (
             self.notification_warning_threshold is not None

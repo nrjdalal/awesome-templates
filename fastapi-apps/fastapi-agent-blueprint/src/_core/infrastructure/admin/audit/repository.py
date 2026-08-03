@@ -6,6 +6,7 @@ surface used by ``/admin/audit-log`` and the cleanup task: ``list_filtered``
 detail dialog), and ``delete_older_than`` (retention cleanup).
 """
 
+from collections.abc import Callable
 from datetime import UTC, datetime
 
 from sqlalchemy import delete, func, select
@@ -30,8 +31,27 @@ class AdminAuditLogRepository:
     plus retention cleanup, not a generic CRUD entity.
     """
 
-    def __init__(self, database: Database) -> None:
-        self._database = database
+    def __init__(self, database: Database | Callable[[], Database]) -> None:
+        """Accept a ``Database`` **or** a zero-arg provider returning one.
+
+        ``bootstrap_admin`` passes the container's ``database`` *provider* rather
+        than a resolved instance. Freezing the instance here made
+        ``override_database`` (applied after bootstrap) unobservable to every
+        audit write and query: the repository kept the real ``DATABASE_*``
+        connection while ``/v1/*`` ran on the swapped one. Callers that already
+        hold a ``Database`` — the worker cleanup task and the unit tests — pass
+        it directly and are unaffected.
+        """
+        self._database_source = database
+
+    @property
+    def _database(self) -> Database:
+        source = self._database_source
+        # `isinstance`, not `callable(source)`: duck-typing the discrimination
+        # would silently invoke a `Database` that ever grows a `__call__`.
+        # Instances are not callable today, so both forms behave identically —
+        # this one cannot stop doing so.
+        return source if isinstance(source, Database) else source()
 
     # ── Write ────────────────────────────────────────────────────────────────
 

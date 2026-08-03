@@ -70,17 +70,23 @@ class S3VectorClient:
                 yield s3v_client
         except ClientError as e:
             error_code = e.response.get("Error", {}).get("Code", "Unknown")
-            error_message = e.response.get("Error", {}).get("Message", str(e))
 
             if error_code == "NotFoundException":
                 raise S3VectorIndexNotFoundException() from e
             if error_code == "TooManyRequestsException":
                 raise S3VectorThrottlingException() from e
 
+            # The provider message is deliberately NOT a structlog kwarg:
+            # security-checklist.md:194 requires kwargs carry no sensitive
+            # fields, and an AWS `Error.Message` names the calling IAM principal
+            # ARN (embedding the account id) plus the table/bucket/key. The
+            # `from e` chain below still carries the full text, which is where
+            # `custom_exception_handler` renders it via `exc_info` — the log is
+            # the one sink that is allowed to have it.
             _logger.error(
                 "s3vectors_operation_failed",
                 error_code=error_code,
-                error_message=error_message,
+                provider_exception_type=type(e).__name__,
             )
             raise S3VectorException(
                 status_code=500,

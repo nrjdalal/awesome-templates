@@ -120,15 +120,20 @@ class TestNotificationSelector:
         monkeypatch.setattr(
             settings,
             "discord_webhook_url",
-            "https://discord.com/api/webhooks/1/token",
+            "https://discord.com/api/webhooks/<id>/<token>",
         )
         assert _notification_selector() == "enabled"
 
 
 class TestNotificationCriticalSelector:
-    """#286: falls back to the base notification target when no
-    per-severity override is configured, so it tracks _notification_selector
-    exactly in the unmapped (default) case."""
+    """#286: falls back to the base notification target when no per-severity
+    override is configured.
+
+    Three-way since #327. The fallback case returns ``"shared"`` rather than
+    ``"enabled"`` so the tier resolves to ``notification_client`` itself instead of
+    building a second adapter against the same URL — with routing on and no
+    overrides that produced three adapter instances for one channel.
+    """
 
     def test_disabled_when_nothing_configured(self, monkeypatch: pytest.MonkeyPatch):
         monkeypatch.setattr(settings, "notification_provider", None)
@@ -137,15 +142,17 @@ class TestNotificationCriticalSelector:
         monkeypatch.setattr(settings, "notification_critical_webhook_url", None)
         assert _notification_critical_selector() == "disabled"
 
-    def test_enabled_via_fallback_to_base_target(self, monkeypatch: pytest.MonkeyPatch):
+    def test_shared_when_falling_back_to_the_base_target(
+        self, monkeypatch: pytest.MonkeyPatch
+    ):
         monkeypatch.setattr(settings, "notification_provider", "slack")
         monkeypatch.setattr(
             settings, "slack_webhook_url", "https://hooks.slack.com/services/T/B/X"
         )
         monkeypatch.setattr(settings, "notification_critical_webhook_url", None)
-        assert _notification_critical_selector() == "enabled"
+        assert _notification_critical_selector() == "shared"
 
-    def test_enabled_via_explicit_override(self, monkeypatch: pytest.MonkeyPatch):
+    def test_override_when_a_per_tier_url_is_set(self, monkeypatch: pytest.MonkeyPatch):
         # A real deployment always has the base webhook set — boot validation
         # rejects a provider without one. Modelling a bootable config here keeps
         # the fixture honest; the override is still what the assertion is about.
@@ -158,7 +165,7 @@ class TestNotificationCriticalSelector:
             "notification_critical_webhook_url",
             "https://hooks.slack.com/services/T/B/ALERTS",
         )
-        assert _notification_critical_selector() == "enabled"
+        assert _notification_critical_selector() == "override"
 
 
 class TestNotificationWarningSelector:
@@ -169,15 +176,17 @@ class TestNotificationWarningSelector:
         monkeypatch.setattr(settings, "notification_warning_webhook_url", None)
         assert _notification_warning_selector() == "disabled"
 
-    def test_enabled_via_fallback_to_base_target(self, monkeypatch: pytest.MonkeyPatch):
+    def test_shared_when_falling_back_to_the_base_target(
+        self, monkeypatch: pytest.MonkeyPatch
+    ):
         monkeypatch.setattr(settings, "notification_provider", "slack")
         monkeypatch.setattr(
             settings, "slack_webhook_url", "https://hooks.slack.com/services/T/B/X"
         )
         monkeypatch.setattr(settings, "notification_warning_webhook_url", None)
-        assert _notification_warning_selector() == "enabled"
+        assert _notification_warning_selector() == "shared"
 
-    def test_enabled_via_explicit_override(self, monkeypatch: pytest.MonkeyPatch):
+    def test_override_when_a_per_tier_url_is_set(self, monkeypatch: pytest.MonkeyPatch):
         # A real deployment always has the base webhook set — boot validation
         # rejects a provider without one. Modelling a bootable config here keeps
         # the fixture honest; the override is still what the assertion is about.
@@ -190,7 +199,7 @@ class TestNotificationWarningSelector:
             "notification_warning_webhook_url",
             "https://hooks.slack.com/services/T/B/MONITORING",
         )
-        assert _notification_warning_selector() == "enabled"
+        assert _notification_warning_selector() == "override"
 
 
 class TestNotificationRoutingSelector:

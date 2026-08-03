@@ -6,17 +6,21 @@ If you discover a security vulnerability, please report it responsibly.
 
 **Do not open a public GitHub issue for security vulnerabilities.**
 
-Instead, please email the maintainers directly. We will respond within 48 hours and work with you to understand and address the issue.
+Use GitHub's private vulnerability reporting instead:
+[**Report a vulnerability**](https://github.com/Mr-DooSun/fastapi-agent-blueprint/security/advisories/new).
+The report is visible only to the maintainers, and the thread stays private
+until an advisory is published. We will respond within 48 hours and work with
+you to understand and address the issue.
 
 ## Supported Versions
 
 | Version  | Supported |
 |----------|-----------|
-| 0.7.x    | Yes       |
-| < 0.7.0  | No        |
+| 0.9.x    | Yes       |
+| < 0.9.0  | No        |
 
 Pre-1.0: only the latest minor line receives security fixes. Upgrade to the
-newest `0.7.x` patch to pick them up.
+newest `0.9.x` patch to pick them up.
 
 ## Disclosure Policy
 
@@ -49,7 +53,8 @@ hygiene rules below are load-bearing, not aspirational.
 
 ### If you suspect a leak in this repo
 
-1. **Do not open a public issue.** Email the maintainers as described above.
+1. **Do not open a public issue.** Use private vulnerability reporting as
+   described above.
 2. Include the file path and line, not the raw key (they already know what it is).
 3. Credential rotation happens first; the public discussion happens
    only after the key is invalidated upstream.

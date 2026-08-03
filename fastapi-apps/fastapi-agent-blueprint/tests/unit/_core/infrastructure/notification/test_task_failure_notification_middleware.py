@@ -317,17 +317,20 @@ class TestMiddlewareOrderingContract:
 
     # The positional assertion (notifier registered last) lives in
     # tests/unit/_apps/worker/test_bootstrap.py, which already owns the
-    # "what does _install_middleware register, in what order" contract for the
+    # "what does install_task_middleware register, in what order" contract for the
     # whole chain. Kept there rather than duplicated so there is one canonical
     # order assertion. What follows is notifier-specific.
 
-    def test_install_middleware_shares_one_retry_middleware_instance(self):
+    def test_install_task_middleware_shares_one_retry_middleware_instance(self):
         """The notifier reads retry defaults off the registered instance, so a
         second instance would let the two disagree about max_retries."""
-        from src._apps.worker.bootstrap import _install_middleware
+        from src._apps.worker.bootstrap import install_task_middleware
+        from src._apps.worker.broker import container
 
         broker = InMemoryBroker()
-        _install_middleware(broker)
+        install_task_middleware(
+            broker, error_notifier_provider=container.error_notifier
+        )
 
         registered_retry = next(
             m
@@ -343,7 +346,7 @@ class TestMiddlewareOrderingContract:
         assert notifier_middleware._retry_middleware is registered_retry
 
     async def test_registered_order_alerts_once_on_the_final_attempt(self):
-        """End-to-end through the REAL ``_install_middleware`` wiring.
+        """End-to-end through the REAL ``install_task_middleware`` wiring.
 
         Drives three attempts the way taskiq's receiver does and asserts
         exactly one alert lands, on the last. This is the test that actually
@@ -352,11 +355,14 @@ class TestMiddlewareOrderingContract:
         middleware it reads an already-incremented ``_retries`` and fires on
         attempt 2 instead of 3.
         """
-        from src._apps.worker.bootstrap import _install_middleware
+        from src._apps.worker.bootstrap import install_task_middleware
+        from src._apps.worker.broker import container
 
         notifier = FakeErrorNotifier()
         broker = InMemoryBroker()
-        _install_middleware(broker)
+        install_task_middleware(
+            broker, error_notifier_provider=container.error_notifier
+        )
 
         retry = next(
             m

@@ -66,8 +66,9 @@ make setup        # one-time: venv + deps via uv
 make quickstart   # FastAPI on :8001, SQLite schema auto-created
 ```
 
-In a second terminal, `make demo` exercises the `auth` + `user` domains
-(JWT register → CRUD → refresh → logout) and `make demo-rag` exercises the
+In a second terminal, `make demo` exercises the `auth` + `user` domains across
+both token realms (customer register → seed a demo admin → admin login → user
+CRUD → refresh → logout) and `make demo-rag` exercises the
 `docs` domain (end-to-end RAG: upload → chunk → embed → retrieve → answer
 with citations, zero credentials):
 
@@ -139,7 +140,7 @@ Full integration walkthrough (auth · RBAC · worker · admin · RAG · OTEL): [
 
 - **Claude/Codex collaboration harness** — shared `AGENTS.md`, mirrored skills, and hook-backed workflow reminders
 - `/new-domain order` or `$new-domain order` scaffolds **44 files** (15 source + 25 `__init__.py` + 4 tests) in one command
-- **14 Claude Code + 14 Codex CLI skills** sharing the same architecture and review rules
+- **15 Claude Code + 15 Codex CLI skills** sharing the same architecture and review rules
 - **AI-assisted development (AIDD)** — humans keep product judgment; agents follow repeatable domain, test, review, and drift-check workflows
 - Full setup: [`docs/ai-development.md`](docs/ai-development.md)
 - Manual path: [`docs/tutorial/first-domain.md`](docs/tutorial/first-domain.md) (Path B)
@@ -178,10 +179,10 @@ from scratch.
 | Zero-boilerplate CRUD (8 methods) | **Yes** | No | No | No |
 | Auto domain discovery | **Yes** | No | No | No |
 | Architecture enforcement (pre-commit) | **Yes** | No | No | No |
-| AI workflow skills (Claude + Codex) | **14 + 14** | 0 | 0 | 0 |
+| AI workflow skills (Claude + Codex) | **15 + 15** | 0 | 0 | 0 |
 | Vector infrastructure (S3 Vectors) | **Yes** | No | No | No |
 | Multi-interface (API + Worker + Admin + MCP) | **3 + 1 planned** | 2 | 1 | 1 |
-| Architecture Decision Records | **18 active · 30 archived** | 0 | 0 | 0 |
+| Architecture Decision Records | **27 active · 30 archived** | 0 | 0 | 0 |
 | Type-safe generics across layers | **Yes** | Partial | Partial | No |
 | IoC container DI | **Yes** | No | No | No |
 
@@ -321,7 +322,7 @@ One business logic, multiple surfaces:
 | Adopt into an existing FastAPI project | [`docs/adoption.md`](docs/adoption.md) |
 | Check Python / FastAPI / tool version support | [`docs/compatibility.md`](docs/compatibility.md) |
 | See detailed env vars, tech stack, project tree | [`docs/reference.md`](docs/reference.md) |
-| Understand why a decision was made | [ADR index](docs/history/README.md) (18 active · 30 archived) |
+| Understand why a decision was made | [ADR index](docs/history/README.md) (27 active · 30 archived) |
 | Follow what's next | [Roadmap](docs/reference.md#roadmap) · [issue tracker](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues) |
 
 ---

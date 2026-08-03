@@ -13,6 +13,11 @@ from src._core.exceptions.base_exception import BaseCustomException
 
 _logger = structlog.stdlib.get_logger("src._core.exceptions")
 
+# Status at or above which a curated exception is also an operational event worth
+# an exception-level log record. Named rather than inlined so the worker path can
+# share the same boundary (see taskiq_middleware._synthetic_status_code).
+_SERVER_ERROR_FLOOR = 500
+
 
 def _dispatch_error_notification(
     request: Request, *, status_code: int, error_code: str, message: str
@@ -81,6 +86,19 @@ async def custom_exception_handler(
             error_details=exc.details,
         )
     )
+    # A curated 5xx still means something broke. Without this record the wrapped
+    # cause exists nowhere in stg/prod: the response is curated by design, the
+    # notification receives that same curated text, and ``details`` carries the
+    # original only when ``settings.is_dev``. Curated 4xx are normal traffic and
+    # stay unlogged — logging them at error level would bury this signal.
+    if exc.status_code >= _SERVER_ERROR_FLOOR:
+        _logger.exception(
+            "custom_exception",
+            exc_info=exc,
+            exception_type=type(exc).__name__,
+            error_code=exc.error_code,
+            status_code=exc.status_code,
+        )
     _dispatch_error_notification(
         request,
         status_code=exc.status_code,
@@ -97,6 +115,19 @@ async def generic_exception_handler(request: Request, exc: Exception) -> JSONRes
 
     mapped = try_map_llm_error(exc)
     if mapped is not None:
+        # Log before the early return. This branch used to bypass
+        # ``_logger.exception`` below, so a provider error — or, before the
+        # mapper was gated on provider modules, a *misclassified* ordinary
+        # exception — produced a 4xx with no trace anywhere. The original ``exc``
+        # is what matters here; ``mapped`` is a translation of it.
+        _logger.exception(
+            "mapped_provider_exception",
+            exc_info=exc,
+            exception_type=type(exc).__name__,
+            exception_module=type(exc).__module__,
+            mapped_error_code=mapped.error_code,
+            mapped_status_code=mapped.status_code,
+        )
         content = jsonable_encoder(
             ErrorResponse(
                 message=mapped.message,

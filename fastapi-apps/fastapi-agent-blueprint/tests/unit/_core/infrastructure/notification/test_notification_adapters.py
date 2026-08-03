@@ -77,7 +77,7 @@ class TestSlackNotificationAdapter:
 class TestDiscordNotificationAdapter:
     async def test_send_posts_discord_content_payload(self):
         http_client = _FakeHttpClient()
-        webhook_url = "https://discord.com/api/webhooks/1/token"
+        webhook_url = "https://discord.com/api/webhooks/<id>/<token>"
         adapter = DiscordNotificationAdapter(
             http_client=http_client, webhook_url=webhook_url
         )

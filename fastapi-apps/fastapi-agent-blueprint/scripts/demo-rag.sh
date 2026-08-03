@@ -44,6 +44,37 @@ note "Health check"
 run "curl -sS '${BASE_URL}/health' | pretty"
 
 # --------------------------------------------------------------
+# Auth — every /v1/docs route is gated on a customer-realm token
+# (`Depends(get_current_user)`), so obtain one before seeding.
+# Register is idempotent here only in the sense that a second run
+# falls back to login with the same credentials.
+# --------------------------------------------------------------
+
+note "Register (or log in) to obtain a customer JWT"
+REGISTER_BODY='{"username":"alice","full_name":"Alice Liddell","email":"alice@example.com","password":"secret123"}'
+REGISTER_RESPONSE="$(curl -sS -X POST "${BASE_URL}/v1/auth/register" \
+  -H 'Content-Type: application/json' \
+  -d "${REGISTER_BODY}")"
+
+ACCESS_TOKEN="$(echo "${REGISTER_RESPONSE}" | python3 -c "import json,sys;print(json.load(sys.stdin)['data']['accessToken'])" 2>/dev/null || echo "")"
+
+if [ -z "${ACCESS_TOKEN}" ]; then
+  LOGIN_BODY='{"username":"alice","password":"secret123"}'
+  LOGIN_RESPONSE="$(curl -sS -X POST "${BASE_URL}/v1/auth/login" \
+    -H 'Content-Type: application/json' \
+    -d "${LOGIN_BODY}")"
+  ACCESS_TOKEN="$(echo "${LOGIN_RESPONSE}" | python3 -c "import json,sys;print(json.load(sys.stdin)['data']['accessToken'])" 2>/dev/null || echo "")"
+fi
+
+if [ -z "${ACCESS_TOKEN}" ]; then
+  echo "Could not obtain access token — aborting." >&2
+  exit 1
+fi
+
+AUTH_HEADER="Authorization: Bearer ${ACCESS_TOKEN}"
+echo "Obtained a customer access token."
+
+# --------------------------------------------------------------
 # Seed three sample documents
 # --------------------------------------------------------------
 
@@ -53,7 +84,7 @@ DOC1_BODY='{
   "source": "https://fastapi.tiangolo.com",
   "content": "FastAPI is a modern Python web framework for building APIs. It leverages type hints for automatic request validation via Pydantic and generates OpenAPI documentation automatically. FastAPI is built on Starlette for async HTTP handling and supports dependency injection out of the box. Developers choose FastAPI for its speed, developer ergonomics, and first-class async support."
 }'
-run "curl -sS -X POST '${BASE_URL}/v1/docs/documents' -H 'Content-Type: application/json' -d '${DOC1_BODY}' | pretty"
+run "curl -sS -X POST '${BASE_URL}/v1/docs/documents' -H 'Content-Type: application/json' -H '${AUTH_HEADER}' -d '${DOC1_BODY}' | pretty"
 
 note "Seed document 2 — DDD layered architecture"
 DOC2_BODY='{
@@ -61,7 +92,7 @@ DOC2_BODY='{
   "source": "internal-notes",
   "content": "Domain-Driven Design organizes code around business domains rather than technical concerns. The typical layered architecture separates Interface, Application, Domain, and Infrastructure. The Domain layer contains business logic and must not depend on infrastructure details. The Infrastructure layer implements persistence and external integrations. Interfaces invert control via protocols or dependency injection."
 }'
-run "curl -sS -X POST '${BASE_URL}/v1/docs/documents' -H 'Content-Type: application/json' -d '${DOC2_BODY}' | pretty"
+run "curl -sS -X POST '${BASE_URL}/v1/docs/documents' -H 'Content-Type: application/json' -H '${AUTH_HEADER}' -d '${DOC2_BODY}' | pretty"
 
 note "Seed document 3 — Retrieval-Augmented Generation"
 DOC3_BODY='{
@@ -69,14 +100,14 @@ DOC3_BODY='{
   "source": "docs/rag-primer.md",
   "content": "Retrieval-Augmented Generation combines a vector database with a large language model. A user question is embedded into a vector, matched against an index of document chunks, and the top results are supplied as context to the LLM. This approach reduces hallucinations because the model answers from retrieved evidence rather than parametric memory alone. Citations link each answer back to the source chunk that supported it."
 }'
-run "curl -sS -X POST '${BASE_URL}/v1/docs/documents' -H 'Content-Type: application/json' -d '${DOC3_BODY}' | pretty"
+run "curl -sS -X POST '${BASE_URL}/v1/docs/documents' -H 'Content-Type: application/json' -H '${AUTH_HEADER}' -d '${DOC3_BODY}' | pretty"
 
 # --------------------------------------------------------------
 # List seeded documents
 # --------------------------------------------------------------
 
 note "List indexed documents"
-run "curl -sS '${BASE_URL}/v1/docs/documents?page=1&pageSize=10' | pretty"
+run "curl -sS '${BASE_URL}/v1/docs/documents?page=1&pageSize=10' -H '${AUTH_HEADER}' | pretty"
 
 # --------------------------------------------------------------
 # Run a natural-language query
@@ -87,6 +118,6 @@ QUERY_BODY='{
   "question": "What does retrieval-augmented generation do with citations?",
   "top_k": 3
 }'
-run "curl -sS -X POST '${BASE_URL}/v1/docs/query' -H 'Content-Type: application/json' -d '${QUERY_BODY}' | pretty"
+run "curl -sS -X POST '${BASE_URL}/v1/docs/query' -H 'Content-Type: application/json' -H '${AUTH_HEADER}' -d '${QUERY_BODY}' | pretty"
 
 note "Done. API docs: ${BASE_URL}/docs | Admin: ${BASE_URL}/admin/docs"

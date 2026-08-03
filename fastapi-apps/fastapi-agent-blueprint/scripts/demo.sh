@@ -62,14 +62,46 @@ fi
 AUTH_HEADER="Authorization: Bearer ${ACCESS_TOKEN}"
 
 # --------------------------------------------------------------
-# User CRUD (JWT-protected routes)
+# Admin realm — /v1/user* is gated on Depends(require_admin) since
+# #199, re-pointed to the admin token realm by #218. The customer
+# token above cannot reach it, and neither can the quickstart
+# bootstrap admin (require_admin rejects is_bootstrap_admin, and the
+# token login rejects bootstrap + temp-password accounts). Seed a
+# real admin the way the NiceGUI setup wizard would.
 # --------------------------------------------------------------
 
-note "Create a second user (JWT-authenticated)"
+DEMO_ADMIN_USER="${DEMO_ADMIN_USER:-demoadmin}"
+DEMO_ADMIN_SECRET="${DEMO_ADMIN_SECRET:-demoadmin123}"
+
+note "Seed the demo admin (quickstart only — refuses to run in stg/prod)"
+run "uv run python scripts/seed_demo_admin.py --env quickstart --username '${DEMO_ADMIN_USER}' --secret '${DEMO_ADMIN_SECRET}'"
+
+note "Admin login (separate token realm from the customer token above)"
+ADMIN_LOGIN_BODY="{\"username\":\"${DEMO_ADMIN_USER}\",\"password\":\"${DEMO_ADMIN_SECRET}\"}"
+ADMIN_LOGIN_RESPONSE="$(curl -sS -X POST "${BASE_URL}/v1/admin/login" \
+  -H 'Content-Type: application/json' \
+  -d "${ADMIN_LOGIN_BODY}")"
+
+ADMIN_ACCESS_TOKEN="$(echo "${ADMIN_LOGIN_RESPONSE}" | python3 -c "import json,sys;print(json.load(sys.stdin)['data']['accessToken'])" 2>/dev/null || echo "")"
+
+if [ -z "${ADMIN_ACCESS_TOKEN}" ]; then
+  echo "${ADMIN_LOGIN_RESPONSE}" | pretty
+  echo "Could not obtain an admin access token — aborting." >&2
+  exit 1
+fi
+
+ADMIN_AUTH_HEADER="Authorization: Bearer ${ADMIN_ACCESS_TOKEN}"
+echo "Obtained an admin-realm access token."
+
+# --------------------------------------------------------------
+# User CRUD (admin-realm protected routes)
+# --------------------------------------------------------------
+
+note "Create a second user (admin-authenticated)"
 CREATE_BODY='{"username":"bob","full_name":"Bob Builder","email":"bob@example.com","password":"secret456"}'
 CREATE_RESPONSE="$(curl -sS -X POST "${BASE_URL}/v1/user" \
   -H 'Content-Type: application/json' \
-  -H "${AUTH_HEADER}" \
+  -H "${ADMIN_AUTH_HEADER}" \
   -d "${CREATE_BODY}")"
 echo "${CREATE_RESPONSE}" | pretty
 
@@ -81,14 +113,14 @@ if [ -z "${USER_ID}" ]; then
 fi
 
 note "List users (page=1, pageSize=10)"
-run "curl -sS '${BASE_URL}/v1/users?page=1&pageSize=10' -H '${AUTH_HEADER}' | pretty"
+run "curl -sS '${BASE_URL}/v1/users?page=1&pageSize=10' -H '${ADMIN_AUTH_HEADER}' | pretty"
 
 note "Update the user"
 UPDATE_BODY='{"full_name":"Bob Builder (updated)"}'
-run "curl -sS -X PUT '${BASE_URL}/v1/user/${USER_ID}' -H 'Content-Type: application/json' -H '${AUTH_HEADER}' -d '${UPDATE_BODY}' | pretty"
+run "curl -sS -X PUT '${BASE_URL}/v1/user/${USER_ID}' -H 'Content-Type: application/json' -H '${ADMIN_AUTH_HEADER}' -d '${UPDATE_BODY}' | pretty"
 
 note "Delete the user"
-run "curl -sS -X DELETE '${BASE_URL}/v1/user/${USER_ID}' -H '${AUTH_HEADER}' | pretty"
+run "curl -sS -X DELETE '${BASE_URL}/v1/user/${USER_ID}' -H '${ADMIN_AUTH_HEADER}' | pretty"
 
 # --------------------------------------------------------------
 # Auth — refresh token + logout

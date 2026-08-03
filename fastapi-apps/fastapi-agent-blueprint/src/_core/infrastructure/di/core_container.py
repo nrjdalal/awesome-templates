@@ -60,12 +60,41 @@ def _notification_selector() -> str:
     return "enabled" if settings.notification_webhook_url else "disabled"
 
 
+def _notification_tier_selector(override_url: str | None, target: str | None) -> str:
+    """Three-way branch for a per-tier notification client (#327).
+
+    ``"shared"`` is the branch that matters. Both tier targets fall back to the
+    single provider webhook, so a two-way enabled/disabled selector built a
+    *separate adapter against the same URL* for every tier: with routing on and no
+    overrides, three ``SlackNotificationAdapter`` instances for one channel.
+    Probed at HEAD before this change — ``distinct adapter objects: 3``.
+
+    That footprint is not cosmetic. Both defects found in round 1 of PR #313 were
+    consequences of it: three ``NoopNotificationClient`` instances instead of one
+    (so the disabled warning logged three times), and an injected client the router
+    short-circuits. The symptoms were patched then; this removes the shape.
+
+    An adapter is only built for a tier that has its own URL. Otherwise the tier
+    resolves to ``notification_client`` — the same object, not a copy — so the
+    delivered URL is unchanged and only the instance count drops.
+    """
+    if not target:
+        return "disabled"
+    return "override" if override_url else "shared"
+
+
 def _notification_critical_selector() -> str:
-    return "enabled" if settings.notification_critical_target else "disabled"
+    return _notification_tier_selector(
+        settings.notification_critical_webhook_url,
+        settings.notification_critical_target,
+    )
 
 
 def _notification_warning_selector() -> str:
-    return "enabled" if settings.notification_warning_target else "disabled"
+    return _notification_tier_selector(
+        settings.notification_warning_webhook_url,
+        settings.notification_warning_target,
+    )
 
 
 def _notification_routing_selector() -> str:
@@ -473,23 +502,27 @@ class CoreContainer(containers.DeclarativeContainer):
 
     notification_critical_client = providers.Selector(
         _notification_critical_selector,
-        enabled=providers.Singleton(
+        override=providers.Singleton(
             _build_notification_client,
             http_client=http_client,
             provider=settings.notification_provider,
-            webhook_url=settings.notification_critical_target,
+            webhook_url=settings.notification_critical_webhook_url,
         ),
+        # No override: reuse the base client object rather than building a second
+        # adapter against the same URL. See _notification_tier_selector.
+        shared=notification_client,
         disabled=_noop_notification_client,
     )
 
     notification_warning_client = providers.Selector(
         _notification_warning_selector,
-        enabled=providers.Singleton(
+        override=providers.Singleton(
             _build_notification_client,
             http_client=http_client,
             provider=settings.notification_provider,
-            webhook_url=settings.notification_warning_target,
+            webhook_url=settings.notification_warning_webhook_url,
         ),
+        shared=notification_client,
         disabled=_noop_notification_client,
     )
 

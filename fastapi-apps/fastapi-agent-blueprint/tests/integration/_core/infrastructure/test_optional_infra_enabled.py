@@ -25,7 +25,7 @@ pytestmark = pytest.mark.slow
 SLACK = "https://hooks.slack.com/services/T/B/BASE"
 ALERTS = "https://hooks.slack.com/services/T/B/ALERTS"
 MONITORING = "https://hooks.slack.com/services/T/B/MONITORING"
-DISCORD = "https://discord.com/api/webhooks/123456789012345678/abcdefgh"
+DISCORD = "https://discord.com/api/webhooks/<id>/<token>"
 
 _ADAPTER_URL = """
 client = container.notification_client()

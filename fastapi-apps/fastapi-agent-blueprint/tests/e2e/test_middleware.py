@@ -80,10 +80,22 @@ async def test_request_id_echoed_when_valid_uuid():
 
 # --- Registration order ----------------------------------------------------
 def test_middleware_registration_order():
+    """`user_middleware` is in *registration* order; Starlette makes the LAST
+    added the OUTERMOST, so the runtime chain is this list reversed.
+
+    `BodySizeLimitMiddleware` (#322) sits between CORS and TrustedHost, which puts
+    it inside CorrelationId, RequestLog and CORS but outside the app. Each of
+    those is load-bearing: a 413 still gets an X-Request-ID and an access-log
+    line, it still carries the CORS headers a browser needs to read it, and an
+    over-long body never reaches route parsing.
+    """
     from asgi_correlation_id import CorrelationIdMiddleware
     from fastapi.middleware.cors import CORSMiddleware
     from fastapi.middleware.trustedhost import TrustedHostMiddleware
 
+    from src._core.infrastructure.http.body_size_middleware import (
+        BodySizeLimitMiddleware,
+    )
     from src._core.infrastructure.logging.request_log_middleware import (
         RequestLogMiddleware,
     )
@@ -92,6 +104,7 @@ def test_middleware_registration_order():
         CorrelationIdMiddleware,
         RequestLogMiddleware,
         CORSMiddleware,
+        BodySizeLimitMiddleware,
         TrustedHostMiddleware,
     ]
 

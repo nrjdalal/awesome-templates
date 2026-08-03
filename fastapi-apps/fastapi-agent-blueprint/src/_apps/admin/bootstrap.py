@@ -46,7 +46,10 @@ _global_exception_handler_registered = False
 
 def bootstrap_admin(fastapi_app: FastAPI) -> None:
     """Bootstrap NiceGUI admin dashboard onto the existing FastAPI app."""
-    admin_container = create_admin_container()
+    # A view over the server's tree, not a second one — see
+    # ``create_admin_container`` for why the core container cannot simply be
+    # injected the way the worker does it.
+    admin_container = create_admin_container(fastapi_app.state.container)
     fastapi_app.state.admin_container = admin_container
 
     # Global safety net (#195): uniformly structured-log any exception that
@@ -66,8 +69,11 @@ def bootstrap_admin(fastapi_app: FastAPI) -> None:
     # admin action can fire. The logger and the repository share the same
     # instance — the logger uses it for writes, the audit-log UI for queries,
     # and the cleanup task for retention deletes.
-    database = admin_container.core_container.database()
-    audit_repo = AdminAuditLogRepository(database)
+    # Pass the *provider*, not a resolved Database. Resolving here froze the
+    # connection into module state, so an override applied after bootstrap
+    # (override_database in the e2e harness) was invisible to every audit write
+    # and query while /v1/* ran on the swapped database.
+    audit_repo = AdminAuditLogRepository(admin_container.core_container.database)
     configure_audit_repository(audit_repo)
     configure_audit_logger(AuditLogger(audit_repo))
     configure_admin_account_use_case_provider(

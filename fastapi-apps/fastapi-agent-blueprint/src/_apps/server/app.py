@@ -8,8 +8,12 @@ from src._core.config import settings
 def create_app():
     app = FastAPI(
         title="FastAPI Agent Blueprint",
-        description="AI Agent Backend Platform — MCP server + AI orchestration + async DDD architecture",
-        version="1.0.0",
+        description="AI Agent Backend Platform — async DDD architecture with HTTP API, Taskiq worker, and admin interfaces",
+        # Kept in step with pyproject.toml [project].version by
+        # tests/unit/_apps/test_openapi_metadata.py. The package is not
+        # installed as a distribution (no [build-system]), so
+        # importlib.metadata cannot resolve it at runtime.
+        version="0.9.0",
         root_path="/api",
         docs_url=settings.docs_url,
         redoc_url=settings.redoc_url,

@@ -37,8 +37,16 @@ In a second terminal:
 make demo
 ```
 
-This exercises the `auth` and `user` domains: health check → register (JWT token pair) →
+This exercises the `auth` and `user` domains: health check → register (customer
+JWT token pair) → seed a demo admin → admin login (a separate token realm) →
 create user → list → update → delete → refresh token → logout.
+
+The admin step is not decoration. `/v1/user*` is gated on `require_admin`
+against the **admin** realm (#199/#218), which the customer token cannot
+satisfy — and neither can the quickstart bootstrap admin, which is setup-only.
+[`scripts/seed_demo_admin.py`](../scripts/seed_demo_admin.py) creates one real
+admin the way the NiceGUI setup wizard would; it refuses to run in `stg`/`prod`.
+
 Raw script: [`scripts/demo.sh`](../scripts/demo.sh).
 
 ## What does `quickstart` actually configure?

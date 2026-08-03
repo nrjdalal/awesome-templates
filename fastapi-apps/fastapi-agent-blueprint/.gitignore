@@ -189,3 +189,7 @@ quickstart.db
 
 # Work-ledger runtime state (cross-session context; machine-written, not committed)
 .agents/state/
+
+# Local tooling scratch (pyright/pycon caches, agent worktrees) — machine-local
+.pycon/
+.claude/worktrees/

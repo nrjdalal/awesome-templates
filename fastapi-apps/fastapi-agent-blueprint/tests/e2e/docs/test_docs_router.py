@@ -149,6 +149,28 @@ async def test_query_endpoint_returns_answer_with_citations():
     assert "excerpt" in cite
 
 
+async def _drain_inline_tasks(timeout: float = 10.0) -> None:
+    """Wait for the inline broker's detached tasks to finish.
+
+    `InMemoryBroker` is constructed with `await_inplace=False`, so `.kiq()` only
+    does `asyncio.create_task(...)` and returns. Anything asserting on a task's
+    *effect* has to wait for those tasks rather than for a wall-clock interval.
+    """
+    import asyncio
+
+    from src._apps.worker.broker import broker
+
+    deadline = asyncio.get_running_loop().time() + timeout
+    while asyncio.get_running_loop().time() < deadline:
+        running = [t for t in getattr(broker, "_running_tasks", set()) if not t.done()]
+        if not running:
+            return
+        await asyncio.wait(
+            running, timeout=deadline - asyncio.get_running_loop().time()
+        )
+    raise AssertionError(f"inline broker tasks did not finish within {timeout:.1f}s")
+
+
 @pytest.mark.asyncio
 async def test_create_large_document_defers_ingestion_to_worker():
     """Content beyond the sync threshold returns chunk_count=0 and leaves
@@ -165,13 +187,28 @@ async def test_create_large_document_defers_ingestion_to_worker():
         assert response.status_code == 200, response.text
         created = response.json()["data"]
         document_id = created["id"]
-        # Worker has not processed the queued task yet, so the row is
-        # persisted with chunk_count=0 and the client can still read it back.
+        # The response is returned before ingestion runs, so the row the caller
+        # sees is still chunk_count=0. `.kiq()` is fire-and-forget on the inline
+        # broker (await_inplace=False), so this is a property of the response, not
+        # a race: the task cannot have run before `create_without_ingestion`
+        # returned.
         assert created["chunkCount"] == 0
+
+        # ...but on the inline broker the task then runs IN THIS PROCESS, so
+        # ingestion does complete. Before #324 it could not: the task module's
+        # `Provide` marker was never wired, so every dispatch died with
+        # `AttributeError: 'Provide' object has no attribute
+        # 'ingest_existing_document'` and the row stayed at chunk_count=0 forever
+        # — invisible to /v1/docs/query, with no alert and no error record.
+        # Draining rather than sleeping a fixed interval keeps this deterministic.
+        await _drain_inline_tasks()
 
         fetch_resp = await client.get(f"/v1/docs/documents/{document_id}")
         assert fetch_resp.status_code == 200
-        assert fetch_resp.json()["data"]["chunkCount"] == 0
+        assert fetch_resp.json()["data"]["chunkCount"] > 0, (
+            "async ingestion did not complete in-process; the inline broker is "
+            "running the task without its domain DI wiring again (#324)"
+        )
 
 
 @pytest.mark.asyncio

@@ -136,3 +136,22 @@ jobs:
 
       - name: Run architecture checks
         run: uv run pre-commit run --all-files
+
+      # The gitleaks pre-commit hook is `gitleaks git --pre-commit --staged` with
+      # pass_filenames: false, so the step above does NOT scan it: on a clean
+      # checkout there is no staged diff and the hook reports
+      # `0 commits scanned. scanned ~0 bytes`. Until this step existed the secret
+      # gate was purely local — a PR from a contributor who skipped the hook was
+      # never re-checked. This scans the whole working tree instead (#320).
+      - name: Scan the full checkout for committed secrets
+        env:
+          # Keep in lockstep with the `rev:` pinned for gitleaks in
+          # .pre-commit-config.yaml so local and CI enforce one ruleset.
+          GITLEAKS_VERSION: "8.30.1"
+        run: |
+          set -euo pipefail
+          curl -sSfL -o /tmp/gitleaks.tar.gz \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          tar -xzf /tmp/gitleaks.tar.gz -C /tmp gitleaks
+          /tmp/gitleaks version
+          /tmp/gitleaks dir --config .gitleaks.toml --redact --no-banner --exit-code 1 .
