@@ -1,12 +1,136 @@
-version: '3.8'
+# Reference stack: every long-lived process this project ships, plus the
+# infrastructure they require, in one `docker compose up`.
+#
+# Previously this file declared a single `server` service, pinned
+# `image: server:v0.0.1` at project version 0.9.0, carried the obsolete
+# `version: '3.8'` key, and pointed `env_file` at the gitignored
+# `_env/prod.env` — so `docker compose config` failed outright on a clean
+# clone:
+#
+#   env file .../_env/prod.env not found
+#
+# `_env/prod.env` is now an *optional overlay* (`required: false`). Without it
+# the stack runs on the inline defaults below at ENV=local. Supply the file to
+# point the same topology at real infrastructure; note that ENV=stg/prod turns
+# on boot validation that rejects every placeholder credential here, which is
+# the intended behaviour rather than an obstacle to work around.
+#
+# Infrastructure ports are deliberately not published to the host: this file
+# and docker-compose.local.yml would otherwise both claim 5432.
+
+name: fastapi-agent-blueprint
+
+x-app: &app
+  build:
+    context: .
+    dockerfile: _docker/docker.Dockerfile
+  image: fastapi-agent-blueprint:0.9.0
+  env_file:
+    # Order is the whole point. Entries later in this list override earlier
+    # ones, so `_env/prod.env` genuinely wins over the reference defaults. An
+    # inline `environment:` block would override BOTH and make the overlay
+    # unreachable — ENV would stay `local`, stg/prod boot validation would never
+    # run, and the wildcard hosts and placeholder credentials could not be
+    # replaced. Verified with `docker compose config`.
+    - _docker/compose.defaults.env
+    - path: _env/prod.env
+      required: false
+  restart: unless-stopped
 
 services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # BROKER_TYPE=inmemory runs tasks inline in the producer process and
+  # InMemoryBroker.listen() raises, so a standalone worker needs a real broker.
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "check_running"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  # Schema owner. Runs to completion before the app processes start, so the
+  # three of them never race to create the same tables.
+  migrate:
+    <<: *app
+    command: ["alembic", "upgrade", "head"]
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # The admin dashboard is mounted onto this process when the `admin` extra is
+  # installed; build with --build-arg EXTRAS="... --extra admin" to include it.
+  # Without it the server boots normally and logs admin_mount_skipped.
   server:
-    build:
-      context: .
-      dockerfile: _docker/docker.Dockerfile
-    container_name: server
-    image: server:v0.0.1
-    env_file: _env/prod.env
+    <<: *app
+    # 8080, not 8000: port 8000 belongs to dynamodb-local in this repo
+    # (docker-compose.local.yml, DYNAMODB_ENDPOINT_URL in _env/*.example, and a
+    # hardcoded probe in the dynamodb integration tests). Publishing the server
+    # there makes those tests find FastAPI instead of DynamoDB, so they stop
+    # skipping and fail with a 404 from DescribeTable. 8001 is taken too — that
+    # is the local/quickstart runner's port.
     ports:
-      - "8000:8000"
+      - "8080:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+  worker:
+    <<: *app
+    command:
+      ["taskiq", "worker", "src._apps.worker.app:app", "src._apps.worker.app"]
+    healthcheck:
+      disable: true
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+  # Separate process from the worker: it only enqueues on a cron label, and the
+  # worker consumes. Two schedulers would double-enqueue.
+  scheduler:
+    <<: *app
+    command:
+      [
+        "taskiq",
+        "scheduler",
+        "src._apps.worker.scheduler:scheduler",
+        "src._apps.worker.scheduler",
+      ]
+    healthcheck:
+      disable: true
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+volumes:
+  postgres_data:

@@ -4,8 +4,8 @@ Creates the admin_identity + admin_refresh_token tables, moves existing
 role='admin' rows out of the user table, then drops the admin-only columns
 (role, permissions, password_temporary, is_bootstrap_admin) from user.
 
-Revision ID: 0009_admin_identity_realm_separation
-Revises: 0008_ai_usage_add_guardrail_triggered
+Revision ID: 0009_admin_identity_realm
+Revises: 0008_ai_usage_guardrail_flag
 Create Date: 2026-06-01
 
 """
@@ -16,8 +16,8 @@ import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision: str = "0009_admin_identity_realm_separation"
-down_revision: str | None = "0008_ai_usage_add_guardrail_triggered"
+revision: str = "0009_admin_identity_realm"
+down_revision: str | None = "0008_ai_usage_guardrail_flag"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

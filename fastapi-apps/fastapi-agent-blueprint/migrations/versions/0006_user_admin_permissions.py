@@ -1,6 +1,6 @@
 """user: add password_temporary, is_bootstrap_admin, permissions for admin permission model
 
-Revision ID: 0006_add_user_admin_permission_fields
+Revision ID: 0006_user_admin_permissions
 Revises: 0005_add_user_role
 Create Date: 2026-05-27
 
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision: str = "0006_add_user_admin_permission_fields"
+revision: str = "0006_user_admin_permissions"
 down_revision: str | None = "0005_add_user_role"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None

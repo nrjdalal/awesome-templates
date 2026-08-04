@@ -1,7 +1,7 @@
 """admin: add admin_audit_log table for #196 Phase 1
 
 Revision ID: 0007_add_admin_audit_log
-Revises: 0006_add_user_admin_permission_fields
+Revises: 0006_user_admin_permissions
 Create Date: 2026-05-28
 
 """
@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "0007_add_admin_audit_log"
-down_revision: str | None = "0006_add_user_admin_permission_fields"
+down_revision: str | None = "0006_user_admin_permissions"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

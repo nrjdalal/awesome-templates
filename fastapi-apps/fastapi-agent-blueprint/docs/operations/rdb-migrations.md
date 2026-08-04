@@ -29,6 +29,34 @@ Do not run `alembic downgrade base` in an environment that was stamped at the
 baseline to preserve pre-existing tables. The baseline revision is a schema
 baseline, not a data migration.
 
+## Revision Id Length
+
+Revision ids must be **32 characters or shorter**. Alembic stores the applied
+revision in `alembic_version.version_num`, hardcoded as `String(32)` in
+`DefaultImpl.version_table_impl` with no configuration hook. A longer id fails
+on PostgreSQL and MySQL:
+
+```
+DataError: (psycopg.errors.StringDataRightTruncation)
+value too long for type character varying(32)
+```
+
+while SQLite accepts it silently, so the default test engine will not catch it.
+`tests/unit/tools/test_migration_revision_ids.py` enforces the limit.
+
+Three ids shipped over it before #332 and were shortened. A database created
+before that change — in practice a SQLite one, since PostgreSQL and MySQL
+rejected the long values — will fail its next upgrade with
+`Can't locate revision identified by ...`. Rewrite it once first:
+
+```bash
+uv run python tools/migrate_legacy_revision_ids.py --env local --dry-run
+uv run python tools/migrate_legacy_revision_ids.py --env local
+```
+
+The script only replaces the three known ids, is idempotent, and is a no-op on
+a current or fresh database.
+
 ## Zero-Downtime Migrations
 
 > Background: [ADR 056](../history/056-zero-downtime-migration-safety.md).

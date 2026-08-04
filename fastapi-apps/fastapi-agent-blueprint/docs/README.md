@@ -32,6 +32,7 @@ Quick index for the `docs/` folder.
 
 | Page | What it covers |
 |---|---|
+| [operations/containers.md](operations/containers.md) | Docker image and the `docker compose up` reference stack — build args, ports, migrations, what to change before production |
 | [operations/rdb-migrations.md](operations/rdb-migrations.md) | Alembic rollout, rollback, and the zero-downtime expand-contract playbook |
 | [operations/error-notifications.md](operations/error-notifications.md) | Slack / Discord error alerts — setup, severity channel routing, coverage limits, cooldown and payload caveats |
 | [operations/observability-otel.md](operations/observability-otel.md) | OpenTelemetry — Jaeger / Tempo / Phoenix setup |

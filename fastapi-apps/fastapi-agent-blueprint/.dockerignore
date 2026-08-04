@@ -1,0 +1,67 @@
+# Build context exclusions.
+#
+# Without this file the whole working tree is sent to the daemon: ~1.0 GB
+# locally, of which .venv is ~376 MB and .claude/worktrees is ~495 MB. Both are
+# host-only and neither can be used by the image — the venv is rebuilt inside
+# the builder stage against the target platform.
+#
+# Keep in step with the COPY lines in _docker/docker.Dockerfile: anything the
+# image needs must NOT be excluded here.
+
+# Version control
+.git/
+.gitignore
+.gitattributes
+
+# Local virtualenvs and interpreter caches — rebuilt in the builder stage
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pycon/
+.ruff_cache/
+.mypy_cache/
+.pytest_cache/
+
+# Secrets and local runtime state. The image reads configuration from the
+# process environment; nothing under _env/ is ever baked into a layer.
+_env/
+*.env
+.env
+quickstart.db
+*.sqlite
+*.sqlite3
+.nicegui/
+
+# Test, docs and example trees — not part of the served application
+tests/
+docs/
+examples/
+scripts/
+migrations/versions/__pycache__/
+
+# AI collaboration harness (host-side tooling only)
+.claude/
+.codex/
+.antigravity/
+.gemini/
+.agents/
+AGENTS.md
+CLAUDE.md
+
+# CI and editor
+.github/
+.vscode/
+.idea/
+.pre-commit-config.yaml
+
+# Compose files and container assets — not needed inside the image
+docker-compose*.yml
+_docker/
+
+# Build artefacts
+dist/
+build/
+htmlcov/
+.coverage
