@@ -87,6 +87,34 @@ otel = [
     "opentelemetry-exporter-otlp-proto-grpc>=1.40.0",
 ]
 
+# Type checking. pyright was a declared dev dependency with zero invocation
+# sites anywhere in the repo (#333) — the pre-commit mypy hook is
+# `stages: [manual]`, so `pre-commit run --all-files` skipped it and the CI
+# `architecture` job type-checked nothing at all.
+#
+# `include` is an allow-list of what is clean today rather than all of `src/`,
+# which reports 58 errors. Measured per package at the time of writing:
+#
+#   src/_core/domain       0     src/user              0
+#   src/_core/application  0     src/auth              2
+#   src/_core/exceptions   0     src/admin_identity    2
+#   src/_core/common       0     src/ai_usage          5
+#   src/_core (all)       34     src (all)            58
+#
+# The remainder is SQLAlchemy attribute-assignment and Protocol-shape noise
+# concentrated in infrastructure/ and interface/admin/. Widen this list as
+# packages are cleaned; never widen it by relaxing the rules below.
+[tool.pyright]
+include = [
+    "src/_core/domain",
+    "src/_core/application",
+    "src/_core/exceptions",
+    "src/_core/common",
+    "src/user",
+]
+pythonVersion = "3.12"
+typeCheckingMode = "standard"
+
 [project.urls]
 Homepage = "https://github.com/Mr-DooSun/fastapi-agent-blueprint"
 Repository = "https://github.com/Mr-DooSun/fastapi-agent-blueprint"

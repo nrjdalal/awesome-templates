@@ -43,7 +43,7 @@ Quick index for the `docs/` folder.
 
 The [history/](history/) folder contains Architecture Decision Records (ADRs).
 
-- 27 active ADRs in `history/` — open and in effect
+- 28 active ADRs in `history/` — open and in effect
 - 30 archived ADRs in `history/archive/` — superseded or historical
 
 Start at [history/README.md](history/README.md) for the index.

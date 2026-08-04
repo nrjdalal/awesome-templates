@@ -7,7 +7,6 @@ diff) ships in Phase 2 alongside the ``/admin/audit-log`` UI.
 from sqlalchemy import (
     BigInteger,
     DateTime,
-    ForeignKey,
     Index,
     Integer,
     String,
@@ -24,8 +23,9 @@ class AdminAuditLog(Base):
     """Persistent record of every admin action — login/logout, account
     management, password change, etc. (#196).
 
-    ``admin_username`` is denormalized so log entries survive deletion of the
-    acting user (FK is ``ON DELETE SET NULL``).
+    ``admin_username`` is the durable actor reference — denormalized so entries
+    survive deletion of the acting admin. ``admin_user_id`` is correlation-only
+    and carries no foreign key; see the column comment and ADR 057 (#348).
     """
 
     __tablename__ = "admin_audit_log"
@@ -48,12 +48,29 @@ class AdminAuditLog(Base):
         autoincrement=True,
     )
 
-    # FK to user.id, SET NULL on delete; ``admin_username`` survives as the
-    # durable actor reference.
+    # Deliberately unconstrained. This carried a foreign key to ``user.id`` with
+    # ``ON DELETE SET NULL`` until ADR 057 (#348), which was wrong twice over:
+    #
+    # - The value is an ``admin_identity.id`` (ADR 049 / #218), not a customer
+    #   id. Migration 0009 copied admins across *preserving ids* and advanced
+    #   only ``admin_identity``'s sequence, so the two id spaces overlap — a
+    #   constraint against either table can be satisfied by the wrong row and
+    #   certify that a customer performed an admin action.
+    # - ``SET NULL`` let a non-audit code path rewrite append-only evidence.
+    #   0009's ``DELETE FROM "user" WHERE role = 'admin'`` ran *after* 0007
+    #   created the constraint, nulling the actor on every pre-#218 row on
+    #   PostgreSQL/MySQL while SQLite (which does not enforce foreign keys)
+    #   kept them.
+    #
+    # Integrity now lives on the read side and in CI, not in the DDL — see
+    # tests/unit/_core/infrastructure/admin/audit/test_audit_actor_fk.py.
     admin_user_id: Mapped[int | None] = mapped_column(
         Integer,
-        ForeignKey("user.id", ondelete="SET NULL"),
         nullable=True,
+        comment=(
+            "admin_identity.id of the actor. Realm-scoped and correlation-only:"
+            " never join to user. admin_username is the durable reference."
+        ),
     )
     admin_username: Mapped[str] = mapped_column(String(255), nullable=False)
 

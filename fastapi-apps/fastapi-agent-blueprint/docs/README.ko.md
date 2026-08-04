@@ -98,7 +98,7 @@ make quickstart   # :8001 에 FastAPI 기동, SQLite 스키마 자동 생성
 | AI 워크플로우 스킬 (Claude + Codex) | **15 + 15** | 0 | 0 | 0 |
 | 벡터 인프라 (S3 Vectors) | **Yes** | No | No | No |
 | 멀티 인터페이스 (API + Worker + Admin + MCP) | **3 + 1 예정** | 2 | 1 | 1 |
-| Architecture Decision Records | **27 active · 30 archived** | 0 | 0 | 0 |
+| Architecture Decision Records | **28 active · 30 archived** | 0 | 0 | 0 |
 | 전 계층 타입 안전 제네릭 | **Yes** | 부분 | 부분 | No |
 | IoC Container DI | **Yes** | No | No | No |
 
@@ -230,7 +230,7 @@ Codex CLI 를 쓴다면 `/` 대신 `$`. 하네스 없이 손으로 만들고 싶
 | Claude Code / Codex CLI 설정 | [`docs/ai-development.ko.md`](ai-development.ko.md) |
 | 도메인을 수동으로 추가 (AI 도구 없이) | [`docs/tutorial/first-domain.md`](tutorial/first-domain.md) (Path B) |
 | 상세 env 변수 · 기술 스택 · 프로젝트 트리 | [`docs/reference.md`](reference.md) |
-| 어떤 결정을 왜 했는지 | [ADR 인덱스](history/README.md) (27 active · 30 archived) |
+| 어떤 결정을 왜 했는지 | [ADR 인덱스](history/README.md) (28 active · 30 archived) |
 | 다음 계획 | [Roadmap](reference.md#roadmap) · [이슈 트래커](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues) |
 
 ---

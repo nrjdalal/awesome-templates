@@ -2,8 +2,13 @@
 
 Design invariants (codex-reviewed):
 - **Audit-write never raises into the caller.** A repository failure is
-  swallowed and surfaced via structlog as a warning so that a transient DB
-  hiccup cannot break the user action that triggered the log.
+  swallowed so a transient DB hiccup cannot break the user action that
+  triggered the log. It is *not* silent: the fallback logs at ``error`` with
+  enough identity to reconstruct the dropped event, and dispatches through
+  ``ErrorNotifier`` so a persistent failure pages someone (#348). Before ADR
+  057 this path logged at ``warning`` with only action/domain/result, which is
+  how a wrong foreign key destroyed every authenticated admin audit write on
+  PostgreSQL for two releases without anyone noticing.
 - **Actor + correlation auto-fill.** When ``admin_user_id`` / ``admin_username``
   are not passed (typical for instrumentation inside a NiceGUI page callback),
   they are read from ``app.storage.user``. ``correlation_id`` is read from
@@ -48,11 +53,38 @@ _UNSET = object()
 _ADMIN_USERNAME_MAX = 255
 
 
+def _loggable(value: Any) -> Any:
+    """Render ``_UNSET`` as a readable marker for the failure log.
+
+    A raw ``object()`` repr in a log line tells the reader nothing; knowing the
+    write failed *before* actor auto-fill ran is diagnostically different from
+    knowing the actor was genuinely unknown.
+    """
+    return "<unset>" if value is _UNSET else value
+
+
 class AuditLogger:
     """Thin facade callers use to record an audit entry."""
 
-    def __init__(self, repository: AdminAuditLogRepository) -> None:
+    def __init__(
+        self,
+        repository: AdminAuditLogRepository,
+        error_notifier: Any | None = None,
+    ) -> None:
         self._repository = repository
+        # A *provider* (zero-arg callable) or an already-built notifier, or None.
+        # Providers are resolved lazily in _notify_write_failure for the same
+        # reason bootstrap_admin passes the database provider rather than a
+        # resolved Database: resolving at boot freezes container state into
+        # module state. Here it also consumes the one-time
+        # notification_client_disabled warning, because the disabled branch is a
+        # shared Singleton that logs from __init__ — resolving it eagerly made
+        # test_noop_notification_client_disabled_warning_emitted_once see zero
+        # warnings instead of one.
+        #
+        # Duck-typed rather than imported: this module must not take a hard
+        # dependency on the notification package just to report a failure.
+        self._error_notifier = error_notifier
 
     async def log(
         self,
@@ -108,15 +140,77 @@ class AuditLogger:
             )
             await self._repository.insert(dto)
         except Exception as exc:  # noqa: BLE001 - swallowed by design
-            # The dropped event is reconstructable from these non-sensitive
-            # fields only (no before_state/after_state/failure_reason — they
-            # may contain detail not yet vetted by the whitelist).
-            _logger.warning(
-                "audit_write_failed",
+            # Identity is included on purpose. The previous version claimed the
+            # dropped event was "reconstructable from these non-sensitive
+            # fields" while omitting actor and record, so it recorded that
+            # *something* failed and nothing about who or what. These three are
+            # the minimum needed to reconstruct the entry; before_state /
+            # after_state / failure_reason stay out because they may carry
+            # detail the whitelist has not vetted.
+            #
+            # ``error``, not ``warning``: a dropped audit entry is a lost
+            # security record, not a degraded nicety.
+            #
+            # ``Database.session()`` translates IntegrityError into a curated
+            # ``DatabaseException`` with this error_code (see
+            # ``persistence/rdb/database.py``), which is also how
+            # ``user_repository`` and ``admin_identity_repository`` detect it —
+            # a constraint rejection never arrives here as a raw IntegrityError.
+            rejected_by_constraint = (
+                getattr(exc, "error_code", None) == "DB_INTEGRITY_ERROR"
+            )
+            event = (
+                "audit_write_rejected_by_constraint"
+                if rejected_by_constraint
+                else "audit_write_failed"
+            )
+            _logger.error(
+                event,
                 exc_info=exc,
                 action=getattr(action, "value", str(action)),
                 domain=domain,
                 result=getattr(result, "value", str(result)),
+                # Both are function parameters, so they always exist as locals;
+                # they may still hold the _UNSET sentinel if the failure landed
+                # before actor auto-fill, which is itself worth seeing.
+                admin_username=_loggable(admin_username),
+                admin_user_id=_loggable(admin_user_id),
+                record_id=record_id,
+                error_type=type(exc).__name__,
+            )
+            self._notify_write_failure(event, type(exc).__name__)
+
+    def _notify_write_failure(self, event: str, error_type: str) -> None:
+        """Page an operator when audit writes are failing.
+
+        status_code=500 so the default NOTIFICATION_SEVERITY_THRESHOLD (500)
+        lets it through; ``ErrorNotifier`` applies its own per-error_code
+        cooldown, so a storm of failures produces one alert per quiet window
+        rather than one per admin action.
+
+        Never raises: a notification problem must not become a second failure
+        on a path whose entire contract is "does not raise into the caller".
+        """
+        notifier = self._error_notifier
+        if notifier is None:
+            return
+        try:
+            # dependency-injector providers are callable and return the instance;
+            # an already-built notifier exposes maybe_dispatch directly.
+            if not hasattr(notifier, "maybe_dispatch"):
+                notifier = notifier()
+            notifier.maybe_dispatch(
+                status_code=500,
+                error_code=event,
+                message=f"admin audit write failed ({error_type})",
+            )
+        except Exception as exc:  # noqa: BLE001 - see docstring
+            # exc_type only, no exc_info. The notifier is duck-typed and may be
+            # any provider a deployment wires in; its exceptions can carry the
+            # webhook URL or other configuration. ErrorNotifier._safe_send takes
+            # the same precaution for the same reason (security-checklist §13).
+            _logger.warning(
+                "audit_write_failure_notify_failed",
                 error_type=type(exc).__name__,
             )
 

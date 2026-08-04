@@ -577,7 +577,27 @@ class {Name}Container(containers.DeclarativeContainer):
 
 ### Pre-commit (Manual Stage)
 
-- mypy (--ignore-missing-imports, --check-untyped-defs)
+- mypy (--ignore-missing-imports, --check-untyped-defs). `stages: [manual]`, so
+  `pre-commit run --all-files` — including the CI `architecture` job — does **not** run it.
+  Until #333 that meant nothing in CI type-checked anything; the blocking check now lives in
+  the `typecheck` job below rather than here.
+
+### CI Type Check and Dependency Audit (#333)
+
+- **pyright — blocking, scoped.** `[tool.pyright] include` in `pyproject.toml` is an
+  allow-list of packages that pass today (`_core/domain`, `_core/application`,
+  `_core/exceptions`, `_core/common`, `user`), not all of `src/`, which reports 58 errors
+  concentrated in `infrastructure/` and `interface/admin/`. Widen the list as packages are
+  cleaned; never widen it by relaxing the rules. `tests/unit/tools/test_pyright_scope.py`
+  fails if an include path stops existing, because pyright silently checks less rather
+  than erroring.
+- **pip-audit — advisory** (`continue-on-error`), writing to the job summary. A newly
+  published CVE would otherwise redden a PR that changed nothing, which the §0
+  advisory-first direction rules out. It installs the shipped extras before scanning so
+  optional production dependencies are covered. Current backlog: #349.
+- **`uv sync --locked`** on every CI install. `--frozen` was tried first and is the wrong
+  flag: it syncs *without* updating the lock and therefore accepts a stale one. `--locked`
+  asserts the lock would not change and fails the job when `pyproject.toml` moved without it.
 
 ### Commit Message
 

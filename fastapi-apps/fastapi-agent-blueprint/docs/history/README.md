@@ -65,6 +65,7 @@ Read top-to-bottom; each builds on the ones above it.
 | [054](054-plan-execute-boundary-hard-gate.md) | Plan→Execute Boundary Hard Gate | `/plan-feature` ends at the approved Execution Packet; implementing from the `planned` stage without `/execute-plan` or a waiver token is hard-blocked on Claude, advisory on Codex. |
 | [055](055-summary-finding-ledger.md) | Summary Finding Ledger | Out-of-diff review findings post as a task-list ledger with complete carry-forward per round; any `OPEN` ledger key blocks Approve and the completion gate (closes the #292 merge-gate bypass). |
 | [056](056-zero-downtime-migration-safety.md) | Zero-Downtime Migration Safety | No-downtime migration playbook (expand-contract + per-engine safe/unsafe DDL) + an advisory checker that scans Alembic revisions for unsafe DDL; advisory-first, plan-time data-model contracts explicitly out of scope. |
+| [057](057-audit-actor-correlation-only.md) | Admin Audit Actor — Correlation-Only, No Foreign Key | `admin_audit_log.admin_user_id` drops its foreign key: the value is an `admin_identity.id` and migration 0009's id-preserving copy left the two id spaces overlapping, so a constraint against either table can be satisfied by the wrong row. Integrity moves to the read path; the swallowed audit-write failure that hid it becomes loud. |
 
 ## Archive
 

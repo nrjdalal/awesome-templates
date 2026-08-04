@@ -31,7 +31,7 @@ async def test_repository_insert_and_table_registered(test_db):
     repo = AdminAuditLogRepository(test_db)
 
     dto = AuditLogDTO(
-        admin_user_id=42,
+        admin_user_id=None,
         admin_username="alice",
         action=AdminAction.LOGIN,
         domain="auth",

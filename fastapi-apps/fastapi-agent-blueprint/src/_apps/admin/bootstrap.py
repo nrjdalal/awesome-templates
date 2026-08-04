@@ -75,7 +75,17 @@ def bootstrap_admin(fastapi_app: FastAPI) -> None:
     # and query while /v1/* ran on the swapped database.
     audit_repo = AdminAuditLogRepository(admin_container.core_container.database)
     configure_audit_repository(audit_repo)
-    configure_audit_logger(AuditLogger(audit_repo))
+    # Pass the notifier so a persistent audit-write failure reaches an operator
+    # instead of only structlog (#348). The *provider*, not a resolved notifier,
+    # for the same reason as the database above — and because the disabled branch
+    # is a shared Singleton that logs its one-time warning from __init__, so
+    # resolving it at boot consumes that warning before anything can observe it.
+    configure_audit_logger(
+        AuditLogger(
+            audit_repo,
+            error_notifier=admin_container.core_container.error_notifier,
+        )
+    )
     configure_admin_account_use_case_provider(
         admin_container.admin_identity_container.admin_account_use_case
     )

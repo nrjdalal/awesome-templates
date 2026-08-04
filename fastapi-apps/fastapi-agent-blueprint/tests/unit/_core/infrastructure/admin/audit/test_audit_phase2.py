@@ -56,7 +56,11 @@ def audit_recorder(monkeypatch):
 
 async def _insert_row(repo, **overrides) -> None:
     base = {
-        "admin_user_id": 1,
+        # None, not a customer id. project-dna §17 IC-218-1: "No admin row
+        # may exist in `user`" — and admin_audit_log.admin_user_id still FKs
+        # to user.id (#348), so there is no honest non-null value to write
+        # here. The column is nullable and nothing below asserts on it.
+        "admin_user_id": None,
         "admin_username": "alice",
         "action": AdminAction.LOGIN,
         "domain": "auth",
@@ -175,12 +179,20 @@ async def test_delete_older_than_only_removes_old(test_db):
     # Backdate one row directly to ensure something is older than cutoff.
     async with test_db.session() as session:
         old = AdminAuditLog(
-            admin_user_id=2,
+            admin_user_id=None,  # see _insert_row — #348
             admin_username="old_p2",
             action=AdminAction.LOGIN.value,
             domain="auth",
             result=AuditResult.SUCCESS.value,
-            created_at=datetime.now(UTC) - timedelta(days=400),
+            # Naive UTC, matching the column. AdminAuditLog.created_at is
+            # tz-naive by design and the repository normalises through
+            # _to_naive_utc before writing; this test bypasses the repository,
+            # so it has to honour the same contract. An aware value reaches
+            # asyncpg as `can't subtract offset-naive and offset-aware
+            # datetimes` — SQLite stores it as a string and never complains.
+            created_at=AdminAuditLogRepository._to_naive_utc(
+                datetime.now(UTC) - timedelta(days=400)
+            ),
         )
         session.add(old)
         await session.commit()
