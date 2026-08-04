@@ -58,7 +58,7 @@
     "semi": false
   },
   "dependencies": {
-    "@base-ui/react": "^1.6.0",
+    "@base-ui/react": "^1.7.0",
     "@remixicon/react": "^4.9.0",
     "@shadcn/react": "^0.2.1",
     "@tanstack/react-form": "^1.33.3",
