@@ -41,6 +41,36 @@ rm -f ./quickstart.db
 > what a contributor would do when turning an example into a real
 > domain inside their own fork.
 
+### The copy flow stops at quickstart — there is no schema step
+
+No example ships an Alembic revision. The flow above works because
+`make quickstart` calls `Base.metadata.create_all()`, and it does that
+**only when `ENV=quickstart`**
+([`_bootstrap_quickstart_schema_if_applicable`](../src/_apps/server/bootstrap.py)).
+Every other environment is expected to use Alembic.
+
+So copying an example into `src/` and then booting against a real database
+(`make dev`, or anything with `ENV=local`/`dev`/`stg`/`prod`) gives you a
+**missing-relation error on the first request** — the model is discovered and
+the routes mount, but the table was never created. Generate a revision before
+you boot:
+
+```bash
+cp -r examples/todo src/todo
+
+# Autogenerate compares against a LIVE database, so bring it up first — running
+# alembic before this fails on connection, not on the missing table.
+docker compose -f docker-compose.local.yml up -d postgres
+
+alembic revision --autogenerate -m "todo: initial schema"
+alembic upgrade head
+make dev
+```
+
+This is a known gap in the contract, not a bug in any single example: turning
+an example into a real domain means owning its migration, the same as a domain
+created by `/new-domain`.
+
 ## Contributing a new example
 
 Each `good first issue` under the `examples/` area maps one-to-one to a

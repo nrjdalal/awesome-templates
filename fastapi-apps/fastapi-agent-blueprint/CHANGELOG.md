@@ -7,6 +7,71 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-08-05
+
+Error-notification webhooks land as the first post-v0.9.0 feature, and then a
+project-wide audit ([#336](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/336))
+found 39 defects across 14 clusters and closed all of them. Several were silent
+failures that no test could see because CI only ran SQLite; that gap is closed
+too. **Read `Upgrading` — two changes are API-visible and one removes public
+symbols.**
+
+### Added
+
+- **Error-notification webhooks.** Optional Slack/Discord alerts fired from the
+  global exception handlers, behind the ADR 042 Protocol + Selector pattern:
+  `NOTIFICATION_PROVIDER` plus a matching webhook URL enables it, unset falls back
+  to `NoopNotificationClient`. `ErrorNotifier` gates on
+  `NOTIFICATION_SEVERITY_THRESHOLD` (default 500) and a per-process, per-`error_code`
+  `NOTIFICATION_COOLDOWN_SECONDS` (default 60), and dispatches fire-and-forget so a
+  slow webhook never enters the request path. Send failures are logged
+  `exc_type`-only — a webhook URL is a bearer credential and must never reach the
+  log stream. First external contribution to `src/` after v0.9.0
+  ([#17](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/17)).
+- **Worker task failures alert too.** `TaskFailureNotificationMiddleware` extends
+  dispatch to Taskiq task failures. No new env vars. Severity is synthesised (a
+  `BaseCustomException` keeps its `status_code`, anything else is 500) so the
+  existing threshold still applies, and the cooldown key is scoped
+  `{task_name}:{error_code}` so one noisy task cannot mute every other task.
+  Alerts fire once per incident on the terminal failure — permanent errors
+  immediately, retryable ones after the last attempt
+  ([#310](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/310)).
+- **Severity channel routing.** `NOTIFICATION_WARNING_THRESHOLD` is the sole
+  switch: setting it lowers the alerting floor to `min(severity, warning)` and
+  routes that band to a second webhook.
+  `NOTIFICATION_CRITICAL_WEBHOOK_URL` / `NOTIFICATION_WARNING_WEBHOOK_URL` are
+  per-tier overrides that each fall back to the single provider webhook
+  ([#286](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/286)).
+- **Request bodies are bounded before the app parses them.**
+  `MAX_REQUEST_BODY_BYTES` (default 10 MiB, `0` disables) enforced by
+  `BodySizeLimitMiddleware` on both the `Content-Length` path and the chunked path
+  that carries none. Collection fields also gained explicit `max_length` bounds
+  ([#322](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/322)).
+- **`VECTOR_STORE_TYPE` is a real setting with boot validation.** `inmemory`
+  (default) or `s3vectors`; an unknown value is rejected, and `s3vectors` without
+  the complete `S3VECTORS_*` group is rejected rather than handing the docs domain
+  a store with `s3vector_client=None`
+  ([#328](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/328)).
+- **CI runs PostgreSQL, and the type gate is real.** The test matrix gained a
+  PostgreSQL leg — it previously claimed PostgreSQL while running SQLite — and the
+  `architecture` job now actually type-checks instead of passing vacuously
+  ([#333](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/333)).
+- **The secret scan runs in CI, and covers Discord.** `.gitleaks.toml` adds a
+  `discord-webhook-url` rule the shipped ruleset could not match, and the
+  `architecture` job runs `gitleaks dir` over the whole working tree. The
+  pre-commit hook only ever saw the staged diff, so a hook-skipping PR was
+  unchecked ([#320](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/320)).
+- **Tests can resolve the *enabled* half of an optional-infra Selector.** No test
+  could before, so every "enabled" branch in `CoreContainer` was unverified. Adds
+  `tests/support/container_env.py` plus a `block_import` fixture that simulates a
+  missing optional extra
+  ([#330](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/330),
+  [#351](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/351)).
+- New ADRs: [057](docs/history/057-audit-actor-correlation-only.md) (audit actor is
+  correlation-only) and
+  [058](docs/history/058-base-repository-engine-guarantees.md) (what
+  `BaseRepository` guarantees regardless of `DATABASE_ENGINE`).
+
 ### Changed
 
 - **API-visible: unsorted list endpoints now return newest-first.**
@@ -15,28 +80,182 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([ADR 058](docs/history/058-base-repository-engine-guarantees.md) D2). Offset
   paging over an unordered result set could repeat or skip rows across pages, so
   the previous "order" was whatever the engine happened to return. An explicit
-  `QueryFilter.sort_field` still wins. Clients that relied on the incidental
-  order — including `GET /v1/users` — will see a different sequence
+  `QueryFilter.sort_field` still wins — it becomes the primary key, not the only
+  one. Clients that relied on the incidental order — including `GET /v1/users` —
+  will see a different sequence
   ([#325](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/325)).
-- **Search and sort now fail closed with a 400 instead of returning too much.**
-  A search naming no usable text column previously added no WHERE clause and
-  returned the whole table with `total_items` set to the full count; it is now
-  `400 DB_SEARCH_FIELD_UNUSABLE`. An unknown `sort_field` was an opaque
+- **API-visible: search and sort now fail closed with a 400 instead of returning
+  too much.** A search naming no usable text column previously added no WHERE
+  clause and returned the whole table with `total_items` set to the full count; it
+  is now `400 DB_SEARCH_FIELD_UNUSABLE`. An unknown `sort_field` was an opaque
   `500 DB_INTERNAL_ERROR`; it is now `400 DB_UNKNOWN_FIELD` (ADR 058 D3, D4).
+- **The inline broker is no longer a different runtime.** Under
+  `BROKER_TYPE=inmemory` — the shipped default — `.kiq()` runs the task inside the
+  server process, and it did so with an empty middleware stack and unresolved
+  `Provide[...]` markers: retries, error logging, structlog context and worker
+  alerts were all inert, and docs ingestion silently no-opped. The server now
+  installs the same middleware stack and domain DI wiring on the inline broker
+  ([#324](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/324)).
+- **Admin shares the server's `CoreContainer` instead of building a second tree.**
+  Two async engines, two `QueuePool`s, two `HttpClient`s and two `ErrorNotifier`
+  cooldown dicts per process — so an HTTP-path alert did not suppress its admin-path
+  duplicate ([#326](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/326)).
+- **bcrypt runs off the event loop.** Hashing and verification are ~100 ms of
+  synchronous CPU that stalled every concurrent request; both now go through a
+  thread. The login miss path was also equalised so a missing username and a wrong
+  credential take the same time
+  ([#322](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/322)).
+- **The Docker image builds as shipped, and compose starts every process.** The
+  image did not build; `migrations/` was never copied so a container could not run
+  Alembic; the image ran as root; and `docker compose up` started one of four
+  processes ([#332](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/332)).
+- **Three Alembic revision ids shortened** past the hardcoded `String(32)` of
+  `alembic_version.version_num`, which PostgreSQL and MySQL reject.
+  `tools/migrate_legacy_revision_ids.py` rewrites a stored long id — needed on
+  SQLite, which does not enforce VARCHAR length and so accepted them
+  ([#332](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/332)).
+- **Dependency floors raised past the runtime-critical advisories.** `pip-audit`
+  went from 32 distinct advisories to 8: `aiohttp` 3.14.3, `pyjwt` 2.13.0 (5
+  advisories, and it sits directly in the auth path), `pydantic-settings` 2.14.2,
+  `python-dotenv` 1.2.2, `nicegui` 3.12.0, plus eleven transitive upgrades.
+  `pydantic-ai-slim` is `>=1.99.0,<2` across all four extras — the advisory needs
+  the floor, and the cap keeps an unvetted 2.x major out. The remaining 8 are not
+  fixable here: `starlette` (5) is held by `fastapi 0.128.0`'s own
+  `starlette<0.51.0` pin, and `pip` (3) is the ambient installer rather than a
+  dependency of this project
+  ([#349](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/349)).
+- `_maybe_configure_otel` moved out of both bootstraps into one shared
+  `maybe_configure_otel(settings, service_name)` at
+  `src/_core/infrastructure/observability/otel_bootstrap.py`. The two copies were
+  byte-identical apart from the word "server"/"worker" in a docstring. It
+  deliberately does **not** live in `otel_setup.py`: that module imports
+  `opentelemetry` at module top, so it is the thing being guarded
+  ([#331](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/331)).
 
 ### Fixed
 
 - **`BaseRepository.insert_datas` no longer 500s on backends without RETURNING.**
   The bulk path committed and then read server-side defaults that were never
-  loaded, so `MissingGreenlet` surfaced as `500 DB_INTERNAL_ERROR` **for rows
-  that were already written** — the client saw a failure for a successful write
-  and retried into duplicate-key errors. Affects MySQL/MariaDB
+  loaded, so `MissingGreenlet` surfaced as `500 DB_INTERNAL_ERROR` **for rows that
+  were already written** — the client saw a failure for a successful write and
+  retried into duplicate-key errors. Affects MySQL/MariaDB
   (`insert_returning=False`); PostgreSQL and SQLite were unaffected, which is why
-  no test caught it. It now refreshes explicitly, matching `insert_data`
-  (ADR 058 D1).
+  no test caught it. It now loads defaults with one `populate_existing` SELECT
+  before commit (ADR 058 D1).
+- **5xx exceptions are logged.** A 5xx `BaseCustomException` produced no
+  exception-level record, so in stg/prod the wrapped driver or provider error
+  existed in *none* of the response body, the logs, or the alert. The LLM error
+  mapper is also gated instead of substring-matching any message containing
+  "rate limit", and provider errors are curated rather than interpolated raw into
+  a response body — a boto3 `AccessDenied` message names the calling IAM principal
+  ARN, the account id, the bucket and the key
+  ([#323](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/323)).
+- **The notification provider graph collapsed from five Selectors to what is
+  consumable**, and configuration nothing can act on is now rejected at boot
+  ([#327](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/327)).
+  Setting a per-tier webhook URL *without* `NOTIFICATION_WARNING_THRESHOLD`
+  previously booted and silently sent every alert to the base webhook; it now
+  fails at boot ([#315](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/315)).
+- **The in-memory vector store no longer ignores filter operators it does not
+  implement.** `$gte`, `$lt`, `$and` and friends were dropped silently, so the same
+  query returned a filtered result on S3 Vectors and an unfiltered one on the
+  default backend. They now raise `VectorFilterUnsupportedException`, a curated
+  400 — the filter arrives from a public request body, so an untranslated
+  exception would have been a 500
+  ([#328](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/328)).
+- **DynamoDB batch operations no longer report success for refused work.**
+  Unprocessed items were dropped, so a partially-refused batch write returned 200.
+  Retries now use backoff with jitter and a genuinely incomplete batch raises
+  `DynamoDBBatchIncompleteException` (503). An invalid `limit` was a 500 and is now
+  a 400, and `_decode_cursor` validates strictly instead of trusting client input
+  ([#329](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/329)).
+- **Admin audit writes no longer fail silently.** The actor foreign key pointed at
+  the wrong realm's table — an id-space overlap that could attribute an action to
+  the wrong account — and a failed audit insert was swallowed. The FK is dropped in
+  favour of correlation-only ([ADR 057](docs/history/057-audit-actor-correlation-only.md),
+  [#348](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/348)).
+- **Both README demos work again**, and several reader-facing claims that were
+  false were removed. `make demo-rag`'s Step 5 no longer credits a background
+  dispatch that never happens: the demo payloads are 378–425 characters against a
+  20,000-character inline threshold, so they take the sync path.
+- **`.claude` has the hook functions its own state tooling assumed.**
+  `append_verify_log` and `cleanup_stale_verify_logs` existed in `.codex` and
+  `.antigravity` but not `.claude`, while `check_state_lifecycle.py` and
+  `governor_state_doctor.py` reasoned about all three
+  ([#334](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/334)).
+- The Governor Footer checker accepts `n/a` as a `links` entry
+  ([#314](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/314)).
 - Removed the dead `related_entities` refresh branch, which passed a list to
   `AsyncSession.refresh` (it takes one instance) and would have raised the moment
   any model defined the attribute (ADR 058 D5).
+
+### Removed
+
+- **Eleven unreferenced symbols deleted.** None had a caller, and none was an
+  advertised extension point — this repo deliberately ships base classes and stub
+  fallbacks with zero implementers, so a reference count alone is never grounds for
+  deletion here. Gone: `TaskiqManager` (and its `CoreContainer` provider — task
+  code always used `.kiq()` directly), `BaseHttpGateway` + `ExampleApiGateway`, the
+  `src/_core/infrastructure/llm/exceptions.py` re-export facade (the hierarchy
+  stays at `src/_core/exceptions/llm_exceptions.py`),
+  `ClassificationFailedException` (LLM failures are mapped centrally by
+  `try_map_llm_error`), `BrokerType` (a dead duplicate of `KNOWN_BROKER_TYPES`),
+  `ExistsData`, `InternalConfig` and its `INTERNAL_CONFIG`,
+  `S3VectorNotFoundException`, `AdminPermissionDeniedException` (the admin page
+  guard navigates rather than raising), and three uncalled `ensure_*` wrappers in
+  `_core/domain/validation.py` — the `collect_*` functions they wrapped are alive
+  and unchanged. The two candidates that looked dead but are not,
+  `BUSINESS_CONFLICT` and `build_stub_llm_model`, were kept
+  ([#331](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/331)).
+
+### Docs
+
+- **Operator runbook for error notifications** — setup, coverage limits,
+  cooldown and payload caveats, local-sink verification
+  ([`docs/operations/error-notifications.md`](docs/operations/error-notifications.md),
+  [#307](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/307)).
+- **Error Notification section in the security checklist**, covering webhook
+  credential handling and committed artefacts
+  ([#305](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/305)),
+  plus a raw-provider-exception-in-a-response-body item
+  ([#335](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/335)).
+- **Shared-reference re-sync** after the channel-routing work and again after the
+  audit ([#316](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/316),
+  [#317](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/317),
+  [#335](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/335)): the
+  scheduler — a fourth runtime process running an unattended irreversible `DELETE`
+  — appeared in no auto-loaded rule file; `AI_USAGE_PUBLIC_API_ENABLED` and
+  `AUDIT_LOG_RETENTION_DAYS` were undocumented in `_env/*.example`; and
+  `examples/README.md` now records that the copy flow has no schema step, because
+  `create_all` runs only under `ENV=quickstart`.
+- ADRs 037, 042 and 046 received **append-only errata** rather than in-place edits
+  (ADR 047 D3/D6): ADR 042's `s3vector_client` rationale credited a domain selector
+  that no longer holds the invariant — boot validation does, and the two selectors
+  key off different fields.
+
+### Upgrading
+
+```bash
+git pull
+uv sync --group dev --extra admin --extra aws
+alembic upgrade head   # revision 0010 drops the audit actor FK
+```
+
+Three changes need a look before you upgrade:
+
+1. **Unsorted list endpoints changed order** (newest-first). If a client depended
+   on the incidental order, pass an explicit `QueryFilter.sort_field`.
+2. **Search and sort now return 400 where they used to return 200 or 500.** A
+   search over a non-text field, or an unknown `sort_field`, is now rejected.
+3. **Eleven symbols were removed.** If you imported any name in the *Removed*
+   section, that import now fails. Nothing in `examples/` or the reference domains
+   used them.
+
+Migration `0010` drops the audit actor foreign key. It is reversible, and
+`tools/check_migration_safety.py` reports it as safe for a zero-downtime rollout.
+If you ran migrations on **SQLite** at v0.9.0 or earlier, run
+`tools/migrate_legacy_revision_ids.py` first — SQLite accepted three revision ids
+that are now shortened.
 
 ## [0.9.0] - 2026-07-21
 
@@ -461,7 +680,8 @@ Quality Gate review contract, `/plan-feature` Approach Options stage,
 - ADR documentation (001-013)
 - CONTRIBUTING guide and issue templates
 
-[Unreleased]: https://github.com/Mr-DooSun/fastapi-agent-blueprint/compare/v0.9.0...HEAD
+[Unreleased]: https://github.com/Mr-DooSun/fastapi-agent-blueprint/compare/v0.10.0...HEAD
+[0.10.0]: https://github.com/Mr-DooSun/fastapi-agent-blueprint/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/Mr-DooSun/fastapi-agent-blueprint/compare/v0.8.4...v0.9.0
 [0.8.4]: https://github.com/Mr-DooSun/fastapi-agent-blueprint/compare/v0.8.3...v0.8.4
 [0.8.3]: https://github.com/Mr-DooSun/fastapi-agent-blueprint/compare/v0.8.2...v0.8.3

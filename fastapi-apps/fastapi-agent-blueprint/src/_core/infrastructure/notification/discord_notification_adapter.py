@@ -4,8 +4,8 @@ from src._core.infrastructure.http.http_client import HttpClient
 class DiscordNotificationAdapter:
     """Sends error alerts to a Discord webhook.
 
-    Posts directly via ``HttpClient`` instead of ``BaseHttpGateway._post``:
-    a successful Discord webhook response is ``204 No Content`` by default
+    Posts via ``HttpClient`` and never decodes the response body: a
+    successful Discord webhook response is ``204 No Content`` by default
     (empty body), so parsing it as JSON would raise on every successful send.
     """
 

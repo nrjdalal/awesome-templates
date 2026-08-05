@@ -115,17 +115,6 @@ class AdminSetupForbiddenException(BaseCustomException):
         )
 
 
-class AdminPermissionDeniedException(BaseCustomException):
-    """Admin lacks the required page permission."""
-
-    def __init__(self) -> None:
-        super().__init__(
-            status_code=403,
-            message="Permission denied",
-            error_code="ADMIN_PERMISSION_DENIED",
-        )
-
-
 class AdminLastAccountsGuardException(BaseCustomException):
     """Blocked because action would remove the last accounts-permission holder."""
 

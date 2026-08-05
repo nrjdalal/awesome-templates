@@ -28,7 +28,6 @@ from src._core.infrastructure.taskiq.broker import (
     create_rabbitmq_broker,
     create_sqs_broker,
 )
-from src._core.infrastructure.taskiq.manager import TaskiqManager
 
 # ---------------------------------------------------------------------------
 # Selector functions — read ``settings`` at resolution time, so tests can
@@ -419,11 +418,6 @@ class CoreContainer(containers.DeclarativeContainer):
             url=settings.rabbitmq_url,
         ),
         inmemory=providers.Singleton(InMemoryBroker),
-    )
-
-    taskiq_manager = providers.Singleton(
-        TaskiqManager,
-        broker=broker,
     )
 
     #########################################################

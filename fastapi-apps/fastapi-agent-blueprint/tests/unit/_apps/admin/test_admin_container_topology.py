@@ -78,7 +78,6 @@ class TestOneCoreContainerPerProcess:
         [
             "http_client",
             "broker",
-            "taskiq_manager",
             "embedding_client",
             "notification_client",
             "error_notifier",

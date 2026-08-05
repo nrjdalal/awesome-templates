@@ -11,11 +11,6 @@ API_CONFIG = ConfigDict(
     ser_json_bytes="utf8",
 )
 
-INTERNAL_CONFIG = ConfigDict(
-    extra="forbid",
-    # frozen=False,
-)
-
 PAYLOAD_CONFIG = ConfigDict(
     extra="forbid",
     frozen=True,
@@ -28,10 +23,6 @@ class BaseConfig(BaseModel):
 
 class ApiConfig(BaseConfig):
     model_config = API_CONFIG
-
-
-class InternalConfig(BaseConfig):
-    model_config = INTERNAL_CONFIG
 
 
 class PayloadConfig(BaseConfig):

@@ -20,6 +20,13 @@ make demo-rag        # RAG end-to-end (seed 3 docs → list → query, #80)
 make dev
 make worker
 
+# Taskiq scheduler — a FOURTH process, separate from the worker. Enqueues tasks
+# carrying a `schedule=[{"cron": ...}]` label; today that is audit_cleanup_task
+# (`0 3 * * *`), whose job is an irreversible DELETE bounded only by
+# AUDIT_LOG_RETENTION_DAYS. Optional: the same @broker.task is also reachable
+# from external cron, a k8s CronJob, or a one-off REPL call.
+make scheduler
+
 # Direct invocation (reference only)
 uvicorn src._apps.server.app:app --reload --host 127.0.0.1 --port 8001
 python run_server_local.py --env local

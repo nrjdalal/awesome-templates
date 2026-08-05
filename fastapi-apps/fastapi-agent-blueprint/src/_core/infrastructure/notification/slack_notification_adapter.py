@@ -4,8 +4,8 @@ from src._core.infrastructure.http.http_client import HttpClient
 class SlackNotificationAdapter:
     """Sends error alerts to a Slack Incoming Webhook.
 
-    Posts directly via ``HttpClient`` instead of ``BaseHttpGateway._post``:
-    a successful Slack webhook response is a plain-text ``ok`` body (not
+    Posts via ``HttpClient`` and never decodes the response body: a
+    successful Slack webhook response is a plain-text ``ok`` body (not
     JSON), so parsing it as JSON would raise on every successful send.
     """
 

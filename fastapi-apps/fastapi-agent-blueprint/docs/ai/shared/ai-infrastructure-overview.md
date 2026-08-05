@@ -94,7 +94,7 @@ Issue #15 (PydanticAI Core) — COMPLETED
 
 **New**:
 - `src/_core/domain/value_objects/llm_config.py` — `LLMConfig` frozen dataclass
-- `src/_core/infrastructure/llm/exceptions.py` — `LLMException` hierarchy
+- `src/_core/infrastructure/llm/exceptions.py` — `LLMException` hierarchy. **Removed in #331**: it had become a pure re-export facade that nothing imported through; the hierarchy itself lives at `src/_core/exceptions/llm_exceptions.py`
 - `src/classification/` — Prototype AI domain (full domain scaffold)
 - `docs/history/037-pydanticai-agent-integration.md`
 - `docs/history/archive/038-llm-observability-dual-path.md` ← superseded by ADR 046
@@ -103,8 +103,8 @@ Issue #15 (PydanticAI Core) — COMPLETED
 
 **Modified**:
 - `src/_core/config.py` — `otel_enabled`, `otel_exporter_otlp_endpoint` fields + partial-config validator
-- `src/_apps/server/bootstrap.py` — `_maybe_configure_otel(service_name)` call
-- `src/_apps/worker/bootstrap.py` — `_maybe_configure_otel(service_name)` call
+- `src/_apps/server/bootstrap.py` — `maybe_configure_otel(settings, service_name)` call
+- `src/_apps/worker/bootstrap.py` — `maybe_configure_otel(settings, service_name)` call
 - `pyproject.toml` — `otel` optional extra (`opentelemetry-api/sdk/exporter-otlp-proto-grpc >=1.40.0`)
 
 **New**:

@@ -190,3 +190,30 @@ A separate smoke test imports the full FastAPI app under `clean_optional_env` to
 - **`pyproject.toml` cleanup (nicegui, boto3 → optional extras) is out of scope** for this ADR. Filed as a separate follow-up issue; it is a user-facing UX change (admin dashboard mount decision, aws-installation matrix) and deserves its own design pass.
 
 > **AGENTS.md alias note (PR-B.4a):** The AGENTS.md section for this pattern was renamed from `§ Optional Infrastructure` to `§ Optional Infrastructure Toggles` for clarity. Cross-references should use the new heading name.
+
+## Errata 2026-08-05:
+
+The `s3vector_client` row in the **Consequences** disabled-branch table gives a
+rationale that no longer holds. Appended rather than edited in place per ADR 047
+D3/D6 (write-once).
+
+The row says the `docs` domain "already falls back to in-memory via its own
+`chunk_vector_store` selector, so the S3 client genuinely goes unused when
+disabled". At HEAD the two selectors are keyed off **different fields**, so the
+domain selector does not provide that guarantee:
+
+- `core_container._s3vector_selector` returns `enabled` iff
+  `settings.s3vectors_access_key` is set.
+- `docs_container._vector_store_selector` returns `settings.vector_store_type`,
+  the `VECTOR_STORE_TYPE` setting introduced by #328 — which did not exist when
+  this ADR was written.
+
+Setting `VECTOR_STORE_TYPE=s3vectors` without the `S3VECTORS_*` group therefore
+resolves the domain selector's `s3vectors` branch while `s3vector_client`
+resolves to `None`, handing the store `s3vector_client=None`.
+
+What holds the invariant today is **boot validation, not the selector**:
+`config.py` rejects `VECTOR_STORE_TYPE=s3vectors` with an incomplete
+`S3VECTORS_*` group (see the comment above that check, which names this exact
+divergence). The mechanism claim in the same row — `providers.Object(None)` as
+the disabled branch — is still accurate.

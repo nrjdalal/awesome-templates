@@ -94,8 +94,10 @@ The quickstart runs on the **InMemory broker** (`BROKER_TYPE=inmemory`), which e
 tasks **synchronously inline inside the API server process** — there is no separate worker to
 start (`InMemoryBroker.listen()` raises, so it cannot back a standalone `make worker`). The
 `docs` domain dispatches a background ingestion task when a document exceeds the inline
-threshold (20,000 characters); in quickstart mode that work runs in-process, so the upload in
-Step 3 already exercised it.
+threshold (20,000 characters). The three demo documents are 378–425 characters, so Step 3 took
+the **inline** path (`DocumentService.should_ingest_sync`) and dispatched no task at all — it
+did not exercise the worker. To see the background path, upload a document over 20,000
+characters; on the InMemory broker that still runs in-process, just through the task.
 
 To watch a **standalone worker** pull jobs across process boundaries, switch to a cross-process
 broker. Start RabbitMQ, set `BROKER_TYPE=rabbitmq` + `RABBITMQ_URL` in your env file, then run
@@ -150,7 +152,7 @@ make test-dynamo  # optional: DynamoDB Local variant
 | Layer | Exercised |
 |---|---|
 | HTTP API | JWT register/login/refresh/logout, CRUD, RAG upload + query |
-| Background worker | Task dispatch via Taskiq InMemory broker |
+| Background worker | Taskiq wired on the InMemory broker with the full middleware stack — `make demo-rag` stays under the 20,000-char inline threshold, so no task is dispatched (see Step 5) |
 | Admin UI | NiceGUI with JWT login + RBAC admin gating |
 | Domain isolation | user · auth · docs · ai_usage as independent DDD domains |
 | Optional infra | OTEL traces (opt-in), embeddings + LLM via stub fallbacks |

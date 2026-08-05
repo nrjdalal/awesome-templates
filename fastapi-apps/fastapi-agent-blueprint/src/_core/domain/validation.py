@@ -9,6 +9,11 @@ from src._core.domain.protocols.repository_protocol import BaseRepositoryProtoco
 from src._core.exceptions.base_exception import BaseCustomException
 
 BUSINESS_VALIDATION_ERROR = "BUSINESS_VALIDATION_ERROR"
+# Reachable only as the default `error_code` of `raise_if_errors(status_code=409)`,
+# so a name search finds no callers. It is not dead: `raise_if_errors` is the
+# documented helper (AGENTS.md § CRUD Write Validation) and both shipped 409
+# subclasses pass an explicit code, which is exactly why this default exists for
+# adopter code that does not. Do not delete on a reference count alone (#331).
 BUSINESS_CONFLICT = "BUSINESS_CONFLICT"
 
 
@@ -125,13 +130,6 @@ def collect_duplicate_field_errors(
     return errors
 
 
-def ensure_no_duplicate_field_values(
-    entities: Sequence[BaseModel],
-    fields: Sequence[str],
-) -> None:
-    raise_if_errors(collect_duplicate_field_errors(entities, fields))
-
-
 async def collect_unique_field_errors(
     repository: BaseRepositoryProtocol[Any],
     entity: BaseModel,
@@ -155,29 +153,6 @@ async def collect_unique_field_errors(
                 )
             )
     return errors
-
-
-async def ensure_unique_field_values(
-    repository: BaseRepositoryProtocol[Any],
-    entity: BaseModel,
-    fields: Sequence[str],
-    *,
-    exclude_id: int | None = None,
-    message: str = "Validation failed",
-    error_code: str | None = None,
-) -> None:
-    errors = await collect_unique_field_errors(
-        repository,
-        entity,
-        fields,
-        exclude_id=exclude_id,
-    )
-    raise_if_errors(
-        errors,
-        status_code=409,
-        message=message,
-        error_code=error_code,
-    )
 
 
 async def collect_existing_unique_field_errors(
@@ -209,23 +184,6 @@ async def collect_existing_unique_field_errors(
                 )
             )
     return errors
-
-
-async def ensure_unique_field_values_for_batch(
-    repository: BaseRepositoryProtocol[Any],
-    entities: Sequence[BaseModel],
-    fields: Sequence[str],
-    *,
-    message: str = "Validation failed",
-    error_code: str | None = None,
-) -> None:
-    errors = await collect_existing_unique_field_errors(repository, entities, fields)
-    raise_if_errors(
-        errors,
-        status_code=409,
-        message=message,
-        error_code=error_code,
-    )
 
 
 async def collect_existing_reference_errors(

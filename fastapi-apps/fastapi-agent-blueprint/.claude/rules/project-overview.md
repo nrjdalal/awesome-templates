@@ -14,6 +14,7 @@ AI Agent Backend Platform built on FastAPI with DDD modular layered architecture
 - Server: `src/_apps/server/` — FastAPI (uvicorn)
 - Worker: `src/_apps/worker/` — Taskiq (broker abstraction: SQS/RabbitMQ/InMemory)
 - Admin: `src/_apps/admin/` — NiceGUI (mounted on server via ui.run_with) — **mounted only when the `admin` extra is installed**; otherwise the server boots normally and emits only an `admin_mount_skipped` structured log line (#104). UI follows the admin design system (token theme + `components/` builders, #193).
+- Scheduler: `src/_apps/worker/scheduler.py` — Taskiq `TaskiqScheduler` (`make scheduler` → `run_scheduler_local.py`). A **fourth runtime process**, not a fourth app package: it imports `worker.app` so `bootstrap_app` runs (middlewares + domain wiring) on the scheduler too, then enqueues tasks carrying a `schedule=[{"cron": ...}]` label. Today that is `audit_cleanup_task` (`0 3 * * *`), whose job is an **irreversible `DELETE`** bounded only by `AUDIT_LOG_RETENTION_DAYS`. The same `@broker.task` is also reachable from external cron / a k8s `CronJob` / a one-off REPL call, so the scheduler is optional rather than the only trigger
 - AWS infrastructure (ObjectStorage/DynamoDB/S3Vectors) requires the `aws` extra. If the relevant env vars are unset, the lazy import never fires, so boot succeeds without the extra (#104 Part 2)
 
 ## Dependency Direction
@@ -34,6 +35,7 @@ Interface → Application → Domain ← Infrastructure
 - Settings (pydantic-settings) with model_validator
 - stg/prod: unsafe defaults blocked, broker required, partial config groups rejected
 - STORAGE_TYPE-driven validation: S3/MinIO config group required when set
+- VECTOR_STORE_TYPE-driven validation: unknown value rejected against `KNOWN_VECTOR_STORE_TYPES` (`inmemory`, `s3vectors`); `s3vectors` requires the full S3Vectors config group. Unset → `inmemory`, whose filter support is a strict subset of the S3 syntax (#328)
 - Partial config group validation: S3, MinIO, DynamoDB, S3Vectors, SQS, Embedding (OpenAI/Bedrock), LLM (OpenAI/Anthropic/Bedrock), Notification (Slack/Discord), Notification/Routing (warning threshold below severity; per-tier webhook URL requires both a provider and the warning threshold)
 - Logging: `LOG_LEVEL` (DEBUG/INFO/WARNING/ERROR), `LOG_JSON_FORMAT` (None → derive from ENV; True/False to force-override)
 

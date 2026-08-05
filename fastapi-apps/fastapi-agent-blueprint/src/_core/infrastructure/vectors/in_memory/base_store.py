@@ -27,9 +27,10 @@ class BaseInMemoryVectorStore(Generic[ReturnDTO], ABC):
     Filter semantics support the S3 Vectors ``$eq`` / ``$in`` / ``$ne``
     subset so domain code written against the S3 backend remains
     portable. Operators outside that subset — ``$gte``, ``$lt``,
-    ``$and`` and friends — raise ``NotImplementedError`` rather than
-    being ignored; see ``_matches_filters`` for why the previous silent
-    behaviour was unsafe in both directions (#328 F10).
+    ``$and`` and friends — raise ``VectorFilterUnsupportedException``
+    (a curated 400) rather than being ignored; see ``validate_filters``
+    for why the previous silent behaviour was unsafe in both directions
+    (#328 F10).
     """
 
     def __init__(

@@ -180,3 +180,16 @@ PydanticAI fits a new category in the framework: the external tool already provi
 - [x] Is this the right approach for the current project scale and team situation?
 - [x] Will a reader understand "why" 6 months from now without additional context?
 - [x] Am I recording the decision process, or justifying a conclusion I already reached?
+
+## Errata 2026-08-05:
+
+The file listing under **Decision** §4 names
+`src/_core/infrastructure/llm/exceptions.py` as the home of the `LLMException`
+hierarchy. Appended rather than edited in place per ADR 047 D3/D6 (write-once).
+
+That module was deleted in #331. By then it had become a pure re-export facade —
+its whole body was `from src._core.exceptions.llm_exceptions import ...` plus a
+matching `__all__` — and nothing imported through it, including
+`infrastructure/llm/error_mapper.py`, which imports from the origin directly.
+The hierarchy itself is unchanged and lives at
+`src/_core/exceptions/llm_exceptions.py`.

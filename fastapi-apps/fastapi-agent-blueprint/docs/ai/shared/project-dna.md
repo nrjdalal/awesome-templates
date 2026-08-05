@@ -632,7 +632,7 @@ class {Name}Container(containers.DeclarativeContainer):
 | AWS S3 Vectors (aioboto3) | Active | BaseS3VectorStore + S3VectorClient (optional infra, via `aws` extra) |
 | Embedding (PydanticAI) | Active | PydanticAIEmbeddingAdapter, BaseEmbeddingProtocol, auto-dimension, multi-provider |
 | LLM (PydanticAI Agent) | Active | build_llm_model(), LLMConfig, Agent structured output |
-| OpenTelemetry tracing | Active | Optional `[otel]` extra, `OTEL_ENABLED` + `OTEL_EXPORTER_OTLP_ENDPOINT`, server/worker `_maybe_configure_otel()`, PydanticAI Agent instrumentation |
+| OpenTelemetry tracing | Active | Optional `[otel]` extra, `OTEL_ENABLED` + `OTEL_EXPORTER_OTLP_ENDPOINT`, server/worker `maybe_configure_otel()` (shared, `observability/otel_bootstrap.py`), PydanticAI Agent instrumentation |
 | Langfuse observability recipe | Active | Opt-in local OTLP/HTTP trace ingestion stack via `docker-compose.langfuse.yml`; `make observability-langfuse` generates ignored `_env/langfuse.env` with random local secrets |
 | Text chunking (semantic-text-splitter) | Active | chunk_text(), chunk_text_by_tokens() in src._core.common.text_utils |
 | Structured Logging (structlog) | Active | structlog + asgi-correlation-id, RequestLogMiddleware (server), StructlogContextMiddleware (worker), LOG_LEVEL / LOG_JSON_FORMAT env vars, sqlalchemy.engine double-emit fix (#9) |

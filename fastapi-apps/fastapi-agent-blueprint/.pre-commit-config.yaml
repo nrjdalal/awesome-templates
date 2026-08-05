@@ -71,6 +71,18 @@ repos:
         entry: "from src\\..*\\.infrastructure"
         files: "src/.*/domain/.*\\.py$"
 
+      # Same prohibition for examples/, which the hook above cannot reach:
+      # its `files` is anchored on `src/`, and even widened it would not
+      # match, because examples import RELATIVELY (`from ....infrastructure`)
+      # so the copy-to-src flow keeps working (#260). Needs its own pattern,
+      # not a wider glob. Anchored on `from ` + leading dots so the several
+      # docstrings that mention `infrastructure/` in prose do not match.
+      - id: no-domain-infra-import-examples
+        name: "Prohibit Domain → Infrastructure import (examples)"
+        language: pygrep
+        entry: "^from \\.+[A-Za-z0-9_.]*infrastructure"
+        files: "examples/.*/domain/.*\\.py$"
+
       # Detect residual Entity pattern (ADR 004: unified to DTO)
       - id: no-entity-pattern
         name: "Entity pattern not allowed (unified to DTO)"

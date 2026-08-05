@@ -16,11 +16,11 @@ you to understand and address the issue.
 
 | Version  | Supported |
 |----------|-----------|
-| 0.9.x    | Yes       |
-| < 0.9.0  | No        |
+| 0.10.x   | Yes       |
+| < 0.10.0 | No        |
 
 Pre-1.0: only the latest minor line receives security fixes. Upgrade to the
-newest `0.9.x` patch to pick them up.
+newest `0.10.x` patch to pick them up.
 
 ## Disclosure Policy
 

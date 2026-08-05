@@ -17,10 +17,13 @@ class VectorQuery(ValueObject):
     - Comparison: ``{"year": {"$gte": 2020}}``
     - Compound: ``{"$and": [{"category": "tech"}, {"year": {"$gte": 2020}}]}``
 
-    **Backend support is not uniform.** The in-memory store implements only the
-    equality / membership / negation subset above and raises
-    ``NotImplementedError`` for comparison and compound operators — it does not
-    silently ignore them (#328 F10). Since ``inmemory`` is the default whenever
+    **Backend support is not uniform.** Comparison (``$gte`` and friends) and
+    compound (``$and``) are S3-backend-only. The in-memory store implements only
+    the equality / membership / negation subset above and raises
+    ``VectorFilterUnsupportedException`` — a curated 400, not a bare
+    ``NotImplementedError``, because the filter arrives from a public request
+    body — for anything else. It does not silently ignore them (#328 F10). Since
+    ``inmemory`` is the default whenever
     ``VECTOR_STORE_TYPE`` is unset, code written against the full syntax will
     fail loudly on the default backend rather than returning unfiltered results.
     Check the concrete store before relying on an operator outside the subset.

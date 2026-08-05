@@ -1,12 +1,4 @@
-from enum import StrEnum
-
 from taskiq import AsyncBroker
-
-
-class BrokerType(StrEnum):
-    SQS = "sqs"
-    RABBITMQ = "rabbitmq"
-    INMEMORY = "inmemory"
 
 
 def create_sqs_broker(

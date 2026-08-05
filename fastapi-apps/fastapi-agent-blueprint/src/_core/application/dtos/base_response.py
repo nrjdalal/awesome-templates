@@ -14,10 +14,6 @@ class PaginationInfo(ApiConfig):
     previous_page: int | None = None
 
 
-class ExistsData(ApiConfig):
-    exists: bool
-
-
 class CursorPaginationInfo(ApiConfig):
     """Cursor-based pagination metadata for DynamoDB-backed endpoints."""
 

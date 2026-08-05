@@ -224,3 +224,22 @@ This ADR governs the following issue updates (execute after this ADR merges):
 - [x] Will a reader understand "why" 6 months from now without additional context?
 - [x] Does this align with ADR 042 (optional infrastructure)?
 - [x] Were the Codex cross-review corrections (PromptSnapshot base class, prompt_version semantics, placeholder issue numbers) incorporated?
+
+## Errata 2026-08-05:
+
+The `bootstrap.py` sketch under **Decision** is a design illustration, not a
+record of the shipped signature, and it has diverged in three ways. Appended
+rather than edited in place per ADR 047 D3/D6 (write-once).
+
+1. The guard is named `maybe_configure_otel` — no leading underscore, because it
+   is no longer private to one bootstrap module.
+2. It lives at `src/_core/infrastructure/observability/otel_bootstrap.py`, shared
+   by the server and worker bootstraps, which previously carried a byte-for-byte
+   copy each (#331). It is deliberately *not* in `otel_setup.py`: that module
+   imports `opentelemetry` at module top, so it is the thing being guarded and
+   cannot host its own guard.
+3. It takes `(settings, service_name)` and catches `ModuleNotFoundError` with an
+   `exc.name.startswith("opentelemetry")` filter — not the bare `ImportError` in
+   the sketch, which would have swallowed real bugs inside `otel_setup.py`. That
+   narrowing landed in PR #141 itself (review point R1.3) and was never
+   reflected here.

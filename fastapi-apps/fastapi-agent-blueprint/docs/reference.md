@@ -157,9 +157,9 @@ fastapi-agent-blueprint/
 │   │   │   ├── embedding/           # PydanticAI embedding adapter
 │   │   │   ├── llm/                 # build_llm_model factory
 │   │   │   ├── storage/             # S3 / MinIO ObjectStorageClient
-│   │   │   ├── taskiq/              # Broker adapters, TaskiqManager
-│   │   │   ├── http/                # HttpClient, BaseHttpGateway
-│   │   │   ├── observability/       # OTEL setup (ADR 046)
+│   │   │   ├── taskiq/              # Broker adapters
+│   │   │   ├── http/                # HttpClient, body-size middleware
+│   │   │   ├── observability/       # OTEL setup + guard (ADR 046)
 │   │   │   ├── rag/                 # RagPipeline, StubAnswerAgent (ADR 040)
 │   │   │   ├── di/                  # CoreContainer
 │   │   │   └── discovery.py         # Auto domain discovery

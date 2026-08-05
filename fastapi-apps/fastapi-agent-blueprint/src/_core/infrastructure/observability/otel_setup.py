@@ -6,7 +6,8 @@ Agent.instrument_all() so all PydanticAI Agent instances (existing AND
 subsequent) emit GenAI semantic-convention spans.
 
 Module-top imports are intentional — this module is imported lazily
-from _maybe_configure_otel() inside a try/except ModuleNotFoundError,
+from maybe_configure_otel() in otel_bootstrap.py inside a
+try/except ModuleNotFoundError,
 so missing extras surface as a structured log line at bootstrap, not
 an import-time crash.
 """

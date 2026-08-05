@@ -32,6 +32,9 @@ from src._core.infrastructure.logging.configure import configure_logging
 from src._core.infrastructure.logging.request_log_middleware import (
     RequestLogMiddleware,
 )
+from src._core.infrastructure.observability.otel_bootstrap import (
+    maybe_configure_otel,
+)
 from src._core.infrastructure.persistence.rdb.database import Base, Database
 
 _logger = structlog.stdlib.get_logger("src._apps.server.bootstrap")
@@ -39,7 +42,7 @@ _logger = structlog.stdlib.get_logger("src._apps.server.bootstrap")
 
 def bootstrap_app(app: FastAPI) -> None:
     _configure_logging_pipeline()
-    _maybe_configure_otel(service_name="fastapi-agent-blueprint-server")
+    maybe_configure_otel(settings, service_name="fastapi-agent-blueprint-server")
     _install_exception_handlers(app)
     _install_middleware(app)
     container = _setup_container(app)
@@ -238,27 +241,6 @@ def _install_inline_task_runtime(container) -> None:
         middlewares=[type(m).__name__ for m in task_broker.middlewares],
         tasks=sorted(task_broker.get_all_tasks()),
     )
-
-
-def _maybe_configure_otel(service_name: str) -> None:
-    """Configure OpenTelemetry tracing if enabled and the otel extra is installed.
-
-    If the extra is missing the server still boots; the skip is recorded as a
-    structured log line so operators can diagnose without re-reading the README.
-    """
-    if not settings.otel_enabled:
-        return
-    try:
-        from src._core.infrastructure.observability.otel_setup import configure_otel
-    except ModuleNotFoundError as exc:
-        if exc.name and not exc.name.startswith("opentelemetry"):
-            raise
-        _logger.warning(
-            "otel_extra_not_installed",
-            install_hint="uv sync --extra otel",
-        )
-        return
-    configure_otel(settings, service_name=service_name)
 
 
 def _mount_admin_if_available(app: FastAPI) -> None:

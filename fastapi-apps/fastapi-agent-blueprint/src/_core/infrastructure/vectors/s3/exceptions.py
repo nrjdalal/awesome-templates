@@ -7,15 +7,6 @@ class S3VectorException(BaseCustomException):
     pass
 
 
-class S3VectorNotFoundException(S3VectorException):
-    def __init__(self) -> None:
-        super().__init__(
-            status_code=404,
-            message="Requested vector not found",
-            error_code="S3VECTOR_NOT_FOUND",
-        )
-
-
 class S3VectorIndexNotFoundException(S3VectorException):
     def __init__(self, index_name: str = "") -> None:
         msg = (
