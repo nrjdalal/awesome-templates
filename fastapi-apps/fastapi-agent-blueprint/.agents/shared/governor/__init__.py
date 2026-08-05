@@ -71,12 +71,20 @@ from .tokens import (
 )
 from .verify import (
     REMINDER_TEXT,
+    VERIFY_PATTERNS,
+    append_verify_log,
+    cleanup_stale_verify_logs,
     extract_file_path,
     is_python_source,
     should_remind_claude,
+    verify_log_path,
 )
 
 __all__ = [
+    "VERIFY_PATTERNS",
+    "append_verify_log",
+    "cleanup_stale_verify_logs",
+    "verify_log_path",
     "Blocked",
     "EXPLORATION_TOKENS",
     "GATED_STAGES",

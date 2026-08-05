@@ -9,6 +9,9 @@ from pydantic import BaseModel
 
 from src._core.domain.value_objects.vector_query import VectorQuery
 from src._core.domain.value_objects.vector_search_result import VectorSearchResult
+from src._core.infrastructure.vectors.in_memory.exceptions import (
+    VectorFilterUnsupportedException,
+)
 from src._core.infrastructure.vectors.vector_model import VectorModel
 
 ReturnDTO = TypeVar("ReturnDTO", bound=BaseModel)
@@ -21,8 +24,12 @@ class BaseInMemoryVectorStore(Generic[ReturnDTO], ABC):
     demos, unit tests, and zero-config local development. Vectors live
     in a plain dict and are lost on process restart.
 
-    Filter semantics support the S3 Vectors ``$eq`` / ``$in`` subset
-    so domain code written against the S3 backend remains portable.
+    Filter semantics support the S3 Vectors ``$eq`` / ``$in`` / ``$ne``
+    subset so domain code written against the S3 backend remains
+    portable. Operators outside that subset — ``$gte``, ``$lt``,
+    ``$and`` and friends — raise ``NotImplementedError`` rather than
+    being ignored; see ``_matches_filters`` for why the previous silent
+    behaviour was unsafe in both directions (#328 F10).
     """
 
     def __init__(
@@ -50,6 +57,10 @@ class BaseInMemoryVectorStore(Generic[ReturnDTO], ABC):
         return len(entities)
 
     async def search(self, query: VectorQuery) -> VectorSearchResult[ReturnDTO]:
+        # Before the scan, so the rejection does not depend on how many records
+        # happen to be stored or on which condition eliminates them first.
+        validate_filters(query.filters)
+
         scored: list[tuple[float, dict[str, Any]]] = []
         for record in self._store.values():
             if query.filters and not _matches_filters(
@@ -79,7 +90,55 @@ class BaseInMemoryVectorStore(Generic[ReturnDTO], ABC):
         return True
 
 
+# The operator subset this store implements. S3 Vectors itself supports
+# $eq/$ne/$gt/$gte/$lt/$lte/$in/$nin/$exists/$and/$or, and this repo's S3 store
+# passes `query.filters` through to `query_vectors` untouched — so the gap here
+# is an unimplemented subset of the backend, not a deliberate ceiling. Widening
+# it is a fine follow-up; silently ignoring what is missing is not.
+_SUPPORTED_OPERATORS = frozenset({"$eq", "$in", "$ne"})
+
+
+def validate_filters(filters: dict[str, Any] | None) -> None:
+    """Reject filter operators this store cannot honour, before any scanning.
+
+    Called once at :meth:`search` entry rather than per record. Inside the
+    record loop the check is data-dependent and therefore not a guarantee: an
+    empty store never evaluates a filter at all, and an earlier condition that
+    eliminates every record short-circuits before a later unsupported operator
+    is ever seen. ``{"category": "missing", "year": {"$gte": 2020}}`` returned an
+    empty result set instead of raising (#328 F10 follow-up).
+
+    Raises :class:`VectorFilterUnsupportedException` (a curated 400), never a
+    bare ``NotImplementedError`` — the filter arrives from a public request body
+    and an untranslated error would surface as a 500.
+    """
+    if not filters:
+        return
+    supported = sorted(_SUPPORTED_OPERATORS)
+    for field, condition in filters.items():
+        if field.startswith("$"):
+            # Compound/top-level operators ($and, $or, $not) are not field
+            # names, so the bare-equality branch would compare None against a
+            # list and silently match nothing.
+            raise VectorFilterUnsupportedException([field], supported)
+        if isinstance(condition, dict):
+            unsupported = set(condition) - _SUPPORTED_OPERATORS
+            if unsupported:
+                raise VectorFilterUnsupportedException(
+                    sorted(unsupported), supported, field=field
+                )
+
+
 def _matches_filters(metadata: dict[str, Any], filters: dict[str, Any]) -> bool:
+    """Evaluate a validated filter mapping against one record's metadata.
+
+    Assumes :func:`validate_filters` has already run — it handles only the
+    supported subset and does not re-check. The two silent behaviours this
+    replaced went in opposite directions, and the fail-open one was the
+    dangerous half: an unsupported operator was *discarded*, so a tenant or ACL
+    filter written against the documented ``VectorQuery`` contract returned
+    other tenants' rows.
+    """
     for field, condition in filters.items():
         value = metadata.get(field)
         if isinstance(condition, dict):

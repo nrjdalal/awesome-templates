@@ -18,6 +18,11 @@ KNOWN_EMBEDDING_PROVIDERS = (
 KNOWN_STORAGE_TYPES = ("s3", "minio")
 KNOWN_LLM_PROVIDERS = ("openai", "anthropic", "bedrock")
 KNOWN_NOTIFICATION_PROVIDERS = ("slack", "discord")
+# The only Selector key that had no tuple and no boot check until #328.
+# `s3` is the natural typo — it is the correct spelling for STORAGE_TYPE —
+# and it used to boot clean in prod, then 500 on the first docs request
+# with `Selector has no "s3" provider`.
+KNOWN_VECTOR_STORE_TYPES = ("inmemory", "s3vectors")
 STRICT_ENVS = frozenset({"stg", "prod"})
 
 _OPENAI_DIMENSIONS: dict[str, int] = {
@@ -686,6 +691,13 @@ class Settings(BaseSettings):
                 f"[storage_type] Unknown storage type '{self.storage_type}'. "
                 f"Expected one of: {', '.join(KNOWN_STORAGE_TYPES)}"
             )
+        vector_store = (self.vector_store_type or "").lower().strip()
+        if vector_store and vector_store not in KNOWN_VECTOR_STORE_TYPES:
+            errors.append(
+                f"[vector_store_type] Unknown vector store "
+                f"'{self.vector_store_type}'. "
+                f"Expected one of: {', '.join(KNOWN_VECTOR_STORE_TYPES)}"
+            )
         if storage == "s3" and s3_set != set(s3_fields):
             missing = sorted(set(s3_fields) - s3_set)
             errors.append(
@@ -718,7 +730,27 @@ class Settings(BaseSettings):
             "s3vectors_bucket_name": self.s3vectors_bucket_name,
         }
         s3vectors_set = {k for k, v in s3vectors_fields.items() if v is not None}
-        if s3vectors_set and s3vectors_set != set(s3vectors_fields):
+
+        # Couple the selector to the credential group it actually needs. The
+        # s3vectors branch injects core_container.s3vector_client, whose own
+        # Selector is gated on s3vectors_access_key — a different field — so
+        # without this the two disagree and the docs domain receives a store
+        # with s3vector_client=None that raises AttributeError per request.
+        if vector_store == "s3vectors" and s3vectors_set != set(s3vectors_fields):
+            missing = sorted(set(s3vectors_fields) - s3vectors_set)
+            errors.append(
+                f"[S3Vectors] VECTOR_STORE_TYPE=s3vectors requires: "
+                f"{', '.join(missing)} missing"
+            )
+
+        # Skipped when the selector-specific error above already fired: the two
+        # describe the same missing values, and one cause should not produce two
+        # messages for an operator to reconcile.
+        if (
+            vector_store != "s3vectors"
+            and s3vectors_set
+            and s3vectors_set != set(s3vectors_fields)
+        ):
             missing = sorted(set(s3vectors_fields) - s3vectors_set)
             errors.append(
                 f"[S3Vectors] Partial configuration: "

@@ -28,6 +28,8 @@ STATE_DIR = STATE_ROOT / ".claude" / "state"
 GOVERNOR_PATHS_MD = REPO_ROOT / "docs" / "ai" / "shared" / "governor-paths.md"
 
 _SHARED = REPO_ROOT / ".agents" / "shared"
+_HOOK_DIR = Path(__file__).resolve().parent
+
 if str(_SHARED) not in sys.path:
     sys.path.insert(0, str(_SHARED))
 
@@ -38,6 +40,7 @@ try:
         GOVERNOR_REMINDER_WITH_PR,
         MarkerLifecycle,
         _within_24h,
+        cleanup_stale_verify_logs,  # noqa: E402
         is_governor_changing,
         is_log_only_backfill,
         match_log_entry,
@@ -106,6 +109,36 @@ except Exception:  # noqa: BLE001 — HC-5.5 fail-open
 
     def _resolve_locale_string(key: str) -> str:  # type: ignore[no-redef]
         return ""
+
+
+def _verify_session_id() -> str | None:
+    """The one id shared with the writer, or ``None``.
+
+    Imports :func:`verify_log.stable_session_id` rather than reimplementing it —
+    a second copy is how the writer and this hook drifted onto different ids in
+    review. ``None`` means "cannot identify the live session", and the caller
+    must then prune nothing: this hook reads no stdin, so guessing a PID-derived
+    id here would mark the *current* session's log as somebody else's and delete
+    it once the session passes 24h.
+    """
+    # Loaded by path, NOT by putting the hook dir on sys.path: `.claude/hooks`
+    # and `.codex/hooks` both contain a `completion_gate.py`, so prepending
+    # either directory lets one shadow the other for any later bare import.
+    # Doing that broke 38 sibling tests in review — passing alone, erroring in a
+    # directory run.
+    import importlib.util  # noqa: PLC0415 — hook-local
+
+    try:
+        spec = importlib.util.spec_from_file_location(
+            "_claude_verify_log", _HOOK_DIR / "verify_log.py"
+        )
+        if spec is None or spec.loader is None:
+            return None
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module.stable_session_id()
+    except Exception:  # noqa: BLE001 — HC-5.5 fail-open
+        return None
 
 
 def _changed_files() -> list[str]:
@@ -188,6 +221,14 @@ def main() -> int:
             reminder = governor_changing_segment()
         with contextlib.suppress(Exception):
             consume_phase2_markers()
+        with contextlib.suppress(Exception):
+            # Prune other sessions' verify logs (#334). The Stop hook is the
+            # only place that runs once per session, which is why the sibling
+            # harnesses clean up here too. Never touches this session's file —
+            # and when the session cannot be identified, nothing at all.
+            _session = _verify_session_id()
+            if _session:
+                cleanup_stale_verify_logs(STATE_DIR, _session)
         if reminder:
             print(reminder)
     except Exception:  # noqa: BLE001 — HC-5.5 fail-open

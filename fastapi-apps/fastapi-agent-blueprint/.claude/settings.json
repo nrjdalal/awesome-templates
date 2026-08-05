@@ -67,6 +67,15 @@
             "command": "bash .claude/hooks/stage-gate.sh"
           }
         ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/verify-log.sh"
+          }
+        ]
       }
     ],
     "Stop": [

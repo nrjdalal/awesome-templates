@@ -89,6 +89,17 @@ def _make_minimal_marker_files(root: Path) -> None:
     antigravity_gate = root / ".antigravity" / "hooks" / "completion_gate.py"
     antigravity_gate.write_text('glob("verify-log-*.json")', encoding="utf-8")
 
+    # .claude is a thin shim (ADR 045 Phase 5): it calls the shared helper
+    # instead of carrying the glob, so C4 accepts either shape (#334).
+    claude_gate = root / ".claude" / "hooks" / "completion_gate.py"
+    claude_gate.parent.mkdir(parents=True, exist_ok=True)
+    claude_gate.write_text(
+        "cleanup_stale_verify_logs(STATE_DIR, _verify_session_id())", encoding="utf-8"
+    )
+
+    verify_py = root / ".agents" / "shared" / "governor" / "verify.py"
+    verify_py.write_text('glob("verify-log-*.json")', encoding="utf-8")
+
 
 # ---------------------------------------------------------------------------
 # C1 — gitignore_registered
@@ -248,6 +259,66 @@ def test_marker_glob_coverage_fail_no_consume(tmp_path: Path) -> None:
     result = check_marker_glob_coverage(tmp_path)
     assert result.ok is False
     assert "consume_phase2_markers" in result.detail
+
+
+def test_marker_glob_coverage_fail_claude_produces_nothing(tmp_path: Path) -> None:
+    # The #334 state itself: .claude reads verify-log state it never writes.
+    _make_minimal_marker_files(tmp_path)
+    claude_gate = tmp_path / ".claude" / "hooks" / "completion_gate.py"
+    claude_gate.write_text("# no cleanup here", encoding="utf-8")
+
+    result = check_marker_glob_coverage(tmp_path)
+
+    assert result.ok is False
+    assert ".claude/hooks/completion_gate.py" in result.detail
+
+
+def test_marker_glob_coverage_fail_import_without_call(tmp_path: Path) -> None:
+    """The realistic regression: the helper is imported but never invoked.
+
+    A substring check passes here — the import line contains the name — while
+    the Stop hook prunes nothing. That is the #334 defect wearing a disguise,
+    so the check parses for a call node instead.
+    """
+    _make_minimal_marker_files(tmp_path)
+    claude_gate = tmp_path / ".claude" / "hooks" / "completion_gate.py"
+    claude_gate.write_text(
+        "from governor import cleanup_stale_verify_logs\n\n"
+        "def main() -> int:\n    return 0\n",
+        encoding="utf-8",
+    )
+
+    result = check_marker_glob_coverage(tmp_path)
+
+    assert result.ok is False
+    assert ".claude/hooks/completion_gate.py" in result.detail
+
+
+def test_marker_glob_coverage_pass_on_an_attribute_call(tmp_path: Path) -> None:
+    # `governor.cleanup_stale_verify_logs(...)` is a call too — the check must
+    # not require a bare name.
+    _make_minimal_marker_files(tmp_path)
+    claude_gate = tmp_path / ".claude" / "hooks" / "completion_gate.py"
+    claude_gate.write_text(
+        "import governor\n\ngovernor.cleanup_stale_verify_logs(STATE_DIR, sid)\n",
+        encoding="utf-8",
+    )
+
+    assert check_marker_glob_coverage(tmp_path).ok is True
+
+
+def test_marker_glob_coverage_fail_shared_helper_lost_its_glob(
+    tmp_path: Path,
+) -> None:
+    # .claude's shim branch is only sound while the shared helper owns the glob.
+    _make_minimal_marker_files(tmp_path)
+    verify_py = tmp_path / ".agents" / "shared" / "governor" / "verify.py"
+    verify_py.write_text("# no glob here", encoding="utf-8")
+
+    result = check_marker_glob_coverage(tmp_path)
+
+    assert result.ok is False
+    assert "governor/verify.py" in result.detail
 
 
 def test_marker_glob_coverage_fail_no_exception_token_glob(tmp_path: Path) -> None:
