@@ -15,7 +15,7 @@ and the "why not X?" questions that come up on HN and Reddit.
 | AI workflow skills (Claude + Codex) | **15 + 15** | 0 | 0 | 0 |
 | Vector infrastructure (S3 Vectors) | **Yes** | No | No | No |
 | Multi-interface (API + Worker + Admin + MCP) | **3 + 1 planned** | 2 | 1 | 1 |
-| Architecture Decision Records | **28 active · 30 archived** | 0 | 0 | 0 |
+| Architecture Decision Records | **29 active · 30 archived** | 0 | 0 | 0 |
 | Type-safe generics across layers | **Yes** | Partial | Partial | No |
 | IoC container DI | **Yes** | No | No | No |
 | JWT auth + RBAC | **Yes** | Yes | Partial | No |

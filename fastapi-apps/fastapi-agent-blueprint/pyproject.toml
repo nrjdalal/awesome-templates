@@ -38,7 +38,7 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
-    "aiohttp>=3.13.0",
+    "aiohttp>=3.14.3",
     "aiomysql>=0.2.0",
     "alembic>=1.15.2",
     "asgi-correlation-id>=4.3.0",
@@ -50,10 +50,10 @@ dependencies = [
     "greenlet>=3.2.0",
     "httpx>=0.28.1",
     "psycopg[binary]>=3.2.12",
-    "pydantic-settings>=2.10.1",
+    "pydantic-settings>=2.14.2",
     "pymysql>=1.1.1",
-    "pyjwt>=2.10.0",
-    "python-dotenv>=1.1.0",
+    "pyjwt>=2.13.0",
+    "python-dotenv>=1.2.2",
     "sqlalchemy>=2.0.40",
     "structlog>=25.0.0",
     "taskiq[reload]>=0.12.1",
@@ -62,7 +62,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-admin = ["nicegui>=3.5.0"]
+admin = ["nicegui>=3.12.0"]
 # Kept installable after 0.9.0 removed it from core: nothing in the repo
 # invokes gunicorn (the only mention is a commented-out block in
 # run_server_local.py), but adopters who relied on the executable arriving
@@ -77,10 +77,10 @@ aws = [
 sqs = ["taskiq-aws>=0.4.0"]
 rabbitmq = ["taskiq-aio-pika>=0.4.0"]
 openai = ["openai>=1.0.0", "tiktoken>=0.7.0"]
-pydantic-ai = ["pydantic-ai-slim[openai]>=1.39.0", "tiktoken>=0.7.0"]
-pydantic-ai-anthropic = ["pydantic-ai-slim[anthropic]>=1.39.0"]
-pydantic-ai-google = ["pydantic-ai-slim[google]>=1.39.0"]
-pydantic-ai-duckduckgo = ["pydantic-ai-slim[duckduckgo]>=1.39.0"]
+pydantic-ai = ["pydantic-ai-slim[openai]>=1.99.0,<2", "tiktoken>=0.7.0"]
+pydantic-ai-anthropic = ["pydantic-ai-slim[anthropic]>=1.99.0,<2"]
+pydantic-ai-google = ["pydantic-ai-slim[google]>=1.99.0,<2"]
+pydantic-ai-duckduckgo = ["pydantic-ai-slim[duckduckgo]>=1.99.0,<2"]
 otel = [
     "opentelemetry-api>=1.40.0",
     "opentelemetry-sdk>=1.40.0",

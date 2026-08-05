@@ -14,12 +14,37 @@ what a *stored* value does.
 
 from __future__ import annotations
 
+import importlib.util
 import sqlite3
+import sys
 from pathlib import Path
 
 import pytest
 
-from tools.migrate_legacy_revision_ids import _RENAMES, rewrite_legacy_ids
+REPO_ROOT = Path(__file__).resolve().parents[3]
+TOOL_PATH = REPO_ROOT / "tools" / "migrate_legacy_revision_ids.py"
+
+
+def _load_module():
+    """Load by path like the sibling `tools` tests.
+
+    `tools/` is a script directory with no `__init__.py`, so `import tools.x`
+    only resolved while pytest happened to put the rootdir on `sys.path`.
+    pytest 9.0.3 stopped doing that and the module vanished.
+    """
+    spec = importlib.util.spec_from_file_location(
+        "migrate_legacy_revision_ids", TOOL_PATH
+    )
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules["migrate_legacy_revision_ids"] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+_module = _load_module()
+_RENAMES = _module._RENAMES
+rewrite_legacy_ids = _module.rewrite_legacy_ids
 
 _LEGACY_HEAD = "0009_admin_identity_realm_separation"
 _CURRENT_HEAD = "0009_admin_identity_realm"

@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **API-visible: unsorted list endpoints now return newest-first.**
+  `BaseRepository.select_datas` and the no-sort branch of
+  `select_datas_with_count` append the primary key descending as a tiebreaker
+  ([ADR 058](docs/history/058-base-repository-engine-guarantees.md) D2). Offset
+  paging over an unordered result set could repeat or skip rows across pages, so
+  the previous "order" was whatever the engine happened to return. An explicit
+  `QueryFilter.sort_field` still wins. Clients that relied on the incidental
+  order — including `GET /v1/users` — will see a different sequence
+  ([#325](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/325)).
+- **Search and sort now fail closed with a 400 instead of returning too much.**
+  A search naming no usable text column previously added no WHERE clause and
+  returned the whole table with `total_items` set to the full count; it is now
+  `400 DB_SEARCH_FIELD_UNUSABLE`. An unknown `sort_field` was an opaque
+  `500 DB_INTERNAL_ERROR`; it is now `400 DB_UNKNOWN_FIELD` (ADR 058 D3, D4).
+
+### Fixed
+
+- **`BaseRepository.insert_datas` no longer 500s on backends without RETURNING.**
+  The bulk path committed and then read server-side defaults that were never
+  loaded, so `MissingGreenlet` surfaced as `500 DB_INTERNAL_ERROR` **for rows
+  that were already written** — the client saw a failure for a successful write
+  and retried into duplicate-key errors. Affects MySQL/MariaDB
+  (`insert_returning=False`); PostgreSQL and SQLite were unaffected, which is why
+  no test caught it. It now refreshes explicitly, matching `insert_data`
+  (ADR 058 D1).
+- Removed the dead `related_entities` refresh branch, which passed a list to
+  `AsyncSession.refresh` (it takes one instance) and would have raised the moment
+  any model defined the attribute (ADR 058 D5).
+
 ## [0.9.0] - 2026-07-21
 
 The AI-collaboration harness grows from a two-tool model (Claude + Codex) to three:
