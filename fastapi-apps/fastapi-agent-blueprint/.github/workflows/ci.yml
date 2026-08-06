@@ -216,6 +216,75 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
           cat audit.txt
 
+  # Quickstart demo smoke: boot `make quickstart` the way a first-time reader
+  # does, then run both headline demo scripts against it.
+  #
+  # These scripts are the front-page proof and they rotted silently for two
+  # months: demo.sh broke when /v1/user moved to the admin JWT realm
+  # (#199/#218) and demo-rag.sh broke when /v1/docs/* started requiring auth,
+  # while the README kept showing successful output for both. Nothing in CI
+  # ever ran them, and the scripts themselves printed the errors and exited 0.
+  # Both halves of that are now closed — the scripts assert their response
+  # envelopes, and this job runs them.
+  demo-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # The admin extra is what `make setup` installs. Without it the server
+      # logs admin_mount_skipped and never seeds the bootstrap admin, so this
+      # would smoke-test a different app than the quickstart docs describe —
+      # and demo.sh's seed_demo_admin.py step depends on that surface.
+      - name: Install dependencies
+        run: uv sync --group dev --extra admin
+
+      - name: Start the quickstart server
+        run: |
+          set -euo pipefail
+          cp _env/quickstart.env.example _env/quickstart.env
+          rm -f quickstart.db
+          nohup uv run python run_server_local.py --env quickstart > /tmp/quickstart.log 2>&1 &
+          echo $! > /tmp/quickstart.pid
+          for _ in $(seq 1 60); do
+            if curl -sf http://127.0.0.1:8001/health >/dev/null 2>&1; then
+              echo "Server is up."
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "::error::Quickstart server did not become healthy within 60s"
+          cat /tmp/quickstart.log
+          exit 1
+
+      - name: make demo
+        run: make demo
+
+      - name: make demo-rag
+        run: make demo-rag
+
+      # Re-run both against the now-populated database. Both scripts fall back
+      # to login when alice already exists, and seed_demo_admin.py resets the
+      # existing demo admin instead of failing the unique-username check — the
+      # second `make demo` is what proves those paths still work.
+      - name: Re-run both demos (idempotency)
+        run: |
+          make demo
+          make demo-rag
+
+      - name: Server log
+        if: always()
+        run: |
+          cat /tmp/quickstart.log || true
+          kill "$(cat /tmp/quickstart.pid)" 2>/dev/null || true
+
   architecture:
     runs-on: ubuntu-latest
     steps:

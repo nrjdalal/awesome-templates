@@ -7,6 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.1] - 2026-08-06
+
+### Added
+
+- **CI `demo-smoke` job** — boots `make quickstart` and runs `make demo` +
+  `make demo-rag` against it on every PR, then re-runs both to cover the
+  warm-database paths (login fallback, demo-admin reseed). v0.10.0 fixed both
+  demo scripts but nothing in CI executed them, so the claim that they work was
+  itself unverified.
+
+- **`make demo-gif`** — regenerates `docs/assets/cast/demo.gif` from
+  `demo.tape`. Re-recording was previously an undocumented two-tool ritual, so
+  nobody repeated it and the GIF went stale for months. The target also enforces
+  a size budget: a bare `vhs` run produces ~1.7MB, over the
+  `check-added-large-files` ceiling, so it palette-re-encodes down to ~900KB and
+  fails loudly rather than silently committing an oversized asset.
+
+### Fixed
+
+- **Demo scripts no longer report success against a broken API.** `make
+  demo-rag` printed a `401` for every `/v1/docs/*` call and still exited `0`;
+  `make demo` did the same from `GET /v1/users` onward. Printing a response was
+  never the same as checking it, and that is why the auth breakage in both
+  scripts stayed invisible for two months. Every call that expects a success
+  envelope now goes through a `check` helper that aborts on the first response
+  whose envelope is not `success: true`, naming the request that failed.
+  `python3` is now declared as a hard dependency at the top of both scripts
+  rather than failing later as "Could not obtain access token".
+
+### Changed
+
+- **`demo.gif` re-recorded** for the admin-realm flow (seed demo admin →
+  `POST /v1/admin/login` → user CRUD). The previous recording showed a customer
+  token creating a user via `POST /v1/user` — an outcome the API stopped
+  producing when #199/#218 moved those routes to the admin realm, and one that
+  contradicted `scripts/demo.sh` itself. Register output is now truncated to
+  100 columns: two full JWTs told the reader nothing and roughly doubled the
+  file.
+
 ## [0.10.0] - 2026-08-05
 
 Error-notification webhooks land as the first post-v0.9.0 feature, and then a
@@ -680,7 +719,8 @@ Quality Gate review contract, `/plan-feature` Approach Options stage,
 - ADR documentation (001-013)
 - CONTRIBUTING guide and issue templates
 
-[Unreleased]: https://github.com/Mr-DooSun/fastapi-agent-blueprint/compare/v0.10.0...HEAD
+[Unreleased]: https://github.com/Mr-DooSun/fastapi-agent-blueprint/compare/v0.10.1...HEAD
+[0.10.1]: https://github.com/Mr-DooSun/fastapi-agent-blueprint/compare/v0.10.0...v0.10.1
 [0.10.0]: https://github.com/Mr-DooSun/fastapi-agent-blueprint/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/Mr-DooSun/fastapi-agent-blueprint/compare/v0.8.4...v0.9.0
 [0.8.4]: https://github.com/Mr-DooSun/fastapi-agent-blueprint/compare/v0.8.3...v0.8.4

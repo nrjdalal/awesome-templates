@@ -25,23 +25,62 @@ set -euo pipefail
 BASE_URL="${BASE_URL:-http://127.0.0.1:8001}"
 
 note() { printf "\n\033[1;36m→ %s\033[0m\n" "$*"; }
-run()  { printf "\033[0;90m$ %s\033[0m\n" "$*"; eval "$*"; }
 
-if ! command -v curl >/dev/null 2>&1; then
-  echo "curl is required but not installed." >&2
-  exit 1
-fi
-
-pretty() {
-  if command -v python3 >/dev/null 2>&1; then
-    python3 -m json.tool 2>/dev/null || cat
-  else
-    cat
+# python3 is not optional: the token extraction below and the envelope
+# assertions both need it. Saying so here beats failing later with a
+# confusing "Could not obtain access token".
+for dep in curl python3; do
+  if ! command -v "${dep}" >/dev/null 2>&1; then
+    echo "${dep} is required but not installed." >&2
+    exit 1
   fi
+done
+
+# Pretty-print JSON.
+pretty() { python3 -m json.tool 2>/dev/null || cat; }
+
+# --------------------------------------------------------------
+# Envelope assertions.
+#
+# Printing a response is not the same as checking it. Until these
+# existed, this script printed a 401 for every single /v1/docs call and
+# still exited 0 — which is exactly how the auth requirement added by
+# f790fea went unnoticed for two months. Every call expecting a success
+# envelope now goes through `check`.
+# --------------------------------------------------------------
+
+RESPONSE=""
+
+# check CURL_COMMAND — run it, pretty-print the body, and abort unless the
+# response envelope reports success. Pass the curl invocation WITHOUT a
+# trailing `| pretty`; this helper prints for you.
+check() {
+  printf "\033[0;90m$ %s\033[0m\n" "$*"
+  RESPONSE="$(eval "$*")"
+  echo "${RESPONSE}" | pretty
+  assert_success "$*"
 }
 
+assert_success() {
+  echo "${RESPONSE}" \
+    | python3 -c "import json,sys; sys.exit(0 if json.load(sys.stdin).get('success') is True else 1)" \
+      2>/dev/null && return 0
+  echo "" >&2
+  echo "The response above is not a success envelope — aborting." >&2
+  echo "  request: $1" >&2
+  exit 1
+}
+
+# /health is outside the SuccessResponse envelope, so it gets its own check.
 note "Health check"
-run "curl -sS '${BASE_URL}/health' | pretty"
+printf "\033[0;90m$ %s\033[0m\n" "curl -sS '${BASE_URL}/health'"
+HEALTH="$(curl -sS "${BASE_URL}/health")"
+echo "${HEALTH}" | pretty
+echo "${HEALTH}" \
+  | python3 -c "import json,sys; sys.exit(0 if json.load(sys.stdin).get('status') == 'ok' else 1)" 2>/dev/null || {
+  echo "Server is not healthy at ${BASE_URL} — is \`make quickstart\` running?" >&2
+  exit 1
+}
 
 # --------------------------------------------------------------
 # Auth — every /v1/docs route is gated on a customer-realm token
@@ -84,7 +123,7 @@ DOC1_BODY='{
   "source": "https://fastapi.tiangolo.com",
   "content": "FastAPI is a modern Python web framework for building APIs. It leverages type hints for automatic request validation via Pydantic and generates OpenAPI documentation automatically. FastAPI is built on Starlette for async HTTP handling and supports dependency injection out of the box. Developers choose FastAPI for its speed, developer ergonomics, and first-class async support."
 }'
-run "curl -sS -X POST '${BASE_URL}/v1/docs/documents' -H 'Content-Type: application/json' -H '${AUTH_HEADER}' -d '${DOC1_BODY}' | pretty"
+check "curl -sS -X POST '${BASE_URL}/v1/docs/documents' -H 'Content-Type: application/json' -H '${AUTH_HEADER}' -d '${DOC1_BODY}'"
 
 note "Seed document 2 — DDD layered architecture"
 DOC2_BODY='{
@@ -92,7 +131,7 @@ DOC2_BODY='{
   "source": "internal-notes",
   "content": "Domain-Driven Design organizes code around business domains rather than technical concerns. The typical layered architecture separates Interface, Application, Domain, and Infrastructure. The Domain layer contains business logic and must not depend on infrastructure details. The Infrastructure layer implements persistence and external integrations. Interfaces invert control via protocols or dependency injection."
 }'
-run "curl -sS -X POST '${BASE_URL}/v1/docs/documents' -H 'Content-Type: application/json' -H '${AUTH_HEADER}' -d '${DOC2_BODY}' | pretty"
+check "curl -sS -X POST '${BASE_URL}/v1/docs/documents' -H 'Content-Type: application/json' -H '${AUTH_HEADER}' -d '${DOC2_BODY}'"
 
 note "Seed document 3 — Retrieval-Augmented Generation"
 DOC3_BODY='{
@@ -100,14 +139,14 @@ DOC3_BODY='{
   "source": "docs/rag-primer.md",
   "content": "Retrieval-Augmented Generation combines a vector database with a large language model. A user question is embedded into a vector, matched against an index of document chunks, and the top results are supplied as context to the LLM. This approach reduces hallucinations because the model answers from retrieved evidence rather than parametric memory alone. Citations link each answer back to the source chunk that supported it."
 }'
-run "curl -sS -X POST '${BASE_URL}/v1/docs/documents' -H 'Content-Type: application/json' -H '${AUTH_HEADER}' -d '${DOC3_BODY}' | pretty"
+check "curl -sS -X POST '${BASE_URL}/v1/docs/documents' -H 'Content-Type: application/json' -H '${AUTH_HEADER}' -d '${DOC3_BODY}'"
 
 # --------------------------------------------------------------
 # List seeded documents
 # --------------------------------------------------------------
 
 note "List indexed documents"
-run "curl -sS '${BASE_URL}/v1/docs/documents?page=1&pageSize=10' -H '${AUTH_HEADER}' | pretty"
+check "curl -sS '${BASE_URL}/v1/docs/documents?page=1&pageSize=10' -H '${AUTH_HEADER}'"
 
 # --------------------------------------------------------------
 # Run a natural-language query
@@ -118,6 +157,6 @@ QUERY_BODY='{
   "question": "What does retrieval-augmented generation do with citations?",
   "top_k": 3
 }'
-run "curl -sS -X POST '${BASE_URL}/v1/docs/query' -H 'Content-Type: application/json' -H '${AUTH_HEADER}' -d '${QUERY_BODY}' | pretty"
+check "curl -sS -X POST '${BASE_URL}/v1/docs/query' -H 'Content-Type: application/json' -H '${AUTH_HEADER}' -d '${QUERY_BODY}'"
 
 note "Done. API docs: ${BASE_URL}/docs | Admin: ${BASE_URL}/admin/docs"

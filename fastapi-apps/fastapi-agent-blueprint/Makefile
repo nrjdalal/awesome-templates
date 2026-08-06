@@ -1,4 +1,4 @@
-.PHONY: help setup quickstart demo demo-rag dev worker langfuse-env observability-langfuse observability-langfuse-down test lint format check check-core check-full check-minimal smoke-examples perf-test clean diagrams
+.PHONY: help setup quickstart demo demo-rag dev worker langfuse-env observability-langfuse observability-langfuse-down test lint format check check-core check-full check-minimal smoke-examples perf-test clean diagrams demo-gif
 
 LANGFUSE_ENV_FILE := _env/langfuse.env
 MINIMAL_UV_ENV := /tmp/fastapi-agent-blueprint-minimal-venv
@@ -40,6 +40,10 @@ demo-rag:
 ## Render architecture-diagrams.md Mermaid blocks to SVG (needs npx)
 diagrams:
 	@bash scripts/render-diagrams.sh
+
+## Re-record docs/assets/cast/demo.gif from demo.tape (needs vhs + ffmpeg)
+demo-gif:
+	@bash scripts/record-demo-gif.sh
 
 ## Start local development (postgres + server)
 dev:

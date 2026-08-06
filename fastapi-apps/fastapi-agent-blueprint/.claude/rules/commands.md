@@ -13,8 +13,17 @@ make setup
 
 # Zero-config quickstart (SQLite + InMemory broker, no external infra)
 make quickstart
-make demo            # in a second terminal — runs curl CRUD walkthrough
+make demo            # in a second terminal — curl CRUD walkthrough
 make demo-rag        # RAG end-to-end (seed 3 docs → list → query, #80)
+# demo.sh cannot reach /v1/user* with a curl-obtained token: those routes are
+# admin-realm (#199/#218), and the ADMIN_BOOTSTRAP_* credential is setup-only.
+# It shells out to `scripts/seed_demo_admin.py` first, which creates a real
+# admin the way the NiceGUI setup wizard would, then POSTs /v1/admin/login.
+# That script refuses to run outside quickstart/local.
+# Both scripts assert every response envelope and exit non-zero on the first
+# response that is not `success: true` — do not convert a `check` call back to
+# a bare `run "curl ... | pretty"`, which is what let them pass while broken.
+# CI job `demo-smoke` boots quickstart and runs both on every PR.
 
 # Local development (PostgreSQL via docker-compose.local.yml)
 make dev
@@ -98,6 +107,18 @@ uv sync --group dev --extra admin --extra aws    # Dev default (same as make set
 uv sync --extra admin                            # NiceGUI admin dashboard only
 uv sync --extra aws                              # S3/MinIO/DynamoDB/S3Vectors
 uv sync --extra pydantic-ai --extra aws          # Bedrock LLM/Embedding (includes aioboto3)
+```
+
+## Demo Recording
+```bash
+# Re-record docs/assets/cast/demo.gif from docs/assets/cast/demo.tape.
+# Required whenever scripts/demo.sh changes — the GIF is a build artefact of
+# the tape, and it silently outlived the API it depicted once already.
+# Needs `vhs` (brew install vhs) + `ffmpeg`. Stop any server on :8001 first:
+# the tape boots its own quickstart server and resets ./quickstart.db.
+# Do NOT run bare `vhs` — the raw output is ~1.7MB, over the pre-commit asset
+# ceiling; the target palette-re-encodes it and fails if it misses budget.
+make demo-gif
 ```
 
 ## Architecture Diagrams

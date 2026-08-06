@@ -107,7 +107,9 @@ Clone → quickstart → CRUD → JWT auth → background worker → RAG query:
 make quickstart && make demo && make demo-rag
 ```
 
-![API demo: health check → register → JWT → CRUD](docs/assets/cast/demo.gif)
+<!-- Regenerate with `make demo-gif` whenever scripts/demo.sh changes. -->
+![API demo: health check → register → JWT → admin realm → user CRUD](docs/assets/cast/demo.gif)
+
 
 Full integration walkthrough (auth · RBAC · worker · admin · RAG · OTEL): [`docs/canonical-demo.md`](docs/canonical-demo.md)
 
@@ -182,7 +184,7 @@ from scratch.
 | AI workflow skills (Claude + Codex) | **15 + 15** | 0 | 0 | 0 |
 | Vector infrastructure (S3 Vectors) | **Yes** | No | No | No |
 | Multi-interface (API + Worker + Admin + MCP) | **3 + 1 planned** | 2 | 1 | 1 |
-| Architecture Decision Records | **27 active · 30 archived** | 0 | 0 | 0 |
+| Architecture Decision Records | **29 active · 30 archived** | 0 | 0 | 0 |
 | Type-safe generics across layers | **Yes** | Partial | Partial | No |
 | IoC container DI | **Yes** | No | No | No |
 
@@ -322,7 +324,7 @@ One business logic, multiple surfaces:
 | Adopt into an existing FastAPI project | [`docs/adoption.md`](docs/adoption.md) |
 | Check Python / FastAPI / tool version support | [`docs/compatibility.md`](docs/compatibility.md) |
 | See detailed env vars, tech stack, project tree | [`docs/reference.md`](docs/reference.md) |
-| Understand why a decision was made | [ADR index](docs/history/README.md) (27 active · 30 archived) |
+| Understand why a decision was made | [ADR index](docs/history/README.md) (29 active · 30 archived) |
 | Follow what's next | [Roadmap](docs/reference.md#roadmap) · [issue tracker](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues) |
 
 ---

@@ -12,22 +12,64 @@ BASE_URL="${BASE_URL:-http://127.0.0.1:8001}"
 note() { printf "\n\033[1;36m→ %s\033[0m\n" "$*"; }
 run()  { printf "\033[0;90m$ %s\033[0m\n" "$*"; eval "$*"; }
 
-if ! command -v curl >/dev/null 2>&1; then
-  echo "curl is required but not installed." >&2
-  exit 1
-fi
-
-# Pretty-print JSON if python3 is available, otherwise pass through.
-pretty() {
-  if command -v python3 >/dev/null 2>&1; then
-    python3 -m json.tool 2>/dev/null || cat
-  else
-    cat
+# python3 is not optional: the token extraction below and the envelope
+# assertions both need it. Saying so here beats failing later with a
+# confusing "Could not obtain access token".
+for dep in curl python3; do
+  if ! command -v "${dep}" >/dev/null 2>&1; then
+    echo "${dep} is required but not installed." >&2
+    exit 1
   fi
+done
+
+# Pretty-print JSON.
+pretty() { python3 -m json.tool 2>/dev/null || cat; }
+
+# --------------------------------------------------------------
+# Envelope assertions.
+#
+# Printing a response is not the same as checking it. Until these
+# existed, a call that came back `{"success": false, ...}` was printed
+# in red-flag detail and then cheerfully stepped over, so this script
+# and `demo-rag.sh` both reported success against a completely broken
+# API. That is how the #199/#218 admin-realm breakage stayed invisible
+# from 2026-05-27 until it was reported: nothing ever failed.
+#
+# Every call expecting a success envelope now goes through `check`.
+# --------------------------------------------------------------
+
+RESPONSE=""
+
+# check CURL_COMMAND — run it, pretty-print the body, and abort unless the
+# response envelope reports success. Pass the curl invocation WITHOUT a
+# trailing `| pretty`; this helper prints for you.
+check() {
+  printf "\033[0;90m$ %s\033[0m\n" "$*"
+  RESPONSE="$(eval "$*")"
+  echo "${RESPONSE}" | pretty
+  assert_success "$*"
 }
 
+assert_success() {
+  echo "${RESPONSE}" \
+    | python3 -c "import json,sys; sys.exit(0 if json.load(sys.stdin).get('success') is True else 1)" \
+      2>/dev/null && return 0
+  echo "" >&2
+  echo "The response above is not a success envelope — aborting." >&2
+  echo "  request: $1" >&2
+  exit 1
+}
+
+# /health is outside the SuccessResponse envelope, so it gets its own check.
 note "Health check"
-run "curl -sS '${BASE_URL}/health' | pretty"
+printf "\033[0;90m$ %s\033[0m\n" "curl -sS '${BASE_URL}/health'"
+HEALTH="$(curl -sS "${BASE_URL}/health")"
+echo "${HEALTH}" | pretty
+echo "${HEALTH}" \
+  | python3 -c "import json,sys; sys.exit(0 if json.load(sys.stdin).get('status') == 'ok' else 1)" 2>/dev/null || {
+  echo "Server is not healthy at ${BASE_URL} — is \`make quickstart\` running?" >&2
+  exit 1
+}
 
 # --------------------------------------------------------------
 # Auth — register + login to obtain a JWT access token
@@ -113,14 +155,14 @@ if [ -z "${USER_ID}" ]; then
 fi
 
 note "List users (page=1, pageSize=10)"
-run "curl -sS '${BASE_URL}/v1/users?page=1&pageSize=10' -H '${ADMIN_AUTH_HEADER}' | pretty"
+check "curl -sS '${BASE_URL}/v1/users?page=1&pageSize=10' -H '${ADMIN_AUTH_HEADER}'"
 
 note "Update the user"
 UPDATE_BODY='{"full_name":"Bob Builder (updated)"}'
-run "curl -sS -X PUT '${BASE_URL}/v1/user/${USER_ID}' -H 'Content-Type: application/json' -H '${ADMIN_AUTH_HEADER}' -d '${UPDATE_BODY}' | pretty"
+check "curl -sS -X PUT '${BASE_URL}/v1/user/${USER_ID}' -H 'Content-Type: application/json' -H '${ADMIN_AUTH_HEADER}' -d '${UPDATE_BODY}'"
 
 note "Delete the user"
-run "curl -sS -X DELETE '${BASE_URL}/v1/user/${USER_ID}' -H '${ADMIN_AUTH_HEADER}' | pretty"
+check "curl -sS -X DELETE '${BASE_URL}/v1/user/${USER_ID}' -H '${ADMIN_AUTH_HEADER}'"
 
 # --------------------------------------------------------------
 # Auth — refresh token + logout
@@ -128,10 +170,12 @@ run "curl -sS -X DELETE '${BASE_URL}/v1/user/${USER_ID}' -H '${ADMIN_AUTH_HEADER
 
 if [ -n "${REFRESH_TOKEN}" ]; then
   note "Refresh token"
-  run "curl -sS -X POST '${BASE_URL}/v1/auth/refresh' -H 'Content-Type: application/json' -d '{\"refreshToken\":\"${REFRESH_TOKEN}\"}' | pretty"
+  check "curl -sS -X POST '${BASE_URL}/v1/auth/refresh' -H 'Content-Type: application/json' -d '{\"refreshToken\":\"${REFRESH_TOKEN}\"}'"
+  # Rotation revokes the token just spent, so log out with the new one.
+  REFRESH_TOKEN="$(echo "${RESPONSE}" | python3 -c "import json,sys;print(json.load(sys.stdin)['data']['refreshToken'])" 2>/dev/null || echo "${REFRESH_TOKEN}")"
 fi
 
 note "Logout"
-run "curl -sS -X POST '${BASE_URL}/v1/auth/logout' -H 'Content-Type: application/json' -H '${AUTH_HEADER}' -d '{\"refreshToken\":\"${REFRESH_TOKEN}\"}' | pretty"
+check "curl -sS -X POST '${BASE_URL}/v1/auth/logout' -H 'Content-Type: application/json' -H '${AUTH_HEADER}' -d '{\"refreshToken\":\"${REFRESH_TOKEN}\"}'"
 
 note "Done. API docs: ${BASE_URL}/docs"
