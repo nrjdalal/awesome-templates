@@ -1,0 +1,17 @@
+# Gitignored files copied into a new git worktree, in .gitignore syntax.
+# Only files that match AND are already gitignored are copied — listing a file
+# here never makes it tracked.
+#
+# Read by worktree-creating tools that support the convention (Claude Code,
+# Conductor, Roo Code, CodeBuddy). Tools that do not read it — Paseo, plain
+# `git worktree add` — are covered by `make worktree-setup`, which copies the
+# same two files. Keep the two lists in sync.
+#
+# Dependencies are never installed by this file: a fresh worktree also needs
+# `make worktree-setup` for the admin/aws extras.
+#
+# `make quickstart` recreates quickstart.env from its .example, so only the
+# hand-edited local.env strictly needs carrying over. Both are listed so a
+# worktree also inherits any local quickstart tweaks.
+_env/local.env
+_env/quickstart.env

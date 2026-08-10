@@ -358,7 +358,17 @@ make demo         # curl walkthrough against running quickstart
 make dev          # real local dev (PostgreSQL via docker-compose)
 make worker
 make diagrams     # regenerate SVGs under docs/assets/architecture/
+
+make worktree-setup  # bootstrap a fresh git worktree (copy gitignored env files
+                     # + install admin/aws extras). Idempotent; agent-agnostic.
 ```
+
+A git worktree is a fresh checkout: `_env/*.env` is gitignored and the
+`admin`/`aws` extras are not part of uv's default sync, so run
+`make worktree-setup` once in a new worktree. Worktree managers can call it from
+their post-create hook (`paseo.json` in this repo does). Tools that read
+`.worktreeinclude` — Claude Code, Conductor, Roo Code, CodeBuddy — copy the env
+files themselves when they create the worktree; the extras still need the target.
 
 ### Test
 

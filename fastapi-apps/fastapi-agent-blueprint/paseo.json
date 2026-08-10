@@ -1,0 +1,14 @@
+{
+  "worktree": {
+    "setup": "make worktree-setup"
+  },
+  "scripts": {
+    "quickstart": {
+      "command": "PORT=$PASEO_PORT uv run python run_server_local.py --env quickstart",
+      "type": "service"
+    },
+    "check": {
+      "command": "make check"
+    }
+  }
+}

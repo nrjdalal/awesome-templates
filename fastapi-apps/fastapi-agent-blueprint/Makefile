@@ -1,4 +1,4 @@
-.PHONY: help setup quickstart demo demo-rag dev worker langfuse-env observability-langfuse observability-langfuse-down test lint format check check-core check-full check-minimal smoke-examples perf-test clean diagrams demo-gif
+.PHONY: help setup worktree-setup quickstart demo demo-rag dev worker langfuse-env observability-langfuse observability-langfuse-down test lint format check check-core check-full check-minimal smoke-examples perf-test clean diagrams demo-gif
 
 LANGFUSE_ENV_FILE := _env/langfuse.env
 MINIMAL_UV_ENV := /tmp/fastapi-agent-blueprint-minimal-venv
@@ -14,6 +14,25 @@ help:
 ## Setup development environment (includes admin + aws extras for full dev coverage)
 setup:
 	uv venv && uv sync --group dev --extra admin --extra aws && uv run pre-commit install && uv run pre-commit install --hook-type commit-msg
+
+# Idempotent and tool-independent: worktree managers (Paseo, Orca) point their
+# post-create hook here, and it also works when run by hand. Tools that read
+# .worktreeinclude (Claude Code, Conductor, Roo Code, CodeBuddy) copy the env
+# files themselves; the extras still need this target. The copy list below
+# mirrors .worktreeinclude — keep the two in sync.
+## Bootstrap a fresh git worktree (copy gitignored env files + install extras)
+worktree-setup:
+	@main=$$(git worktree list --porcelain | sed -n '1s/^worktree //p'); \
+	here=$$(git rev-parse --show-toplevel); \
+	if [ -n "$$main" ] && [ "$$main" != "$$here" ]; then \
+		for f in local.env quickstart.env; do \
+			if [ ! -f "_env/$$f" ] && [ -f "$$main/_env/$$f" ]; then \
+				cp "$$main/_env/$$f" "_env/$$f" && echo "→ copied _env/$$f from $$main"; \
+			fi; \
+		done; \
+	fi
+	@echo "→ Syncing dependencies (dev group + admin/aws extras)"
+	uv sync --group dev --extra admin --extra aws
 
 ## Zero-config quickstart: SQLite + InMemory broker, no external infra
 quickstart:

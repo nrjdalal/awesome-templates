@@ -11,6 +11,13 @@
 # Dev environment setup (includes admin + aws extras — #104)
 make setup
 
+# Bootstrap a fresh git worktree — copies gitignored _env/*.env from the main
+# checkout and installs the admin/aws extras (not in uv's default sync).
+# Idempotent and agent-agnostic. `paseo.json` calls it from its post-create
+# hook; tools that read `.worktreeinclude` (Claude Code, Conductor, Roo Code,
+# CodeBuddy) copy the env files themselves but still need the extras.
+make worktree-setup
+
 # Zero-config quickstart (SQLite + InMemory broker, no external infra)
 make quickstart
 make demo            # in a second terminal — curl CRUD walkthrough
