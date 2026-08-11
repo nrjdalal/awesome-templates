@@ -57,7 +57,7 @@
     "react-dom": "19.2.8",
     "react-resizable-panels": "^4.12.2",
     "recharts": "3.8.0",
-    "resend": "^6.18.1",
+    "resend": "^6.19.0",
     "shadcn": "^4.16.2",
     "sonner": "^2.0.8",
     "tailwind-merge": "^3.6.0",
