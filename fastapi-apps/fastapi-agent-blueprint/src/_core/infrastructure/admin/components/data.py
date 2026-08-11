@@ -20,12 +20,21 @@ _SHARED_DEFAULT_COL_DEF: dict[str, Any] = {
     "sortable": True,
 }
 
+# Measured on AG Grid v33 quartz in the NiceGUI embed at our ``rowHeight``:
+# ``.ag-header`` is 49px and the root wrapper carries a 1px border top+bottom.
+# ``49 + 8 * 36 + 2 = 339`` matched the measured ``.ag-root-wrapper`` height
+# exactly, which is what makes the derived height below reliable rather than a
+# guess. Re-measure if the grid theme or ``GRID_ROW_HEIGHT`` changes.
+_GRID_HEADER_HEIGHT = 49
+_GRID_BORDER_HEIGHT = 2
+
 
 def data_grid(
     column_defs: list[dict],
     row_data: list[dict],
     *,
     compact: bool = False,
+    auto_height: bool = False,
     row_click_to: Callable[[dict], str] | None = None,
     on_cell_click: Callable[[Any], Any] | None = None,
     on_row_click: Callable[[Any], Awaitable[None]] | Callable[[Any], Any] | None = None,
@@ -34,6 +43,26 @@ def data_grid(
 ) -> ui.aggrid:
     """Render an AG Grid with the admin theme class + shared defaults.
 
+    Height:
+    - default → viewport-sized (``--admin-grid-height``); ``compact=True`` →
+      the shorter ``--admin-grid-height-compact``. Both are *fixed*, so a grid
+      holding fewer rows than the container leaves empty space below the last
+      row.
+    - ``auto_height=True`` → the height is *derived from the row count* and set
+      inline, so there is no empty space under the last row. Use only when the
+      caller bounds the row count; every row is laid out, so an unbounded grid
+      gets an arbitrarily tall page. ``compact`` is ignored when
+      ``auto_height`` is set.
+
+      This deliberately does **not** use AG Grid's ``domLayout: "autoHeight"``.
+      That was tried first and does not work in the NiceGUI embed: AG Grid grows
+      its inner ``.ag-root-wrapper`` (measured 339px for 8 rows) while the outer
+      NiceGUI element keeps the height Quasar computed for it (256px), so the
+      grid paints 83px over whatever follows it — on the dashboard the Quick
+      Actions section was overlapped and its heading hidden. Deriving a fixed
+      height keeps the mechanism that already works and only changes where the
+      number comes from.
+
     Click handling (all optional, async-safe):
     - ``row_click_to``: row dict → route; navigates on cellClicked (the common
       list→detail case).
@@ -41,17 +70,24 @@ def data_grid(
       cellClicked / rowClicked events (e.g. opening a detail dialog).
     """
     col_def = {**_SHARED_DEFAULT_COL_DEF, **(default_col_def or {})}
-    grid = ui.aggrid(
-        {
-            "columnDefs": column_defs,
-            "rowData": row_data,
-            "rowSelection": {"mode": "singleRow"}
-            if selection == "single"
-            else selection,
-            "rowHeight": AdminMetrics.GRID_ROW_HEIGHT,
-            "defaultColDef": col_def,
-        }
-    ).classes(f"w-full {AdminClasses.GRID_COMPACT if compact else AdminClasses.GRID}")
+    options: dict[str, Any] = {
+        "columnDefs": column_defs,
+        "rowData": row_data,
+        "rowSelection": {"mode": "singleRow"} if selection == "single" else selection,
+        "rowHeight": AdminMetrics.GRID_ROW_HEIGHT,
+        "defaultColDef": col_def,
+    }
+    if auto_height:
+        height_class = AdminClasses.GRID_AUTO
+    else:
+        height_class = AdminClasses.GRID_COMPACT if compact else AdminClasses.GRID
+    grid = ui.aggrid(options).classes(f"w-full {height_class}")
+    if auto_height:
+        # At least one row's worth so a zero-row grid is not 0px tall.
+        visible_rows = max(len(row_data), 1)
+        grid.style(
+            f"height: {_GRID_HEADER_HEIGHT + visible_rows * AdminMetrics.GRID_ROW_HEIGHT + _GRID_BORDER_HEIGHT}px"
+        )
 
     if row_click_to is not None:
         grid.on(

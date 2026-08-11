@@ -1,5 +1,4 @@
 import importlib
-from pathlib import Path
 
 import structlog
 from fastapi import FastAPI
@@ -107,11 +106,10 @@ def bootstrap_admin(fastapi_app: FastAPI) -> None:
     for cfg in page_configs:
         permission_registry.register(cfg.domain_name)
 
-    # Serve self-hosted admin static assets (the bundled Wanted Sans webfont,
-    # #193). The URL prefix is distinct from the /admin/<domain> page routes so
-    # it never collides with auto-discovered pages. theme.py references this
-    # same path in its @font-face rule.
-    app.add_static_files("/admin-static", str(Path(__file__).parent / "static"))
+    # No static-asset mount: the /admin-static route existed only to serve the
+    # bundled Wanted Sans webfont, which #365 dropped in favour of a system font
+    # stack. Restore `app.add_static_files("/admin-static", ...)` here if the
+    # admin ever needs to serve its own assets again.
 
     # Inject the shared admin theme CSS into every page head (#193). Self-guarded
     # against duplicate injection on repeated bootstrap calls (test reloads).

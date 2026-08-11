@@ -39,11 +39,16 @@ async def dashboard_page():
     # cause audit data to be read server-side.
     metrics = await collect_dashboard_metrics(visible_configs, include_audit=show_audit)
 
+    # No "Quick Actions" section: it rendered one nav card per visible domain,
+    # i.e. exactly the destinations the left drawer already lists, ~1300px down
+    # the page where nobody scrolled to it (#368). Offering the same target
+    # twice only made the landing page longer. If a genuine action surface is
+    # wanted here later it should carry *actions* (create, export, run), not
+    # navigation.
     _render_stat_cards(metrics, show_audit=show_audit)
     if show_audit:
         _render_activity_chart(metrics)
         _render_recent_activity(metrics)
-    _render_quick_actions(visible_configs, permissions)
 
 
 def _render_stat_cards(metrics: DashboardMetrics, *, show_audit: bool) -> None:
@@ -105,24 +110,9 @@ def _render_recent_activity(metrics: DashboardMetrics) -> None:
                 {"headerName": "Domain", "field": "domain"},
             ],
             rows,
-            compact=True,
+            # Sized to its rows, not to the viewport: a fixed-height container
+            # left a ~200px empty box under the last row on the landing page.
+            # Safe because this window is capped at DEFAULT_RECENT_LIMIT (8) —
+            # every row is laid out, so an unbounded grid must not opt in.
+            auto_height=True,
         )
-
-
-def _render_quick_actions(
-    visible_configs: list[BaseAdminPage], permissions: set[str]
-) -> None:
-    def _nav_card(icon: str, label: str, target: str) -> None:
-        with c.card(clickable_to=target):
-            with ui.row().classes("items-center q-pa-sm"):
-                ui.icon(icon).classes("text-h4 text-primary")
-                ui.label(label).classes("text-h6")
-
-    with c.section("Quick Actions"):
-        with ui.row().classes("q-gutter-md"):
-            for pc in visible_configs:
-                _nav_card(pc.icon, pc.display_name, f"/admin/{pc.domain_name}")
-            if "accounts" in permissions:
-                _nav_card("manage_accounts", "Accounts", "/admin/accounts")
-            if _AUDIT_PERMISSION in permissions:
-                _nav_card("fact_check", "Audit Log", "/admin/audit-log")

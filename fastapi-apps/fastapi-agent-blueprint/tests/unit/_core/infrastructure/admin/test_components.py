@@ -76,6 +76,52 @@ def test_data_grid_carries_theme_and_defaults():
 def test_data_grid_compact_uses_compact_class():
     grid = c.data_grid([], [], compact=True)
     assert AdminClasses.GRID_COMPACT in grid._classes
+    assert "height" not in (grid._style or {})
+
+
+def test_data_grid_auto_height_derives_height_from_row_count():
+    """Height scales with rows so no empty space sits under the last row.
+
+    Asserts the derived value, not just that *some* height was set: the point of
+    the feature is the number. `49 + rows * 36 + 2` was measured against the
+    real `.ag-root-wrapper` in the NiceGUI embed.
+    """
+    rows = [{"id": i} for i in range(8)]
+    grid = c.data_grid([{"field": "id"}], rows, auto_height=True)
+    assert AdminClasses.GRID_AUTO in grid._classes
+    assert AdminClasses.GRID not in grid._classes
+    assert AdminClasses.GRID_COMPACT not in grid._classes
+    assert grid._style["height"] == f"{49 + 8 * AdminMetrics.GRID_ROW_HEIGHT + 2}px"
+
+    # Three rows must be shorter than eight — the whole point.
+    shorter = c.data_grid([{"field": "id"}], rows[:3], auto_height=True)
+    assert shorter._style["height"] == f"{49 + 3 * AdminMetrics.GRID_ROW_HEIGHT + 2}px"
+
+
+def test_data_grid_auto_height_never_collapses_to_zero():
+    """A zero-row grid still reserves one row, so it cannot render 0px tall."""
+    grid = c.data_grid([{"field": "id"}], [], auto_height=True)
+    assert grid._style["height"] == f"{49 + 1 * AdminMetrics.GRID_ROW_HEIGHT + 2}px"
+
+
+def test_data_grid_does_not_use_ag_grid_dom_layout_auto_height():
+    """`domLayout: autoHeight` is broken in the NiceGUI embed — never emit it.
+
+    AG Grid grows its inner `.ag-root-wrapper` (measured 339px for 8 rows) while
+    the outer NiceGUI element keeps Quasar's computed height (256px), so the grid
+    paints over the following section. Reaching for the option again is the
+    natural instinct; this test is the tripwire.
+    """
+    for kwargs in ({}, {"compact": True}, {"auto_height": True}):
+        grid = c.data_grid([], [], **kwargs)
+        assert "domLayout" not in grid._props["options"]
+
+
+def test_data_grid_auto_height_overrides_compact():
+    """`compact` imposes a height, so it cannot coexist with autoHeight."""
+    grid = c.data_grid([], [], compact=True, auto_height=True)
+    assert AdminClasses.GRID_AUTO in grid._classes
+    assert AdminClasses.GRID_COMPACT not in grid._classes
 
 
 def test_data_grid_merges_default_col_def():

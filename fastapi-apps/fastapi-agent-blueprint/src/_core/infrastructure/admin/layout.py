@@ -98,9 +98,10 @@ def admin_layout(
                 f"name={'chevron_right' if nav_mini else 'chevron_left'}"
             )
 
-    with ui.header(elevated=True).classes(
-        f"items-center justify-between {AdminClasses.HEADER}"
-    ):
+    # Not ``elevated``: the shell separates chrome from content with a hairline
+    # border (--admin-chrome-border), so Quasar's header shadow is a second,
+    # competing separator (#365).
+    with ui.header().classes(f"items-center justify-between {AdminClasses.HEADER}"):
         # Brand: a hamburger + an icon standing in for a project logo (swap for
         # ui.image in a fork) + the brand name. The hamburger is mobile-only
         # (``lt-md``): below the breakpoint Quasar overlays the drawer and the
@@ -207,7 +208,12 @@ def _nav_item(*, label: str, icon: str, target: str, active: bool) -> None:
         item.classes(AdminClasses.NAV_ACTIVE_ITEM)
     with item:
         with ui.item_section().props("avatar"):
-            ui.icon(icon).classes(AdminClasses.ACCENT_ICON if active else "")
+            # Inactive icons are muted rather than drawer-text weight: at equal
+            # weight the accent on the active icon has nothing to stand out
+            # against, and the rail reads as a wall of glyphs (#365).
+            ui.icon(icon).classes(
+                AdminClasses.ACCENT_ICON if active else AdminClasses.MUTED
+            )
         with ui.item_section():
             text = ui.label(label)
             if active:

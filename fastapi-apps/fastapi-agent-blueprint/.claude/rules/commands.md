@@ -1,6 +1,6 @@
 # Suggested Commands
 
-> Last synced: 2026-08-01 via #286/PR #313 + #315/PR #319 (Error Notification — severity channel routing section and example added; `:159` corrected, it had contradicted the Coverage bullet in the same block since #310). Prior: 2026-07-28 via #310 (Error Notification — dispatch extended to Taskiq worker task failures; the server-only scope note from PR #311 is superseded). Prior: 2026-07-27 via #307/PR #311 (Error Notification section — runbook pointer, server-only dispatch scope, first-dispatch disabled warning). Prior: 2026-07-23 via #17/PR #304 (added the Error Notification section — `NOTIFICATION_*` env vars for Slack/Discord webhook alerts fired from the exception handlers). Prior: 2026-07-20 via ADR 056 (added `tools/check_migration_safety.py` — advisory unsafe-DDL scan for zero-downtime migrations — to Architecture Verification + DB Migrations). Prior: 2026-07-20 via #293 (added `make perf-test` — Locust performance-test harness — to the Test section).
+> Last synced: 2026-08-11 via #365/PR #366 (Admin Dashboard — the UI theming block now names the neutral-mono theme instead of the Toss-style one, and records that the `--q-*` brand group must be emitted under `body` with `!important`, because NiceGUI writes that palette as an inline body style and a `:root` declaration is inert — the pre-#365 state, in which the whole brand half of the palette never applied). Prior: 2026-08-01 via #286/PR #313 + #315/PR #319 (Error Notification — severity channel routing section and example added; `:159` corrected, it had contradicted the Coverage bullet in the same block since #310). Prior: 2026-07-28 via #310 (Error Notification — dispatch extended to Taskiq worker task failures; the server-only scope note from PR #311 is superseded). Prior: 2026-07-27 via #307/PR #311 (Error Notification section — runbook pointer, server-only dispatch scope, first-dispatch disabled warning). Prior: 2026-07-23 via #17/PR #304 (added the Error Notification section — `NOTIFICATION_*` env vars for Slack/Discord webhook alerts fired from the exception handlers). Prior: 2026-07-20 via ADR 056 (added `tools/check_migration_safety.py` — advisory unsafe-DDL scan for zero-downtime migrations — to Architecture Verification + DB Migrations). Prior: 2026-07-20 via #293 (added `make perf-test` — Locust performance-test harness — to the Test section).
 > Purpose: Quick reference for Claude Code when executing shell commands.
 > Also referenced when running Skills.
 > Default Flow context: see [`AGENTS.md` § Default Coding Flow](../../AGENTS.md#default-coding-flow). The commands below are consulted by the `implement` and `verify` steps; this file is **not** a primary entry point in the Default Flow.
@@ -218,8 +218,12 @@ uv sync --extra admin   # install; → http://127.0.0.1:8001/admin
 # Seed admin: ADMIN_BOOTSTRAP_USERNAME/EMAIL/PASSWORD env vars (idempotent on boot, into admin_identity)
 # If not installed: server boots normally, emits admin_mount_skipped log
 
-# UI theming (#193): single Toss-style theme — rebrand by editing token dicts in
-# src/_core/infrastructure/admin/theme.py (no ADMIN_THEME_PALETTE setting).
+# UI theming (#193, restyled in #365): single neutral-mono theme — a desaturated
+# Tailwind zinc ramp with one blue accent. Rebrand by editing the token dicts in
+# src/_core/infrastructure/admin/theme.py (no ADMIN_THEME_PALETTE setting);
+# changing AdminColors.PRIMARY is usually enough. Note the `--q-*` brand group
+# must stay under `body` with `!important` — NiceGUI sets it as an inline body
+# style, so a `:root` declaration is inert (that was the pre-#365 state).
 ADMIN_BRAND_NAME="Acme Admin" uv run python run_server_local.py --env local  # header/login brand text
 ADMIN_DARK_MODE_DEFAULT=true ...       # unset=follow OS; true/false to force initial light/dark
 ```

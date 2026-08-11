@@ -55,7 +55,9 @@ def bar_chart(categories: Sequence[str], values: Sequence[float]) -> ui.echart:
                     "barMaxWidth": 56,
                     "itemStyle": {
                         "color": bar_color,
-                        "borderRadius": [8, 8, 0, 0],
+                        # Matches the 8px card radius at bar scale — a bar is
+                        # narrower than a card, so the same number reads heavier.
+                        "borderRadius": [4, 4, 0, 0],
                     },
                 }
             ],

@@ -102,8 +102,9 @@ class Settings(BaseSettings):
         default=None,
         validation_alias="ADMIN_DARK_MODE_DEFAULT",
     )
-    # (Admin shell uses a single Toss-style theme; edit token dicts in
-    # admin/theme.py to rebrand. No ADMIN_THEME_PALETTE setting.)
+    # (Admin shell uses a single neutral-mono theme; edit the token dicts in
+    # admin/theme.py to rebrand — usually just AdminColors.PRIMARY. No
+    # ADMIN_THEME_PALETTE setting.)
     # Brand name shown in the admin header + login card (#193). Rebrand per fork.
     admin_brand_name: str = Field(
         default="Admin Console",

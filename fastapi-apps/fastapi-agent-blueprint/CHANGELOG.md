@@ -7,6 +7,90 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **BREAKING — admin restyled to a single neutral-mono theme.** A desaturated
+  Tailwind **zinc** ramp carries the UI, a *single* blue accent (`#2563eb`)
+  marks interactive/active state, and three status hues (`#16a34a` / `#dc2626` /
+  `#d97706`) are reserved for outcomes. Shape drops from `20px` cards and pill
+  buttons to `8px` / `6px`; elevation gives way to hairline borders; the login
+  gradient becomes a flat surface; AG Grid rows tighten from `44px` to `36px`
+  and separate by border instead of zebra striping. `theme.py` now holds
+  **three** token dicts — `_BRAND_TOKENS` (Quasar `--q-*`, emitted under `body`),
+  `_ROOT_TOKENS`, `_DARK_TOKENS` — and rebranding a fork is usually just
+  `AdminColors.PRIMARY`
+  ([#365](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/365))
+
+- **BREAKING — the bundled Wanted Sans webfont is removed** in favour of a
+  system font stack with Hangul fallbacks. That also removes
+  `src/_apps/admin/static/` (a 1.29 MB `woff2` + its `OFL.txt`) and the
+  `app.add_static_files("/admin-static", ...)` mount in
+  `src/_apps/admin/bootstrap.py`, which existed only to serve that font. The
+  emitted admin CSS now contains no `@font-face` and no `url(` at all, so the
+  panel makes no third-party request on load
+  ([#365](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/365))
+
+### Fixed
+
+- **The Quasar `--q-*` brand palette had never applied.** NiceGUI writes its own
+  brand palette as an **inline style on `<body>`** (`--q-primary: #5898d4`, teal
+  secondary, purple accent, cyan info). An inline declaration outranks every
+  stylesheet rule regardless of selector specificity, so `theme.py` declaring
+  `--q-*` in `:root` — as it did from #193 through #235 — was inert: `html`
+  carried the project value, `body` re-declared NiceGUI's, and every descendant
+  inherited NiceGUI's. Measured on the live page as `rootVar #2563eb` /
+  `bodyVar #5898d4`. In practice every button, badge and `text-primary` label
+  rendered NiceGUI's defaults *beside* the `--admin-*` greys — a third palette on
+  screen, and the larger reason the admin colours never looked coherent. The
+  brand group is now emitted under `body` with `!important`, which does outrank a
+  normal inline declaration, keeping the inject-once-app-wide model with no
+  per-page `ui.colors()` call. `--q-dark` / `--q-dark-page` are set as well so
+  Quasar's own dark menus, dialogs and selects land on the zinc ladder instead of
+  `#1d1d1d` / `#121212`
+  ([#365](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/365))
+
+- **AG Grid did not use the theme's surface tokens.** The grid body kept the
+  quartz palette's own surface while every other panel used `--admin-surface`,
+  so in dark mode the grid floated as a lighter slab. Worse, pinning *only*
+  `--ag-odd-row-background-color` to switch striping off made striping reappear
+  **inverted** — odd rows darker than the quartz base. Grid background, header
+  and border now come from the same tokens; a test asserts they are present
+  together, because the half-configured state is the bug
+  ([#365](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/365))
+
+- **Muting inactive admin nav icons applied to nothing.** `.admin-drawer
+  .q-icon` is a two-class selector and outranked the single-class
+  `.admin-text-muted` helper. Restated at higher specificity, and dark
+  `--admin-drawer-text` moved off `--admin-text-muted`'s value — equal values
+  make the mute a silent no-op, now pinned by a test. The admin header also no
+  longer renders the operator's own username in the accent colour (NiceGUI puts
+  `text-primary` on the inner `.q-btn__content` span, which the `.q-btn` rule
+  never reached) and drops its `elevated` shadow, which competed with the
+  hairline border
+  ([#365](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/365))
+
+### Upgrading
+
+- **`--admin-login-gradient` is renamed `--admin-login-bg`.** The value is a flat
+  colour now, so the old name lied. No compatibility alias, following #235's
+  removal of `ADMIN_THEME_PALETTE`. Update any fork CSS that referenced it.
+- **Every `AdminColors` value changed** (`PRIMARY` `#3182f6` → `#2563eb`, and so
+  on). If a fork hardcoded these, re-derive from the new ramp. Note that with the
+  `--q-*` fix these values now actually reach Quasar-coloured controls, so a fork
+  that tuned its look *around* NiceGUI's defaults will see buttons and badges
+  change colour even where it did not edit tokens.
+- **`AdminMetrics.GRID_ROW_HEIGHT` is `36`** (was `44`). Override in a fork if
+  taller rows are wanted.
+- **`src/_apps/admin/static/` and the `/admin-static` route are gone.** A fork
+  serving its own admin assets from that prefix must restore
+  `app.add_static_files("/admin-static", ...)` in `src/_apps/admin/bootstrap.py`.
+
+```bash
+# Nothing to run — no env vars, settings, or schema changed. Restart the server.
+# To keep a custom webfont, restore the static mount and add the @font-face rule
+# back to theme.py, then relax test_font_is_a_system_stack_with_no_webfont.
+```
+
 ## [0.10.1] - 2026-08-06
 
 ### Added
