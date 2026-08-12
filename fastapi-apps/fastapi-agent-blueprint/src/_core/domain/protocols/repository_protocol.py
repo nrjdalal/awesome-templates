@@ -6,6 +6,9 @@ from typing import TYPE_CHECKING, Any, Generic, Protocol, TypeVar
 from pydantic import BaseModel
 
 if TYPE_CHECKING:
+    from datetime import datetime
+
+    from src._core.domain.value_objects.daily_count import DailyCount
     from src._core.domain.value_objects.query_filter import QueryFilter
 
 ReturnDTO = TypeVar("ReturnDTO", bound=BaseModel)
@@ -53,3 +56,7 @@ class BaseRepositoryProtocol(Protocol, Generic[ReturnDTO]):
     async def delete_data_by_data_id(self, data_id: int) -> bool: ...
 
     async def count_datas(self) -> int: ...
+
+    async def count_datas_by_day(
+        self, *, since: datetime, column_name: str = "created_at"
+    ) -> list[DailyCount]: ...

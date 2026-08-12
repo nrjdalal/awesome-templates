@@ -9,6 +9,9 @@ from src._core.common.pagination import make_pagination
 from src._core.domain.protocols.repository_protocol import BaseRepositoryProtocol
 
 if TYPE_CHECKING:
+    from datetime import datetime
+
+    from src._core.domain.value_objects.daily_count import DailyCount
     from src._core.domain.value_objects.query_filter import QueryFilter
 
 CreateDTO = TypeVar("CreateDTO", bound=BaseModel)
@@ -66,6 +69,27 @@ class BaseService(Generic[CreateDTO, UpdateDTO, ReturnDTO]):
 
     async def count_datas(self) -> int:
         return await self.repository.count_datas()
+
+    async def count_datas_by_day(
+        self, *, since: datetime, column_name: str = "created_at"
+    ) -> list[DailyCount]:
+        """Rows per calendar day at or after ``since`` (#368).
+
+        A pass-through, like :meth:`count_datas`, and it exists for the same
+        reason: callers reach a domain through its **service**, so a repository
+        method with no service counterpart is unreachable from the places that
+        need it — the admin dashboard resolves ``config._get_service()``, never a
+        repository.
+
+        Read-only, so there is no ``_validate_*`` hook: the write-validation
+        hooks guard mutations, and adding one here would imply a decision point
+        that does not exist. Engine normalisation and the fail-closed behaviour
+        on a missing or non-temporal column live in ``BaseRepository`` (ADR 058);
+        this layer adds nothing and must not paper over them.
+        """
+        return await self.repository.count_datas_by_day(
+            since=since, column_name=column_name
+        )
 
     async def _validate_create(self, entity: CreateDTO) -> None:
         return None

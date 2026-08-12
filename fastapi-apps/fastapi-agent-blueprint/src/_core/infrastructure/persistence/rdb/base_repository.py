@@ -2,13 +2,15 @@ from __future__ import annotations
 
 from abc import ABC
 from collections.abc import Mapping
+from datetime import date, datetime
 from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
 import structlog
 from pydantic import BaseModel
-from sqlalchemy import String, func, or_, select
+from sqlalchemy import Date, DateTime, String, func, or_, select
 from sqlalchemy.orm import InstrumentedAttribute
 
+from src._core.domain.value_objects.daily_count import DailyCount
 from src._core.exceptions.base_exception import BaseCustomException
 from src._core.infrastructure.persistence.rdb.database import Base, Database
 from src._core.infrastructure.persistence.rdb.exceptions import DatabaseException
@@ -267,6 +269,93 @@ class BaseRepository(Generic[ReturnDTO], ABC):
         async with self.database.session() as session:
             result = await session.execute(select(func.count()).select_from(self.model))
             return result.scalar_one()
+
+    async def count_datas_by_day(
+        self, *, since: datetime, column_name: str = "created_at"
+    ) -> list[DailyCount]:
+        """Rows per calendar day at or after ``since``, oldest day first.
+
+        Two dialect differences are absorbed here rather than left to callers,
+        per the ADR 058 guarantee that ``BaseRepository`` behaves the same on
+        PostgreSQL, MySQL and SQLite.
+
+        **1. How the day is truncated.** ``func.date(column)`` is used, and the
+        alternatives were measured rather than assumed:
+
+        =============================== ========= ============
+        expression                      SQLite    PostgreSQL
+        =============================== ========= ============
+        ``cast(column, Date)``          **fails** works
+        ``func.date(column)``           works     works
+        ``substr(cast(col, String), …)`` works     works
+        =============================== ========= ============
+
+        ``cast(column, Date)`` raises ``TypeError: fromisoformat: argument must
+        be str`` on SQLite, which is the quickstart default — so the obvious
+        cast is the one that breaks the most common configuration. Do not
+        "simplify" this to a cast. MySQL's ``DATE()`` is long-standing, but note
+        ADR 058's stated limit: no real MySQL runs in CI, so that leg rests on
+        documentation rather than a test.
+
+        **2. What Python type comes back.** ``func.date`` returns ``str`` on
+        SQLite and ``datetime.date`` on PostgreSQL (both measured). Callers get
+        ``datetime.date`` on every engine because :meth:`_as_date` normalises it;
+        without that, a caller formatting the value would work on one engine and
+        raise on another.
+
+        Days with no rows are **absent**, not zero-filled — see
+        :class:`DailyCount`. Fails closed with a curated 400 when the column
+        cannot carry the aggregate, following the ``DB_SEARCH_FIELD_UNUSABLE``
+        precedent (ADR 058 D3) rather than returning an empty list that reads
+        like "no data".
+
+        ``since`` must match the column's tz-awareness. Every timestamp column
+        in-tree today is naive ``DateTime`` (``user.created_at``,
+        ``ai_usage.occurred_at``), so a naive ``since`` is what callers pass; a
+        fork that switches a column to ``DateTime(timezone=True)`` has to pass an
+        aware one. No coercion happens here because guessing which the caller
+        meant is worse than the comparison failing.
+        """
+        column = getattr(self.model, column_name, None)
+        if not isinstance(column, InstrumentedAttribute) or not isinstance(
+            column.type, (Date, DateTime)
+        ):
+            raise DatabaseException(
+                status_code=400,
+                message=(
+                    f"Field [ {column_name} ] cannot carry a date-grouped count; "
+                    "a Date or DateTime column is required"
+                ),
+                error_code="DB_TIME_FIELD_UNUSABLE",
+            )
+
+        day = func.date(column)
+        async with self.database.session() as session:
+            result = await session.execute(
+                select(day.label("day"), func.count().label("count"))
+                .where(column >= since)
+                .group_by(day)
+                .order_by(day)
+            )
+            return [
+                DailyCount(day=self._as_date(row.day), count=row.count)
+                for row in result
+            ]
+
+    @staticmethod
+    def _as_date(value: object) -> date:
+        """Normalise a grouped day value to ``datetime.date`` across engines."""
+        if isinstance(value, datetime):
+            return value.date()
+        if isinstance(value, date):
+            return value
+        if isinstance(value, str):
+            return date.fromisoformat(value[:10])
+        raise DatabaseException(
+            status_code=500,
+            message=f"Unsupported grouped-day type {type(value).__name__}",
+            error_code="DB_INTERNAL_ERROR",
+        )
 
     async def _populate_defaults(self, session, datas: list) -> None:
         """Load server-side defaults for freshly flushed instances.

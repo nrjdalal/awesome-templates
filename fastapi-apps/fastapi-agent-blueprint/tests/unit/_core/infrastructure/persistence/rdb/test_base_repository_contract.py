@@ -47,11 +47,15 @@ back, producing an opaque 500.
 
 from __future__ import annotations
 
+from datetime import date, datetime
+
 import pytest
+from sqlalchemy import update
 
 from src._core.domain.value_objects.query_filter import QueryFilter
 from src._core.infrastructure.persistence.rdb.exceptions import DatabaseException
 from src.user.domain.dtos.user_dto import UserDTO
+from src.user.infrastructure.database.models.user_model import UserModel
 from src.user.infrastructure.repositories.user_repository import UserRepository
 from tests.factories.user_factory import make_create_user_request
 
@@ -322,3 +326,142 @@ class TestNoDeadRelationshipHook:
         ).read_text(encoding="utf-8")
 
         assert "related_entities" not in source
+
+
+class TestDateGroupedCountAcrossEngines:
+    """`count_datas_by_day` must behave identically on every engine (#368).
+
+    Two dialect differences were measured before writing this, and both would
+    otherwise have shipped as engine-specific behaviour:
+
+    - `cast(column, Date)` — the obvious expression, and the one the plan for
+      this work originally specified — raises `TypeError: fromisoformat:
+      argument must be str` on **SQLite**, the quickstart default. `func.date`
+      works on both engines tested.
+    - `func.date` returns `str` on SQLite and `datetime.date` on PostgreSQL, so
+      a caller that formatted the value would work on one engine and raise on
+      the other.
+
+    These run on SQLite in CI and on PostgreSQL under `make test-pg`, so the
+    parity assertions are exercised on both. Per ADR 058's stated limit, MySQL
+    still rests on documentation rather than a test.
+
+    **Each test owns a distinct year and asserts only on that year.** `test_db`
+    is session-scoped, so the whole suite shares one database and rows
+    accumulate — the same reason the tests above use unique usernames. `since`
+    is only a *lower* bound, so every row another test inserts with
+    `created_at = now()` also falls inside these windows; anchoring the era
+    without filtering the result was the first thing that broke here, and it
+    broke only in the full run. Running these with `-k DateGrouped` hides it,
+    because then no other rows exist. Use :meth:`_era` and run the full suite on
+    both engines.
+    """
+
+    @staticmethod
+    def _era(rows, year: int):
+        """Only this test's own year, so rows from the shared session-scoped
+        database cannot leak into the assertion."""
+        return [(r.day.isoformat(), r.count) for r in rows if r.day.year == year]
+
+    @staticmethod
+    async def _backdate(test_db, username: str, when: datetime) -> None:
+        """Force `created_at`, which carries `server_default=func.now()`.
+
+        Naive datetimes on purpose: `user.created_at` is `DateTime` without
+        `timezone=True`, and `count_datas_by_day` deliberately does not coerce.
+        """
+        async with test_db.session() as session:
+            await session.execute(
+                update(UserModel)
+                .where(UserModel.username == username)
+                .values(created_at=when)
+            )
+            await session.commit()
+
+    async def _seed(self, repository, test_db, name: str, when: datetime) -> None:
+        await repository.insert_data(_request(name))
+        await self._backdate(test_db, name, when)
+
+    @pytest.mark.asyncio
+    async def test_day_is_a_date_object_on_every_engine(
+        self, repository, test_db
+    ) -> None:
+        await self._seed(repository, test_db, "dgc_type", datetime(2001, 3, 10, 7, 0))
+
+        rows = await repository.count_datas_by_day(since=datetime(2001, 1, 1))
+
+        mine = [r for r in rows if r.day.year == 2001]
+        assert mine, "expected the backdated row to be counted"
+        assert isinstance(mine[0].day, date), (
+            f"engine leaked {type(mine[0].day).__name__} instead of datetime.date"
+        )
+        assert not isinstance(mine[0].day, datetime), "a day must not carry a time"
+
+    @pytest.mark.asyncio
+    async def test_rows_on_the_same_day_collapse_into_one_entry(
+        self, repository, test_db
+    ) -> None:
+        await self._seed(repository, test_db, "dgc_a", datetime(2002, 3, 11, 7, 0))
+        # Same day, late in the day — must not spill into the next one.
+        await self._seed(repository, test_db, "dgc_b", datetime(2002, 3, 11, 23, 30))
+        await self._seed(repository, test_db, "dgc_c", datetime(2002, 3, 10, 1, 0))
+
+        rows = await repository.count_datas_by_day(since=datetime(2002, 1, 1))
+
+        assert self._era(rows, 2002) == [
+            ("2002-03-10", 1),
+            ("2002-03-11", 2),
+        ], "grouping or ordering differs from oldest-day-first"
+
+    @pytest.mark.asyncio
+    async def test_since_excludes_older_rows(self, repository, test_db) -> None:
+        await self._seed(repository, test_db, "dgc_old", datetime(2003, 1, 5, 12, 0))
+        await self._seed(repository, test_db, "dgc_new", datetime(2003, 6, 20, 12, 0))
+
+        rows = await repository.count_datas_by_day(since=datetime(2003, 6, 1))
+
+        assert self._era(rows, 2003) == [("2003-06-20", 1)]
+
+    @pytest.mark.asyncio
+    async def test_days_with_no_rows_are_absent_not_zero_filled(
+        self, repository, test_db
+    ) -> None:
+        """The repository reports what the table holds; gap-filling is the
+        caller's policy decision (see DailyCount)."""
+        await self._seed(repository, test_db, "dgc_gap1", datetime(2004, 5, 5, 9, 0))
+        await self._seed(repository, test_db, "dgc_gap2", datetime(2004, 5, 9, 9, 0))
+
+        rows = await repository.count_datas_by_day(since=datetime(2004, 1, 1))
+
+        assert self._era(rows, 2004) == [("2004-05-05", 1), ("2004-05-09", 1)]
+
+    @pytest.mark.asyncio
+    async def test_window_with_no_rows_returns_an_empty_list(self, repository) -> None:
+        rows = await repository.count_datas_by_day(
+            since=datetime(1990, 1, 1), column_name="created_at"
+        )
+        # 1990 predates every seeded era, and `since` is a lower bound, so this
+        # asserts on a window nothing falls into rather than on an empty table.
+        assert [r for r in rows if r.day.year < 2000] == []
+
+    @pytest.mark.asyncio
+    async def test_unknown_column_raises_a_curated_400(self, repository) -> None:
+        with pytest.raises(DatabaseException) as exc:
+            await repository.count_datas_by_day(
+                since=datetime(2005, 1, 1), column_name="nope"
+            )
+
+        assert exc.value.status_code == 400
+        assert exc.value.error_code == "DB_TIME_FIELD_UNUSABLE"
+
+    @pytest.mark.asyncio
+    async def test_non_temporal_column_raises_a_curated_400(self, repository) -> None:
+        """Fails closed rather than grouping by a string column and returning
+        nonsense days — the DB_SEARCH_FIELD_UNUSABLE precedent (ADR 058 D3)."""
+        with pytest.raises(DatabaseException) as exc:
+            await repository.count_datas_by_day(
+                since=datetime(2005, 1, 1), column_name="username"
+            )
+
+        assert exc.value.status_code == 400
+        assert exc.value.error_code == "DB_TIME_FIELD_UNUSABLE"
