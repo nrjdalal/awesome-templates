@@ -7,7 +7,79 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`BaseRepository.count_datas_by_day` / `BaseService.count_datas_by_day`** — rows
+  per calendar day at or after a bound, returning the new frozen
+  `DailyCount` VO. Two dialect differences are absorbed in the base class per the
+  ADR 058 guarantee, and both were measured rather than assumed: `cast(column,
+  Date)` **fails on SQLite** (`TypeError: fromisoformat: argument must be str`),
+  which is the quickstart default, so `func.date` is used; and `func.date`
+  returns `str` on SQLite but `datetime.date` on PostgreSQL, so callers get
+  `datetime.date` on every engine. A missing or non-temporal column raises a
+  curated `400 DB_TIME_FIELD_UNUSABLE` rather than an empty list that would read
+  as "no data". Days with no rows are absent, not zero-filled — gap-filling is a
+  caller policy. MySQL still rests on documentation rather than a test, per ADR
+  058's stated limit
+  ([#368](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/368))
+
 ### Changed
+
+- **BREAKING (admin UI) — the dashboard answers different questions.** It now
+  reports which optional infrastructure is live, stubbed or absent; agent-call
+  volume with a failure rate over 7 days; and new records per day. The
+  audit-derived sections are **removed**, and so is the collection behind them:
+  `/admin/audit-log` is a strict superset with filtering and pagination, so the
+  landing page was reading audit data to render a worse copy of a page that
+  already existed — one fewer audit read per load. A fresh install, where every
+  count is 0, now gets a distinct onboarding view naming the next action instead
+  of a page of zeros. Failure counts are derived as `total - ok` rather than
+  summed over the known failure states, so a `UsageStatus` value added later
+  cannot be silently counted as success; `failure_rate` is `None` rather than
+  `0.0` when there were no calls
+  ([#368](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/368))
+
+### Fixed
+
+- **The dashboard's activity grid reserved viewport height and left a ~200px
+  empty box.** #365 made this worse rather than causing it: shortening rows from
+  44px to 36px while the container height stayed fixed grew the void. Adds
+  `c.data_grid(auto_height=True)`, which derives the height from the row count —
+  for **caller-bounded** grids only. Deliberately **not** AG Grid's
+  `domLayout: "autoHeight"`, which is broken in the NiceGUI embed: the inner
+  wrapper grows to 339px while the outer element keeps Quasar's 256px, so the
+  grid paints over the following section. A test fails if `domLayout` is ever
+  emitted again
+  ([#368](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/368))
+
+- **The dashboard's Quick Actions section duplicated the sidebar below the fold.**
+  One nav card per domain — the same destinations the left drawer lists —
+  rendered ~1300px down the page. Removed; with the grid fix the dashboard went
+  from 1439px to 1094px
+  ([#368](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/368))
+
+- **The admin login screen's failure message was a toast.** `ui.notify` fades, so a
+  few seconds after a rejected attempt the screen showed no reason for it and the
+  operator was left re-reading a form that looked fine. It now writes into a
+  persistent slot above the fields, cleared at the start of the next attempt.
+  `Enter` also did nothing in the username field — only the password field was
+  wired — which mattered once autofocus moved to username. All three rejection
+  causes still collapse to one message on purpose, so the form cannot be used to
+  probe which admin usernames exist. The identity block is recomposed from three
+  stacked elements (a 3rem icon, the brand name, a letterspaced `ADMIN`) into one
+  row plus `Administrator sign-in`, and the card's contents are left-aligned
+  ([#368](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/368))
+
+- **The new infrastructure panel was visible to any authenticated admin.**
+  `require_auth_allowlisted()` authenticates the dashboard without checking page
+  permissions, so an admin holding zero grants could read the deployment's
+  configuration posture — and "Error notification: stub" tells such a holder that
+  failures raise no alert. Now gated on the `accounts` permission, with the
+  onboarding stub hints behind the same gate because they restate the same rows in
+  prose. `security-checklist.md` §2 gains the rule that was missing: the previous
+  equivalent principle lived only in a code comment, which is why removing it
+  broke nothing
+  ([#368](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/368))
 
 - **BREAKING — admin restyled to a single neutral-mono theme.** A desaturated
   Tailwind **zinc** ramp carries the UI, a *single* blue accent (`#2563eb`)

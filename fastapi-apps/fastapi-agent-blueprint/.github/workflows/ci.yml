@@ -178,8 +178,13 @@ jobs:
       # install makes pyright report reportMissingImports rather than type-check
       # it. The same environment is what pip-audit needs to see the optional
       # production dependencies, so install it once.
+      #
+      # pydantic-ai / anthropic / otel were added in #381: without them pyright
+      # reported 20 unresolved imports across src/ (pydantic_ai.*, opentelemetry.*,
+      # tiktoken) — noise that hides real findings and cannot be fixed in code.
+      # Measured on a CI-equivalent install: 89 errors before, 69 after.
       - name: Install dependencies
-        run: uv sync --locked --group dev --extra admin --extra aws --extra sqs --extra rabbitmq
+        run: uv sync --locked --group dev --extra admin --extra aws --extra sqs --extra rabbitmq --extra pydantic-ai --extra pydantic-ai-anthropic --extra otel
 
       # Scope comes from [tool.pyright] in pyproject.toml: an allow-list of the
       # packages that are clean today, not all of src/ (58 errors). Blocking on

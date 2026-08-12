@@ -4,8 +4,32 @@ import pytest
 import pytest_asyncio
 import structlog
 
+from migrations.env_utils import load_models
 from src._core.infrastructure.persistence.rdb.config import DatabaseConfig
 from src._core.infrastructure.persistence.rdb.database import Base, Database
+
+# Populate ``Base.metadata`` with *every* model before any fixture touches the
+# schema (#374).
+#
+# Without this, metadata holds only the models that the collected test modules
+# happen to import, so it varies with the test selection. On PostgreSQL that
+# turns `drop_all` into a coin flip: run a single file whose imports omit
+# `refresh_token` and the fixture tries to drop `user` while the real table's
+# `refresh_token_user_id_fkey` still references it —
+# `DependentObjectsStillExistError`, at *setup*, for every test in the file. It
+# looks like a broken change rather than a partial-metadata problem.
+#
+# The full-suite run masked it (enough modules imported enough models) and SQLite
+# masked it entirely (no FK enforcement, fresh in-memory database), so the bug
+# only appeared when someone ran a subset against a PostgreSQL that already had
+# the schema — from `make dev`, an `alembic upgrade`, or a previous run.
+#
+# Reusing the Alembic helper rather than re-listing model paths here keeps one
+# source of truth for where models live; it only imports
+# `src/*/infrastructure/database/models/**` plus the explicit `_core` packages,
+# so it pulls in no optional-extra dependency and `make check-minimal` is
+# unaffected. `importlib` caches, so calling it at import time is idempotent.
+load_models()
 
 
 @pytest.fixture(autouse=True)

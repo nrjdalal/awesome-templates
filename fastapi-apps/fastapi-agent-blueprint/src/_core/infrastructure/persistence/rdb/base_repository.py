@@ -9,6 +9,7 @@ import structlog
 from pydantic import BaseModel
 from sqlalchemy import Date, DateTime, String, func, or_, select
 from sqlalchemy.orm import InstrumentedAttribute
+from sqlalchemy.sql.elements import UnaryExpression
 
 from src._core.domain.value_objects.daily_count import DailyCount
 from src._core.exceptions.base_exception import BaseCustomException
@@ -332,13 +333,17 @@ class BaseRepository(Generic[ReturnDTO], ABC):
         day = func.date(column)
         async with self.database.session() as session:
             result = await session.execute(
-                select(day.label("day"), func.count().label("count"))
+                # Labelled `total`, not `count`: `Row` is a sequence, so `row.count`
+                # collides with `tuple.count`. SQLAlchemy does resolve the label
+                # first (verified), but depending on it shadowing a builtin
+                # method is fragile and unclear to read.
+                select(day.label("day"), func.count().label("total"))
                 .where(column >= since)
                 .group_by(day)
                 .order_by(day)
             )
             return [
-                DailyCount(day=self._as_date(row.day), count=row.count)
+                DailyCount(day=self._as_date(row.day), count=row.total)
                 for row in result
             ]
 
@@ -376,7 +381,7 @@ class BaseRepository(Generic[ReturnDTO], ABC):
                 .execution_options(populate_existing=True)
             )
 
-    def _stable_order(self) -> tuple[InstrumentedAttribute, ...]:
+    def _stable_order(self) -> tuple[UnaryExpression[Any], ...]:
         """A deterministic tiebreaker for offset pagination (ADR 058 D2).
 
         Offset paging over an unordered result set can repeat or skip rows,

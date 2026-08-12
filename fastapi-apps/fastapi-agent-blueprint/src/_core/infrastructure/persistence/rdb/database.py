@@ -6,8 +6,12 @@ from urllib.parse import quote_plus
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import DeclarativeBase, sessionmaker
+from sqlalchemy.ext.asyncio import (
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
+from sqlalchemy.orm import DeclarativeBase
 
 from src._core.exceptions.base_exception import BaseCustomException
 from src._core.infrastructure.persistence.rdb.config import DatabaseConfig
@@ -172,9 +176,13 @@ class Database:
         if config.echo:
             logging.getLogger("sqlalchemy.engine").setLevel(logging.INFO)
 
-        self.async_session_factory = sessionmaker(
+        # `async_sessionmaker`, not `sessionmaker(class_=AsyncSession)`: the
+        # latter is typed to produce a sync `Session`, so every caller that used
+        # the factory directly (rather than through `session()` below) was told
+        # its context manager was unusable. The runtime object was already an
+        # AsyncSession; only the declared type was wrong.
+        self.async_session_factory = async_sessionmaker(
             bind=self.async_engine,
-            class_=AsyncSession,
             expire_on_commit=False,
             autoflush=False,
             autocommit=False,
@@ -182,7 +190,10 @@ class Database:
 
     @asynccontextmanager
     async def session(self) -> AsyncGenerator[AsyncSession, None]:
-        session = None
+        # Annotated, not bare `= None`: without it the declared type is `None`,
+        # so the `if session:` guards below narrow to `Never` and every
+        # `await session.rollback()` reads as un-awaitable to a type checker.
+        session: AsyncSession | None = None
 
         try:
             session = self.async_session_factory()

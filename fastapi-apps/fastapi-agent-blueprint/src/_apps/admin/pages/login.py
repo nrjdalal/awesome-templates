@@ -35,19 +35,34 @@ def login_page(request: Request):
     with ui.row().classes("absolute-top-right q-pa-md"):
         render_dark_mode_toggle()
 
-    with ui.card().classes(
-        f"absolute-center items-center q-pa-lg {AdminClasses.LOGIN_CARD}"
-    ):
-        ui.icon("smart_toy").classes("text-primary").style("font-size: 3rem")
-        ui.label(settings.admin_brand_name).classes("text-h6 text-weight-bold q-mt-sm")
-        ui.label("ADMIN").classes(f"{AdminClasses.MUTED} q-mb-md").style(
-            "letter-spacing: 0.25em; font-size: 0.7rem"
-        )
-        username = c.text_field("Username").classes("full-width")
+    # Left-aligned, not centred: a centred form makes labels and the error
+    # message harder to scan than a single left edge. Only the card is centred.
+    with ui.card().classes(f"absolute-center q-pa-lg {AdminClasses.LOGIN_CARD}"):
+        # One identity line rather than three stacked elements. The icon matches
+        # the shell header's brand row (same glyph, header scale) so the two
+        # surfaces read as one product; a 3rem version here said nothing extra.
+        with ui.row().classes("items-center q-gutter-sm"):
+            ui.icon("smart_toy").classes(f"text-h5 {AdminClasses.ACCENT_ICON}")
+            ui.label(settings.admin_brand_name).classes("text-h6 text-weight-bold")
+        # Replaces a letterspaced "ADMIN" that read as decoration. This says the
+        # same thing as a sentence, and the realm distinction is real: admin
+        # credentials are a separate identity store from the customer API (#218).
+        ui.label("Administrator sign-in").classes(f"{AdminClasses.MUTED} q-mb-md")
+
+        # A persistent slot, not a toast. `ui.notify` fades, so a few seconds
+        # after a failed attempt the screen shows no reason for it — the operator
+        # is left re-reading a form that looks fine. Cleared on the next submit.
+        error = ui.label().classes("text-negative q-mb-sm")
+        error.set_visibility(False)
+
+        username = c.text_field("Username").classes("full-width").props("autofocus")
         password = c.text_field("Password", password=True).classes("full-width q-mt-sm")
 
         async def try_login():
             target: str | None = None
+            # Clear the previous reason before trying again, so a stale message
+            # can never sit next to a fresh attempt.
+            error.set_visibility(False)
             async with button_loading(login_btn):
                 try:
                     session = await get_admin_auth_provider().authenticate(
@@ -62,7 +77,12 @@ def login_page(request: Request):
                     AdminInvalidCredentialsException,
                     AdminCredentialDisabledException,
                 ):
-                    ui.notify("Invalid credentials", type="negative")
+                    # Deliberately does not distinguish "no such account" from
+                    # "wrong password" or "credential disabled" — all three
+                    # collapse to one message so the form cannot be used to probe
+                    # which admin usernames exist.
+                    error.set_text("Invalid credentials")
+                    error.set_visibility(True)
                 else:
                     AdminAuthProvider.login(session)
                     target = "/admin/"
@@ -70,6 +90,9 @@ def login_page(request: Request):
             if target:
                 ui.navigate.to(target)
 
+        # Both fields, not just the password one: with autofocus on username,
+        # typing a name and pressing Enter was previously a no-op.
+        username.on("keydown.enter", try_login)
         password.on("keydown.enter", try_login)
         login_btn = (
             ui.button("Login", on_click=try_login)

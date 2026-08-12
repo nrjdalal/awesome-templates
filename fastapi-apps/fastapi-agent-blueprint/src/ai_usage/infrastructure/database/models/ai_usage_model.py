@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from decimal import Decimal
 from typing import Any
 
@@ -84,7 +85,7 @@ class AiUsageModel(Base):
     provider: Mapped[str | None] = mapped_column(String(40), nullable=True)
     model: Mapped[str] = mapped_column(String(200), nullable=False)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="ok")
-    occurred_at: Mapped[DateTime] = mapped_column(
+    occurred_at: Mapped[datetime | None] = mapped_column(
         DateTime, server_default=func.now(), nullable=False
     )
     duration_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
@@ -132,6 +133,6 @@ class AiUsageModel(Base):
             "message bodies, user input, and raw provider error text."
         ),
     )
-    created_at: Mapped[DateTime] = mapped_column(
+    created_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now(), nullable=False
     )

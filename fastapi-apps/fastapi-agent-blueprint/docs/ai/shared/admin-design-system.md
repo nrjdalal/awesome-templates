@@ -139,7 +139,7 @@ Import surface: `from src._core.infrastructure.admin import components as c`.
 | `c.data_grid(column_defs, row_data, *, compact=, auto_height=, row_click_to=, on_cell_click=, on_row_click=)` | leaf | AG Grid with the admin theme + shared defaults. Height: default = viewport-sized, `compact=True` = shorter, `auto_height=True` = derived from the row count (no empty space under the last row) — only for a **caller-bounded** row count. `auto_height` deliberately avoids AG Grid's `domLayout: "autoHeight"`, which breaks in the NiceGUI embed: the inner wrapper grows past the outer element and paints over the next section |
 | `c.bar_chart(categories, values)` | leaf | ECharts vertical bar; sized by `AdminClasses.CHART` / `--admin-chart-height`, bar fill = `AdminColors.PRIMARY`, top corners rounded |
 | `c.pagination(*, current, total_pages, on_prev, on_next)` | leaf | Prev / page / next row |
-| `c.empty_state(icon=)` | context mgr | Centered empty placeholder; add the message inside |
+| `c.empty_state(icon=)` | context mgr | **Full-panel** empty placeholder — centred, with a large icon and `48px` vertical padding. For "this list has no rows", not for an inline note: used for a one-line remark inside a populated section it spends ~250px on one sentence (#368). Inline notes are a plain `ui.label(...).classes("admin-text-muted")` |
 | `c.toast_success / toast_warning / toast_error(message)` | leaf | Standardized `ui.notify` |
 | `c.report_error(exc, *, context)` | async | Route a caught exception through the sanitizing `AdminErrorHandler` |
 

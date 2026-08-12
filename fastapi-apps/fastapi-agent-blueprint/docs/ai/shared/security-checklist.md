@@ -61,6 +61,27 @@ Check router files and configuration files:
     `tests/unit/_core/infrastructure/admin/test_route_coverage.py` enforces this invariant (IC-155-4).
     `/admin/error` is exempt because a critical error may itself be a DB/auth outage and the gate
     hits the DB; it exposes no sensitive data (IC-195-1).
+- [ ] [Always][HIGH] A dashboard section does not exceed the permission scope of its subject
+  - Applies to `/admin/` and any other page guarded by `require_auth_allowlisted()`, which
+    authenticates **without** checking page permissions — so every section on such a page is
+    visible to an admin holding zero grants unless it carries its own gate.
+  - Grep: in `src/_apps/admin/pages/dashboard.py`, every section that reads or displays data
+    beyond the operator's `session.permissions` is behind an explicit permission test. Sections
+    driven by permission-filtered inputs (e.g. `visible_configs`) satisfy this implicitly; sections
+    driven by settings or by a fixed source do not.
+  - Also verify the **read** is gated, not just the render: a caller who may not see a source must
+    not cause it to be read server-side (data minimisation). The audit sections used
+    `include_audit=False` for this before #368 removed them.
+  - Reason: configuration posture is itself actionable intelligence. "Error notification: stub"
+    tells the holder of a low-privilege admin account that failures raise no alert; "OpenTelemetry:
+    disabled" that there are no traces. Both are directly useful to someone who has compromised
+    such an account. The infrastructure panel added in #368 shipped ungated for exactly one review
+    round, and nothing caught it because this rule did not exist — the equivalent principle lived
+    only in a code comment on the audit sections ("the landing page must not surface audit data
+    more broadly than the dedicated audit-log page"), so deleting that code violated no rule and
+    failed no test. `may_see_infrastructure` in `dashboard.py` is the current implementation, gated
+    on `accounts` (the account-management permission) and pinned by tests including one asserting
+    the gate key is a valid `AdminPermissionRegistry` key.
 - [ ] [Always][HIGH] Admin error UI does not leak raw exception detail
   - Grep: No `ui.notify(str(exc))` / `ui.notify(f"...{exc}...")` in `interface/admin/pages/` or
     `src/_apps/admin/pages/`; errors route through `AdminErrorHandler` (IC-195-1). The AST test

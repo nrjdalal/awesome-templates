@@ -4,6 +4,8 @@ Append-only — the Phase-1 repository only inserts. Querying (filters / detail
 diff) ships in Phase 2 alongside the ``/admin/audit-log`` UI.
 """
 
+from datetime import datetime
+
 from sqlalchemy import (
     BigInteger,
     DateTime,
@@ -90,6 +92,6 @@ class AdminAuditLog(Base):
     # asgi-correlation-id UUID4 hex / dashed.
     correlation_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
 
-    created_at: Mapped[DateTime] = mapped_column(
+    created_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now(), nullable=False
     )

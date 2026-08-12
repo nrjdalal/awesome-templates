@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from sqlalchemy import (
     DateTime,
     ForeignKey,
@@ -27,19 +29,19 @@ class AdminRefreshTokenModel(Base):
     )
     token_hash: Mapped[str] = mapped_column(String(64), nullable=False)
     jti: Mapped[str] = mapped_column(String(64), nullable=False)
-    expires_at: Mapped[DateTime] = mapped_column(
+    expires_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False
     )
-    revoked_at: Mapped[DateTime | None] = mapped_column(
+    revoked_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
         nullable=True,
     )
-    created_at: Mapped[DateTime] = mapped_column(
+    created_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
         nullable=True,
     )
-    updated_at: Mapped[DateTime] = mapped_column(
+    updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
         onupdate=func.now(),

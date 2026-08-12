@@ -111,6 +111,16 @@ include = [
     "src/_core/exceptions",
     "src/_core/common",
     "src/user",
+    # Added by #381 step 1 — each entered this list only after reaching 0 errors.
+    # The allow-list is the ratchet: once a package is in, new errors there fail
+    # CI. Widen it per package rather than maintaining a baseline file.
+    "src/admin_identity",
+    "src/auth",
+    "src/ai_usage",
+    # Step 2a. The rest of _core/infrastructure stays out for now: the aioboto3
+    # client context managers and aiobotocore TypedDicts there are third-party
+    # stub friction, not findings this repo can fix in code.
+    "src/_core/infrastructure/persistence/rdb",
 ]
 pythonVersion = "3.12"
 typeCheckingMode = "standard"
