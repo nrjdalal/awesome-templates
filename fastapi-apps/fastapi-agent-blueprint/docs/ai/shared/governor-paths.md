@@ -38,7 +38,7 @@ Tier B includes Tier A's `.claude/rules/**`, `.codex/rules/**`, and `.antigravit
 ### Tier C — Other Repo-Level Governance Artefacts (trigger if introduced)
 
 - `.github/workflows/**` (CI as governance)
-- `pyproject.toml`'s `[tool.ruff]`, `[tool.mypy]`, or other linting/typing/policy sections
+- `pyproject.toml`'s `[tool.ruff]`, `[tool.pyright]`, or other linting/typing/policy sections (`[tool.mypy]` until #375 retired it)
 - `.pre-commit-config.yaml`
 - Any new file at the repo root that defines policy (future ADR will add)
 

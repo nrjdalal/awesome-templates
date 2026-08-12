@@ -5,7 +5,7 @@ from dependency_injector import containers, providers
 # the class auto-discovery already registered under `src.author` — importing it
 # from anywhere else would map a second AuthorModel onto the same `author`
 # table and crash the boot. Unresolvable while this file lives under examples/.
-from src.author.infrastructure.repositories.author_repository import (
+from src.author.infrastructure.repositories.author_repository import (  # pyright: ignore[reportMissingImports]
     AuthorRepository,
 )
 

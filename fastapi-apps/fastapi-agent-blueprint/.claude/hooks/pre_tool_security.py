@@ -26,7 +26,7 @@ try:
 
     _SHARED_OK = True
 except Exception:  # noqa: BLE001 — HC-5.5 fail-open
-    check_code_safety = None  # type: ignore[assignment]
+    check_code_safety = None
     _SHARED_OK = False
 
 

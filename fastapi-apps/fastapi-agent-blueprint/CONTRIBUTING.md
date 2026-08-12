@@ -218,8 +218,14 @@ Run the guards manually at any time:
 
 ```bash
 make pre-commit   # runs all pre-commit hooks against staged files
-make lint         # ruff check + mypy
+make lint         # ruff check
+uv run pyright    # type check — the same command the CI typecheck job runs
 ```
+
+`pyright` is the only type checker. It is blocking in CI and its scope is
+`[tool.pyright] include` in `pyproject.toml`. Add a suppression only for a
+framework contract you cannot annotate around, write the reason at the call site,
+and account for it in `tests/unit/tools/test_pyright_scope.py`.
 
 If you change files in `AGENTS.md`, `.claude/`, `.codex/`, or `docs/ai/shared/`, run `/sync-guidelines` (Claude Code) or `$sync-guidelines` (Codex CLI) before the final commit. The completion gate will remind you if you forget.
 

@@ -113,6 +113,7 @@ class AdminVars:
     GRID_HEIGHT_COMPACT: Final = "--admin-grid-height-compact"
     CHART_HEIGHT: Final = "--admin-chart-height"
     LABEL_COL_WIDTH: Final = "--admin-label-col-width"
+    STAT_CARD_MIN_WIDTH: Final = "--admin-stat-card-min-width"
     FONT: Final = "--admin-font"
     # Flat login backdrop. Was ``--admin-login-gradient`` before #365; renamed
     # because the value is no longer a gradient and a lying token name is worse
@@ -128,6 +129,11 @@ class AdminMetrics:
     # one base_admin_page.py reads).
     GRID_ROW_HEIGHT: Final = 36
     GRID_MIN_COL_WIDTH: Final = 120
+
+    # Stat tiles size to their own text otherwise, so a row of them came out
+    # ragged — measured 88px / 64px / 62px for "AI Usage" / "Docs" / "User",
+    # which reads as three unrelated boxes rather than one row of metrics.
+    STAT_CARD_MIN_WIDTH: Final = 150
 
 
 class AdminClasses:
@@ -145,12 +151,16 @@ class AdminClasses:
     FIELD_VALUE: Final = "admin-field-value"
     MUTED: Final = "admin-text-muted"
     EMPTY_VALUE: Final = "admin-empty-value"
+    STAT_CARD: Final = "admin-stat-card"
+    STATUS_DOT: Final = "admin-status-dot"
     SUCCESS_SURFACE: Final = "admin-success-surface"
     GRID: Final = "admin-grid"
     GRID_COMPACT: Final = "admin-grid-compact"
-    # Sets no height — AG Grid owns it via ``domLayout: "autoHeight"``, which
-    # requires the container div to have no height of its own. Paired with
-    # ``c.data_grid(auto_height=True)``; see _HELPER_CSS.
+    # Sets no height on purpose: ``c.data_grid(auto_height=True)`` derives one
+    # from the row count and sets it inline. Deliberately *not* AG Grid's
+    # ``domLayout: "autoHeight"`` — that grows the inner wrapper while the outer
+    # NiceGUI element keeps Quasar's computed height, so the grid paints over
+    # whatever follows it (#368). See _HELPER_CSS and components/data.py.
     GRID_AUTO: Final = "admin-grid-auto"
     CHART: Final = "admin-chart"
     PAGINATION: Final = "admin-pagination"
@@ -173,6 +183,7 @@ _LAYOUT_TOKENS: Final = {
     AdminVars.GRID_HEIGHT_COMPACT: "calc(100vh - 360px)",
     AdminVars.CHART_HEIGHT: "260px",
     AdminVars.LABEL_COL_WIDTH: "140px",
+    AdminVars.STAT_CARD_MIN_WIDTH: f"{AdminMetrics.STAT_CARD_MIN_WIDTH}px",
     # System font stack — no bundled webfont (#365 dropped the self-hosted
     # Wanted Sans and the /admin-static mount that existed only to serve it).
     # Order matters: Latin UI fonts first, then Hangul fallbacks for platforms
@@ -365,6 +376,30 @@ body {
 .admin-text-muted,
 .admin-empty-value {
   color: var(--admin-text-muted);
+}
+
+.admin-stat-card {
+  min-width: var(--admin-stat-card-min-width);
+}
+
+/* Replaces the row-selection radio that `c.data_grid` put in this column
+   position on the dashboard's infrastructure panel: same glance, but it means
+   something and cannot be clicked to no effect. Colour is not the only signal —
+   the state word sits beside it. */
+.admin-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: 0 0 8px;
+  background-color: var(--admin-text-muted);
+}
+
+.admin-status-dot.admin-status-active {
+  background-color: var(--q-positive);
+}
+
+.admin-status-dot.admin-status-stub {
+  background-color: var(--q-warning);
 }
 .admin-success-surface {
   background-color: var(--admin-success-bg) !important;

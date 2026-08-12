@@ -9,6 +9,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **The type check now covers the whole repository.** `[tool.pyright] include` went
+  from an allow-list of five packages to `src`, `tools`, `scripts`, `examples`,
+  `.agents`, the three harness hook directories and the three root runners — 684
+  files at 0 errors, from a starting 91. `uv run pyright` reproduces the blocking
+  CI job exactly. `reportUnnecessaryTypeIgnoreComment` is on, so a suppression that
+  stops being needed becomes an error rather than permanent debt; the 21 that remain
+  are pinned by file and count in `tests/unit/tools/test_pyright_scope.py`
+  ([#381](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/381),
+  [#387](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/387))
+
+- **`types-aioboto3` and `types-aiobotocore-s3vectors` join the `aws` extra.**
+  Without the first, `aioboto3.Session.client()` resolved to an untypeable
+  placeholder and every `async with … .client()` block was unchecked; without the
+  second, the four S3 Vectors API calls had never been type-checked at all. Both are
+  type stubs — no runtime behaviour changes
+  ([#381](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/381))
+
 - **`BaseRepository.count_datas_by_day` / `BaseService.count_datas_by_day`** — rows
   per calendar day at or after a bound, returning the new frozen
   `DailyCount` VO. Two dialect differences are absorbed in the base class per the
@@ -25,6 +42,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **The pre-commit `mypy` hook is removed; pyright is the only type checker.** The
+  hook could not type-check anything: two harness copies of `completion_gate.py` map
+  to one top-level module name, so mypy aborted during module resolution, reported
+  that single error and inspected no source at all. Because it was `stages: [manual]`
+  nothing ever ran it, so one error and zero findings read as coverage for two
+  releases. Repairing it would still have been shallow — its only
+  `additional_dependencies` were `types-requests` and `pydantic`, so under
+  `--ignore-missing-imports` every fastapi / sqlalchemy / nicegui type resolved to
+  `Any`. 96 orphaned `# type: ignore` comments were deleted as part of this and none
+  was replaced by a pyright suppression. **For forks:** drop `mypy` from any local
+  workflow that invoked the manual stage and use `uv run pyright`
+  ([#375](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/375))
+
+- **The admin dashboard is two columns.** The sections were full-width and stacked,
+  which at 1920px meant a 1588×260 plot holding one bar, an infrastructure table
+  giving 488px each to `active` and `sqlite`, and three stat tiles huddled in 294px.
+  Main content and an aside now split `col-12 col-md-8` / `col-12 col-md-4`,
+  collapsing to one column below `md`; content height drops 1186 → 771px (onboarding
+  1148 → 640px). The infrastructure panel is a compact status list rather than an AG
+  Grid — `c.data_grid` is the list-page builder and brought `selection="single"` with
+  it, i.e. row-selection radios on a panel with no row action. **For forks:**
+  `c.stat_card` now carries a minimum width (`--admin-stat-card-min-width`, 150px) so
+  a row of tiles lines up, and `.admin-status-dot` with two state hues is new
+  ([#380](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/380))
+
 - **BREAKING (admin UI) — the dashboard answers different questions.** It now
   reports which optional infrastructure is live, stubbed or absent; agent-call
   volume with a failure rate over 7 days; and new records per day. The
@@ -39,7 +81,62 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `0.0` when there were no calls
   ([#368](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/368))
 
+- **BREAKING — admin restyled to a single neutral-mono theme.** A desaturated
+  Tailwind **zinc** ramp carries the UI, a *single* blue accent (`#2563eb`)
+  marks interactive/active state, and three status hues (`#16a34a` / `#dc2626` /
+  `#d97706`) are reserved for outcomes. Shape drops from `20px` cards and pill
+  buttons to `8px` / `6px`; elevation gives way to hairline borders; the login
+  gradient becomes a flat surface; AG Grid rows tighten from `44px` to `36px`
+  and separate by border instead of zebra striping. `theme.py` now holds
+  **three** token dicts — `_BRAND_TOKENS` (Quasar `--q-*`, emitted under `body`),
+  `_ROOT_TOKENS`, `_DARK_TOKENS` — and rebranding a fork is usually just
+  `AdminColors.PRIMARY`
+  ([#365](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/365))
+
+- **BREAKING — the bundled Wanted Sans webfont is removed** in favour of a
+  system font stack with Hangul fallbacks. That also removes
+  `src/_apps/admin/static/` (a 1.29 MB `woff2` + its `OFL.txt`) and the
+  `app.add_static_files("/admin-static", ...)` mount in
+  `src/_apps/admin/bootstrap.py`, which existed only to serve that font. The
+  emitted admin CSS now contains no `@font-face` and no `url(` at all, so the
+  panel makes no third-party request on load
+  ([#365](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/365))
+
 ### Fixed
+
+- **`make scheduler` had never run the scheduler.** `run_scheduler_local.py` called
+  taskiq's `run_scheduler(args)` without awaiting it — the file says it mirrors
+  `run_worker_local.py`, and it did so literally, but `run_worker` is sync while
+  `run_scheduler` is a coroutine function. The process emitted
+  `coroutine 'run_scheduler' was never awaited` and exited 0 having scheduled
+  nothing, so `audit_cleanup_task` (`0 3 * * *`, the audit-log retention `DELETE`)
+  never fired from the path the docs point at. Now wrapped in `asyncio.run`, exactly
+  as taskiq's own `SchedulerCMD.exec` does, and pinned by
+  `tests/unit/test_local_runners.py`. **If you relied on `make scheduler` for audit
+  retention, that job has not been running** — the same `@broker.task` is still
+  reachable from external cron or a k8s `CronJob`
+  ([#375](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/375))
+
+- **A failed worker start exited 0.** `run_worker_local.py` discarded the status code
+  `run_worker` returns, so a supervisor could not tell a crashed worker from a clean
+  shutdown. Propagated now
+  ([#375](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/375))
+
+- **`ObjectStorage.list_files` raised `KeyError` on a keyless object.** `Key` is
+  optional in the `list_objects_v2` response model and the code subscripted it
+  directly. Such entries are now skipped: this method's contract is "keys you can
+  address", and an empty string handed to `download_file` or `delete_file` is worse
+  than a shorter list
+  ([#381](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/381))
+
+- **`make test-pg` failed against a database that already held the schema.**
+  `Base.metadata` was populated only by whatever models the selected tests happened
+  to import, so the fixture's `drop_all` could try to drop `user` before
+  `refresh_token` and PostgreSQL refused — every test then errored at *setup*, which
+  reads as a broken change rather than partial metadata. `tests/conftest.py` now
+  calls `load_models()` at import time; SQLite hid it by enforcing no FKs and
+  starting from a fresh in-memory database
+  ([#374](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/374))
 
 - **The dashboard's activity grid reserved viewport height and left a ~200px
   empty box.** #365 made this worse rather than causing it: shortening rows from
@@ -81,28 +178,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   broke nothing
   ([#368](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/368))
 
-- **BREAKING — admin restyled to a single neutral-mono theme.** A desaturated
-  Tailwind **zinc** ramp carries the UI, a *single* blue accent (`#2563eb`)
-  marks interactive/active state, and three status hues (`#16a34a` / `#dc2626` /
-  `#d97706`) are reserved for outcomes. Shape drops from `20px` cards and pill
-  buttons to `8px` / `6px`; elevation gives way to hairline borders; the login
-  gradient becomes a flat surface; AG Grid rows tighten from `44px` to `36px`
-  and separate by border instead of zebra striping. `theme.py` now holds
-  **three** token dicts — `_BRAND_TOKENS` (Quasar `--q-*`, emitted under `body`),
-  `_ROOT_TOKENS`, `_DARK_TOKENS` — and rebranding a fork is usually just
-  `AdminColors.PRIMARY`
-  ([#365](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/365))
-
-- **BREAKING — the bundled Wanted Sans webfont is removed** in favour of a
-  system font stack with Hangul fallbacks. That also removes
-  `src/_apps/admin/static/` (a 1.29 MB `woff2` + its `OFL.txt`) and the
-  `app.add_static_files("/admin-static", ...)` mount in
-  `src/_apps/admin/bootstrap.py`, which existed only to serve that font. The
-  emitted admin CSS now contains no `@font-face` and no `url(` at all, so the
-  panel makes no third-party request on load
-  ([#365](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/365))
-
-### Fixed
 
 - **The Quasar `--q-*` brand palette had never applied.** NiceGUI writes its own
   brand palette as an **inline style on `<body>`** (`--q-primary: #5898d4`, teal
@@ -156,11 +231,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`src/_apps/admin/static/` and the `/admin-static` route are gone.** A fork
   serving its own admin assets from that prefix must restore
   `app.add_static_files("/admin-static", ...)` in `src/_apps/admin/bootstrap.py`.
+- **`c.stat_card` now has a minimum width** (`--admin-stat-card-min-width`, 150px) and
+  `.admin-status-dot` is a new class with two state hues. A fork that laid out its own
+  tile rows may need to adjust.
+- **The `mypy` pre-commit hook no longer exists.** Any fork workflow that ran
+  `pre-commit run --hook-stage manual mypy` should call `uv run pyright` instead;
+  local `# type: ignore` comments that only mypy needed will now be reported as
+  unnecessary, because `reportUnnecessaryTypeIgnoreComment` is an error.
+- **`make scheduler` starts working.** If a deployment concluded that the scheduler
+  process was unnecessary because running it appeared to be a no-op, that conclusion
+  was based on the bug — `audit_cleanup_task` will begin pruning at `0 3 * * *` once
+  the process runs, bounded by `AUDIT_LOG_RETENTION_DAYS`. Check that value before
+  starting it against a database whose audit history you want to keep.
 
 ```bash
 # Nothing to run — no env vars, settings, or schema changed. Restart the server.
 # To keep a custom webfont, restore the static mount and add the @font-face rule
 # back to theme.py, then relax test_font_is_a_system_stack_with_no_webfont.
+
+# Contributors: the type check is blocking and reproducible locally.
+uv run pyright
 ```
 
 ## [0.10.1] - 2026-08-06

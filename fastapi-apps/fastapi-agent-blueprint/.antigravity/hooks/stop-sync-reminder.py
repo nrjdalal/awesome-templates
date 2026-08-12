@@ -17,7 +17,7 @@ try:
     )
 except Exception:  # noqa: BLE001
 
-    def _resolve_locale_string(key: str) -> str:  # type: ignore[no-redef]
+    def _resolve_locale_string(key: str) -> str:
         return ""
 
 
@@ -28,7 +28,7 @@ try:
 
     _SYNC_OK = True
 except Exception:  # noqa: BLE001
-    _classify_advisory = None  # type: ignore[assignment]
+    _classify_advisory = None
     _SYNC_OK = False
 
 try:
@@ -46,11 +46,11 @@ try:
 except Exception:  # noqa: BLE001
     PLAN_EXECUTE_REMINDER = ""
     STAGE_GATE_REMINDER = ""
-    default_ledger_path = None  # type: ignore[assignment]
-    is_implementation_source = None  # type: ignore[assignment]
-    mark_fired = None  # type: ignore[assignment]
-    should_plan_execute_gate = None  # type: ignore[assignment]
-    should_stage_gate = None  # type: ignore[assignment]
+    default_ledger_path = None
+    is_implementation_source = None
+    mark_fired = None
+    should_plan_execute_gate = None
+    should_stage_gate = None
     _STAGE_GATE_OK = False
 
 
@@ -66,7 +66,17 @@ def stage_gate_segment(
     ledger_path: Path | None = None,
     repo_root: Path = REPO_ROOT,
 ) -> str | None:
-    if not _STAGE_GATE_OK:
+    # The names are checked individually, not just via the `_OK` flag: the flag
+    # and the sentinels are set in the same `except` branch, but nothing links them
+    # for a reader or a type checker — the guard reads as "the import group
+    # succeeded" while the call sites depend on "these three names are not None".
+    # Same form as the shared-import guards in .claude/hooks/completion_gate.py.
+    if (
+        not _STAGE_GATE_OK
+        or is_implementation_source is None
+        or default_ledger_path is None
+        or should_stage_gate is None
+    ):
         return None
     impl = next(
         (path for path in changed if is_implementation_source(path, repo_root)),
@@ -96,7 +106,12 @@ def plan_execute_segment(
     is the parity surface for Claude's PreToolUse hard block — advisory-only,
     reusing the shared single-file policy unchanged. The ``mark_fired`` claim is
     the caller's job (see ``main``) so it dedupes with ``stage_gate_segment``."""
-    if not _STAGE_GATE_OK:
+    if (
+        not _STAGE_GATE_OK
+        or is_implementation_source is None
+        or default_ledger_path is None
+        or should_plan_execute_gate is None
+    ):
         return None
     impl = next(
         (path for path in changed if is_implementation_source(path, repo_root)),
@@ -213,7 +228,11 @@ def main() -> int:
         # Stage-gate (mid-task, ADR 050) OR plan->execute boundary (ADR 054)
         # fire at most once per session via the shared exclusive-create marker.
         segment = stage_gate_segment(changed, sid) or plan_execute_segment(changed, sid)
-        if segment is not None and mark_fired(STATE_DIR, sid) is not None:
+        if (
+            segment is not None
+            and mark_fired is not None
+            and mark_fired(STATE_DIR, sid) is not None
+        ):
             segments.append(segment)
 
     with contextlib.suppress(Exception):

@@ -6,7 +6,8 @@ import binascii
 import json
 import random
 from abc import ABC
-from typing import Any, Generic, TypeVar
+from collections.abc import Mapping
+from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
 import structlog
 from pydantic import BaseModel
@@ -27,6 +28,9 @@ from src._core.infrastructure.persistence.nosql.dynamodb.exceptions import (
     DynamoDBInvalidLimitException,
     DynamoDBNotFoundException,
 )
+
+if TYPE_CHECKING:
+    from types_aiobotocore_dynamodb.type_defs import KeysAndAttributesUnionTypeDef
 
 _logger = structlog.stdlib.get_logger(__name__)
 
@@ -330,7 +334,15 @@ class BaseDynamoRepository(Generic[ReturnDTO], ABC):
             chunk = keys[i : i + 100]
             pending_keys = [self._serialize_key(k) for k in chunk]
 
-            pending: dict[str, dict] = {self.table_name: {"Keys": pending_keys}}
+            # `Mapping`, not `dict`: the retry loop reassigns `pending` from the
+            # response's `UnprocessedKeys`, whose value type is the *output*
+            # variant of this TypedDict. Feeding that back into a request is what
+            # the Union type exists for, and `Mapping` is what makes the two
+            # variants interchangeable here — `dict` is invariant in its value
+            # type, so it would reject the reassignment.
+            pending: Mapping[str, KeysAndAttributesUnionTypeDef] = {
+                self.table_name: {"Keys": pending_keys}
+            }
             for attempt in range(max_retries):
                 async with self.dynamodb_client.client() as client:
                     response = await client.batch_get_item(RequestItems=pending)

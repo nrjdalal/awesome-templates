@@ -18,6 +18,7 @@ from src._core.infrastructure.admin.error_handler import (
 )
 from src._core.infrastructure.admin.layout import button_loading
 from src._core.infrastructure.admin.theme import AdminClasses
+from src.admin_identity.domain.dtos.admin_identity_dto import AdminIdentityDTO
 from src.admin_identity.domain.exceptions.admin_identity_exceptions import (
     AdminSetupForbiddenException,
 )
@@ -53,27 +54,33 @@ async def setup_page():
         result_card.set_visibility(False)
 
         async def create_first_admin():
-            username = username_input.value.strip()
-            full_name = full_name_input.value.strip()
-            email = email_input.value.strip()
+            # `ui.input().value` is `str | None`; the falsy guard below already
+            # treats a blank field as missing, so coercing None to "" keeps the
+            # same behaviour instead of relying on the widget never being None.
+            username = (username_input.value or "").strip()
+            full_name = (full_name_input.value or "").strip()
+            email = (email_input.value or "").strip()
             if not (username and full_name and email):
                 ui.notify("All fields are required", type="warning")
                 return
 
-            setup_already_complete = False
+            # Holds the result instead of a separate `setup_already_complete`
+            # flag. The flag worked, but the guarantee that `new_admin` is bound
+            # lived in a correlation between that flag and an early `return` —
+            # nothing enforced it, so an `except` added later that neither set the
+            # flag nor returned would raise UnboundLocalError here, in a flow that
+            # runs once per deployment. `None` carries the same information and a
+            # type checker can see it.
+            created: tuple[AdminIdentityDTO, str] | None = None
             async with button_loading(create_btn):
                 try:
-                    (
-                        new_admin,
-                        temp_password,
-                    ) = await get_admin_account_use_case().create_first_admin(
+                    created = await get_admin_account_use_case().create_first_admin(
                         username=username,
                         full_name=full_name,
                         email=email,
                         bootstrap_username=settings.admin_bootstrap_username,
                     )
                 except AdminSetupForbiddenException as exc:
-                    setup_already_complete = True
                     await get_audit_logger().log(
                         action=AdminAction.FIRST_ADMIN_CREATE,
                         domain="auth",
@@ -94,11 +101,13 @@ async def setup_page():
                     )
                     await AdminErrorHandler.handle(exc, context="admin_setup_create")
                     return
-            # Navigate only after loading state is cleared (button not yet torn down).
-            if setup_already_complete:
+            # Navigate only after loading state is cleared (button not yet torn
+            # down) — which is why this is not handled inside the except block.
+            if created is None:
                 ui.notify("Setup is already complete. Please log in.", type="warning")
                 ui.navigate.to("/admin/login")
                 return
+            new_admin, temp_password = created
 
             await get_audit_logger().log(
                 action=AdminAction.FIRST_ADMIN_CREATE,

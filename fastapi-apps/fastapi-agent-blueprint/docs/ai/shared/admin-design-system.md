@@ -131,17 +131,42 @@ Import surface: `from src._core.infrastructure.admin import components as c`.
 | `c.page_header(title, *, subtitle=, back_to=, actions=)` | leaf | Page heading; `back_to` adds a back button, `actions` a right-aligned slot |
 | `c.card(*, clickable_to=, classes=)` | context mgr | A themed card; `clickable_to` makes the whole card navigate |
 | `c.section(title=)` | context mgr | A titled content section |
-| `c.stat_card(label, value, *, icon=)` | leaf | Metric tile (caption + value) |
+| `c.stat_card(label, value, *, icon=)` | leaf | Metric tile (caption + value). Carries a minimum width (`--admin-stat-card-min-width`): a card sizes to its own content, so a row of them came out 88 / 64 / 62px wide and read as unrelated boxes rather than one row of metrics (#380) |
 | `c.field_row(label, value, *, is_empty=)` | leaf | One label/value detail row (value pre-formatted) |
 | `c.text_field / textarea_field / number_field / select_field` | leaf | Form inputs — always `outlined` |
 | `c.action_dialog(title, *, width=, subtitle=)` | context mgr | Dialog with arbitrary body; yields `(dialog, card)`; opens on exit |
 | `c.confirm_dialog(title, message, *, on_confirm, on_success=, danger=)` | async | Confirm-an-action; see contract below |
-| `c.data_grid(column_defs, row_data, *, compact=, auto_height=, row_click_to=, on_cell_click=, on_row_click=)` | leaf | AG Grid with the admin theme + shared defaults. Height: default = viewport-sized, `compact=True` = shorter, `auto_height=True` = derived from the row count (no empty space under the last row) — only for a **caller-bounded** row count. `auto_height` deliberately avoids AG Grid's `domLayout: "autoHeight"`, which breaks in the NiceGUI embed: the inner wrapper grows past the outer element and paints over the next section |
+| `c.data_grid(column_defs, row_data, *, compact=, auto_height=, row_click_to=, on_cell_click=, on_row_click=)` | leaf | AG Grid with the admin theme + shared defaults. Height: default = viewport-sized, `compact=True` = shorter, `auto_height=True` = derived from the row count (no empty space under the last row) — only for a **caller-bounded** row count. `auto_height` deliberately avoids AG Grid's `domLayout: "autoHeight"`, which breaks in the NiceGUI embed: the inner wrapper grows past the outer element and paints over the next section. **Scope:** this is the *list-page* grid and it brings list-page assumptions — `selection="single"` renders a row-selection control in every row, which on a panel with no row action is 122px of dead clickable UI, and its columns spread to fill the container (measured: 488px each for `active` / `sqlite`). For a short status list, compose rows directly (#380) |
 | `c.bar_chart(categories, values)` | leaf | ECharts vertical bar; sized by `AdminClasses.CHART` / `--admin-chart-height`, bar fill = `AdminColors.PRIMARY`, top corners rounded |
 | `c.pagination(*, current, total_pages, on_prev, on_next)` | leaf | Prev / page / next row |
 | `c.empty_state(icon=)` | context mgr | **Full-panel** empty placeholder — centred, with a large icon and `48px` vertical padding. For "this list has no rows", not for an inline note: used for a one-line remark inside a populated section it spends ~250px on one sentence (#368). Inline notes are a plain `ui.label(...).classes("admin-text-muted")` |
 | `c.toast_success / toast_warning / toast_error(message)` | leaf | Standardized `ui.notify` |
 | `c.report_error(exc, *, context)` | async | Route a caught exception through the sanitizing `AdminErrorHandler` |
+
+### Multi-column composition (and the gap that breaks it)
+
+Full-width stacked sections are the default and are wrong once a section has less
+to say than the page is wide. Measured on the dashboard at 1920px before #380: a
+1588px plot holding one bar, a 10-row status table giving 488px each to `active`
+and `sqlite`, and the stat tiles huddled in 294px to their left. The page was
+1186px tall with a mostly-unused right half — and the fix needed **no new
+content**, only two columns.
+
+Use Quasar's own column classes on a `ui.row`, not a fixed-width aside: `col-12
+col-md-8` / `col-12 col-md-4` also collapses to one column below `md`.
+
+**The trap:** NiceGUI puts `gap: var(--nicegui-default-gap)` on every
+`.nicegui-row`, and it is added *on top of* `q-col-gutter-md`. Two columns that
+sum to 12/12 then overflow by that gap and the aside wraps underneath — measured
+at y=709 instead of y=169, with the classes and widths all correct, which is why
+it does not look like a spacing bug. Set `gap: 0` on the row and let the Quasar
+gutter own the spacing. (The dashboard's populated view survived this by accident
+for one round: a `q-gutter-md` on its main column contributed a cancelling
+negative margin.)
+
+A panel that can appear both inside an aside and at full width should bound its
+own width (`max-width`) rather than trust its container — otherwise it stretches
+and puts each value ~1000px from its label.
 
 ### `confirm_dialog` contract (important)
 
@@ -180,6 +205,10 @@ closes the dialog and then awaits `on_success` (e.g. a list refresh). On
 - Call `ui.notify(str(exc))` / `c.toast_error(str(exc))` — leaks internals.
 - Put `require_auth` anywhere but the first statement of the route.
 - Add a builder that wraps a single `ui.label` with no shared behavior.
+- Reach for `c.data_grid` for a short, read-only status list — it brings row
+  selection and full-width columns that neither belong there.
+- Stack full-width sections when a section has less to say than the page is wide;
+  check the composition at 1920px before assuming the layout is fine.
 
 ## Reference
 

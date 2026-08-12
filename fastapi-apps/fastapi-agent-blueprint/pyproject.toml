@@ -71,8 +71,10 @@ server-gunicorn = ["gunicorn>=23.0.0"]
 aws = [
     "aioboto3>=15.4.0",
     "boto3>=1.39.12",
+    "types-aioboto3>=15.4.0",
     "types-aiobotocore-dynamodb>=2.25.0",
     "types-aiobotocore-s3>=2.25.0",
+    "types-aiobotocore-s3vectors>=3.5.0",
 ]
 sqs = ["taskiq-aws>=0.4.0"]
 rabbitmq = ["taskiq-aio-pika>=0.4.0"]
@@ -92,36 +94,74 @@ otel = [
 # `stages: [manual]`, so `pre-commit run --all-files` skipped it and the CI
 # `architecture` job type-checked nothing at all.
 #
-# `include` is an allow-list of what is clean today rather than all of `src/`,
-# which reports 58 errors. Measured per package at the time of writing:
+# Coverage. `include` reached all of `src` in #381 (91 errors -> 0) and now covers
+# everything the retired mypy hook nominally covered, plus the shared governor
+# package and the root runners, which it never did (#375).
 #
-#   src/_core/domain       0     src/user              0
-#   src/_core/application  0     src/auth              2
-#   src/_core/exceptions   0     src/admin_identity    2
-#   src/_core/common       0     src/ai_usage          5
-#   src/_core (all)       34     src (all)            58
+# mypy is gone rather than repaired. It aborted during module resolution — two
+# harness copies of `completion_gate.py` map to one top-level module name — so it
+# reported one error and inspected nothing under `src/`. Two checkers with
+# different scopes, one unable to run, is worse than one. And even repaired it
+# would have been shallow: its `additional_dependencies` were `types-requests` and
+# `pydantic` only, so with `--ignore-missing-imports` every fastapi, sqlalchemy and
+# nicegui type resolved to Any.
 #
-# The remainder is SQLAlchemy attribute-assignment and Protocol-shape noise
-# concentrated in infrastructure/ and interface/admin/. Widen this list as
-# packages are cleaned; never widen it by relaxing the rules below.
+# `exclude` is set explicitly, which is load-bearing: pyright's default excludes
+# `**/.*`, so a dot-directory named in `include` is silently skipped. Measured
+# before overriding it — `.claude/hooks` reported "0 errors" while analysing 0 of
+# its 7 files. `test_pyright_scope.py` pins that pairing, because "0 errors"
+# and "nothing checked" print the same way, which is the exact failure that let
+# the mypy hook look like coverage for two releases.
+#
+# The three harness hook directories joined in #387. 177 errors became 0, and the
+# split was not what it looked like: 70 were unresolved imports that `extraPaths`
+# fixed outright, 88 were `# type: ignore` comments left orphaned by retiring
+# mypy, and the 19 that remained were real — a fallback stub whose signature did
+# not match what it stands in for, one name the fail-open `except` branch forgot
+# to give a sentinel, and 17 call sites guarded by an `_OK` flag that nothing
+# links to the `None` sentinels it sets.
+#
+# Deliberately still out of scope:
+#   tests/                152 errors. mypy excluded it too; widening it is its own
+#                         piece of work, not a side effect of retiring mypy.
+#
+# Never widen coverage by relaxing the rules below.
 [tool.pyright]
 include = [
-    "src/_core/domain",
-    "src/_core/application",
-    "src/_core/exceptions",
-    "src/_core/common",
-    "src/user",
-    # Added by #381 step 1 — each entered this list only after reaching 0 errors.
-    # The allow-list is the ratchet: once a package is in, new errors there fail
-    # CI. Widen it per package rather than maintaining a baseline file.
-    "src/admin_identity",
-    "src/auth",
-    "src/ai_usage",
-    # Step 2a. The rest of _core/infrastructure stays out for now: the aioboto3
-    # client context managers and aiobotocore TypedDicts there are third-party
-    # stub friction, not findings this repo can fix in code.
-    "src/_core/infrastructure/persistence/rdb",
+    "src",
+    "tools",
+    "scripts",
+    "examples",
+    # The shared governor package every harness hook imports. Clean already; it
+    # had no type checker looking at it because it lives in a dot-directory.
+    ".agents",
+    # The three harness hook copies (#387). They are runtime scripts, not shipped
+    # code, but the failure they risk is a hook degrading into a no-op — which is
+    # precisely what the retired mypy stage demonstrated.
+    ".claude/hooks",
+    ".antigravity/hooks",
+    ".codex/hooks",
+    # mypy excluded `run_.*\.py$`. Including them found that `make scheduler` had
+    # never run the scheduler: `run_scheduler` is a coroutine function and the call
+    # dropped it. Pinned by tests/unit/test_local_runners.py.
+    "run_server_local.py",
+    "run_worker_local.py",
+    "run_scheduler_local.py",
 ]
+exclude = ["**/node_modules", "**/__pycache__", "**/.venv"]
+# The hooks reach the shared governor package by inserting `.agents/shared` on
+# `sys.path` at import time, so `harness_debug` / `governor.*` are top-level names
+# that no static resolver can find on its own. This is what turned 70 of #387's
+# findings into zero — and it also revealed two orphaned ignores in
+# `tools/check_governor_footer.py`, a file already in the gate whose imports had
+# been silently unresolved.
+extraPaths = [".agents/shared"]
+# Suppressions cannot rot: an ignore comment that stops being needed is an error.
+# Enabling this is what retiring mypy bought — it reported 3 errors while the hook
+# existed, and 2 were mypy-only `# type: ignore` comments pyright does not need.
+# Those are gone, and the remaining suppressions are `# pyright: ignore[rule]` so
+# each names the one rule it silences.
+reportUnnecessaryTypeIgnoreComment = "error"
 pythonVersion = "3.12"
 typeCheckingMode = "standard"
 

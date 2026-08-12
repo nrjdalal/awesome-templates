@@ -47,11 +47,11 @@ try:
 except Exception:  # noqa: BLE001 — HC-5.5 fail-open
     EXPLORATION_TOKENS = frozenset()
     REMINDER_TEXT = ""
-    MarkerLifecycle = None  # type: ignore[assignment,misc]
-    _shared_read_latest_token = None  # type: ignore[assignment]
+    MarkerLifecycle = None
+    _shared_read_latest_token = None
     _SHARED_OK = False
 
-    def _within_24h(ts: str) -> bool:  # type: ignore[no-redef]
+    def _within_24h(ts: str) -> bool:
         return True
 
 
@@ -64,7 +64,7 @@ try:
     )
 except Exception:  # noqa: BLE001 — HC-5.5 fail-open
 
-    def _resolve_locale_string(key: str) -> str:  # type: ignore[no-redef]
+    def _resolve_locale_string(key: str) -> str:
         return ""
 
 

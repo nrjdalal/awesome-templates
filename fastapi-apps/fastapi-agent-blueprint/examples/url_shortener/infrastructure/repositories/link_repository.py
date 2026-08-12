@@ -1,6 +1,7 @@
 from datetime import UTC, datetime
+from typing import cast
 
-from sqlalchemy import delete, select
+from sqlalchemy import CursorResult, delete, select
 
 from src._core.exceptions.base_exception import BaseCustomException
 from src._core.infrastructure.persistence.rdb.base_repository import BaseRepository
@@ -56,7 +57,10 @@ class LinkRepository(BaseRepository[LinkDTO]):
                 )
             )
             await session.commit()
-            return result.rowcount or 0
+            # `session.execute` is typed `Result[Any]`, but a DML statement returns
+            # a `CursorResult` — which is where `rowcount` lives. Same shape as the
+            # fix in `_core/infrastructure/admin/audit/repository.py`.
+            return cast(CursorResult, result).rowcount or 0
 
     @staticmethod
     def _to_naive_utc(value: datetime) -> datetime:

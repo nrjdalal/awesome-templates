@@ -1,5 +1,5 @@
 # Execution order: auto-fix → check-only
-# Separated by stages: commit (auto-fix), manual (manual check)
+# Separated by stages: commit (auto-fix), commit-msg (message policy)
 repos:
   # ==================== STAGE: COMMIT (auto-run) ====================
   # 1. Basic file validation and auto-fix
@@ -44,22 +44,13 @@ repos:
       - id: ruff-format
         exclude: ^migrations/
 
-  # ==================== STAGE: MANUAL (manual run) ====================
-  # Type checking: pre-commit run --hook-stage manual mypy
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.14.1
-    hooks:
-      - id: mypy
-        stages: [manual]
-        exclude: ^(migrations/|tests/|.*test\.py$|run_.*\.py$|force_.*\.py$)
-        args:
-          - --ignore-missing-imports
-          - --check-untyped-defs  # relaxed from disallow
-          - --warn-redundant-casts
-          - --no-implicit-optional
-        additional_dependencies:
-          - types-requests
-          - pydantic
+  # No type-checking hook here on purpose. pyright is the single type-check
+  # authority and runs blocking in the CI `typecheck` job over `[tool.pyright]
+  # include` — `uv run pyright` reproduces it exactly. A manual-stage mypy hook
+  # lived here from #34 until #375 and could not type-check anything: two harness
+  # copies of `completion_gate.py` collapse to one module name, so mypy aborted
+  # during resolution, reported that one error, and inspected no source at all.
+  # Nothing ran it (`stages: [manual]`), so it read as coverage for two releases.
 
   # ==================== STAGE: COMMIT (architecture violation checks) ====================
   - repo: local

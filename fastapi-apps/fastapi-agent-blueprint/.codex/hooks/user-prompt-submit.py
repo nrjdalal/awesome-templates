@@ -52,15 +52,15 @@ try:
     _SHARED_OK = True
 except Exception as exc:  # noqa: BLE001 — HC-5.5 fail-open
     debug_log("codex user-prompt shared import failed", exc)
-    PROMPT_RULES = []  # type: ignore[assignment]
-    TOKEN_REGEX = None  # type: ignore[assignment]
-    Blocked = None  # type: ignore[assignment,misc]
-    ParsedToken = None  # type: ignore[assignment,misc]
-    safe_parse_exception_token = None  # type: ignore[assignment]
+    PROMPT_RULES = []
+    TOKEN_REGEX = None
+    Blocked = None
+    ParsedToken = None
+    safe_parse_exception_token = None
     _shared_write_marker = None
     _SHARED_OK = False
 
-    def parse_exception_token(prompt: str) -> dict:  # type: ignore[no-redef]
+    def parse_exception_token(prompt: str) -> dict:
         return {"matched": False, "token": None, "rationale_required": False}
 
 

@@ -19,9 +19,9 @@ try:
 
     _SHARED_OK = True
 except Exception:  # noqa: BLE001
-    Blocked = None  # type: ignore[assignment,misc]
-    ParsedToken = None  # type: ignore[assignment,misc]
-    safe_parse_exception_token = None  # type: ignore[assignment]
+    Blocked = None
+    ParsedToken = None
+    safe_parse_exception_token = None
     _shared_write_marker = None
     _SHARED_OK = False
 

@@ -490,6 +490,15 @@ wheels = [
 ]
 
 [[package]]
+name = "botocore-stubs"
+version = "1.43.67"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/3f/45/53d662227dc4787b2c854445ee7eb4751cb5d74cfb5c686a6ecbe1f94c17/botocore_stubs-1.43.67.tar.gz", hash = "sha256:853e74014a1f557055c4ffae5fb38d7c65c7c0520e1aab366cac41d5428f419d", size = 42846, upload-time = "2026-08-08T14:57:53.412Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/4e/5e/bdbf19967898a032292da65a47d6e25b2eee55865db4e687f861d80b5602/botocore_stubs-1.43.67-py3-none-any.whl", hash = "sha256:c51262bac3341c1cda71f05fa01141fffd3990d7a92c7960e3b755c1bc830373", size = 67244, upload-time = "2026-08-08T14:57:52.01Z" },
+]
+
+[[package]]
 name = "brotli"
 version = "1.2.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1041,8 +1050,10 @@ admin = [
 aws = [
     { name = "aioboto3" },
     { name = "boto3" },
+    { name = "types-aioboto3" },
     { name = "types-aiobotocore-dynamodb" },
     { name = "types-aiobotocore-s3" },
+    { name = "types-aiobotocore-s3vectors" },
 ]
 openai = [
     { name = "openai" },
@@ -1128,8 +1139,10 @@ requires-dist = [
     { name = "taskiq-aws", marker = "extra == 'sqs'", specifier = ">=0.4.0" },
     { name = "tiktoken", marker = "extra == 'openai'", specifier = ">=0.7.0" },
     { name = "tiktoken", marker = "extra == 'pydantic-ai'", specifier = ">=0.7.0" },
+    { name = "types-aioboto3", marker = "extra == 'aws'", specifier = ">=15.4.0" },
     { name = "types-aiobotocore-dynamodb", marker = "extra == 'aws'", specifier = ">=2.25.0" },
     { name = "types-aiobotocore-s3", marker = "extra == 'aws'", specifier = ">=2.25.0" },
+    { name = "types-aiobotocore-s3vectors", marker = "extra == 'aws'", specifier = ">=3.5.0" },
     { name = "uvicorn", specifier = ">=0.34.1" },
 ]
 provides-extras = ["admin", "server-gunicorn", "aws", "sqs", "rabbitmq", "openai", "pydantic-ai", "pydantic-ai-anthropic", "pydantic-ai-google", "pydantic-ai-duckduckgo", "otel"]
@@ -3740,6 +3753,32 @@ wheels = [
 ]
 
 [[package]]
+name = "types-aioboto3"
+version = "15.5.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "botocore-stubs" },
+    { name = "types-aiobotocore" },
+    { name = "types-s3transfer" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/56/76/e162ea2ef8d414d4f36f28a6e0b6078ccef3f2f9d5f957859f303995c528/types_aioboto3-15.5.0.tar.gz", hash = "sha256:5769a1c3df7ca1abedf3656ddf0b970c9b0436d0f88cf4686040b55cd2a02925", size = 81059, upload-time = "2025-10-31T01:11:54.445Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ec/1d/e187fbe9771dffb5f0801e315ac23a6c383c14d1cbb90da6ca3ad1ea9b06/types_aioboto3-15.5.0-py3-none-any.whl", hash = "sha256:8aed7c9b6fe9b59e6ce74f7a6db7b8a9912a34c8f80ed639fac1fa59d6b20aa1", size = 42521, upload-time = "2025-10-31T01:11:47.832Z" },
+]
+
+[[package]]
+name = "types-aiobotocore"
+version = "3.9.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "botocore-stubs" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/b9/a8/a4ad647d7b3473bdc1892a0f7e6872affaf509d18f915f07c51f72b055c7/types_aiobotocore-3.9.0.tar.gz", hash = "sha256:00fc52e98c9d65fe6716f246e6e03ce18f0b6727aa580ab5b274fde6844b6142", size = 88503, upload-time = "2026-08-02T03:05:26.377Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/25/0e/d8af0ba644968d6183e04e9ab9c3e1c6b5b10f25f5389ec825abf65c11c7/types_aiobotocore-3.9.0-py3-none-any.whl", hash = "sha256:614862ac387098964805325751f8ab3b74d52e3e6ec7f37b7585fd971fabe476", size = 54999, upload-time = "2026-08-02T03:05:22.581Z" },
+]
+
+[[package]]
 name = "types-aiobotocore-dynamodb"
 version = "3.4.0"
 source = { registry = "https://pypi.org/simple" }
@@ -3755,6 +3794,24 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/2f/f9/76c84023add0e6b8b647eb8d085538b1a180bd560a0b5d115d5fea79cd11/types_aiobotocore_s3-3.1.0.tar.gz", hash = "sha256:2f61d2f785fcbad9af2a01b3162b50436f95bea5440e0b9b848e6f60a23a3602", size = 76650, upload-time = "2026-01-03T02:07:22.875Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/24/08/9ef8235e3b7fd1bfd843a6047a9518c15852e853df76b14c0bd3df7b38f5/types_aiobotocore_s3-3.1.0-py3-none-any.whl", hash = "sha256:b019d2db117a0f17df0f60c3eec547ae98a17ce4d03e73ba5a3cfe77d7f30291", size = 84332, upload-time = "2026-01-03T02:02:28.847Z" },
+]
+
+[[package]]
+name = "types-aiobotocore-s3vectors"
+version = "3.9.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/a3/ad/53c6c7d1c4fced744ec23ad946ed0554e6fab3472c87a31b2705ec1e9737/types_aiobotocore_s3vectors-3.9.0.tar.gz", hash = "sha256:25458fa4a6b835f8548d6b4d9d29e57ad9271cbf5b5107822a3a2125bdfbd00c", size = 19040, upload-time = "2026-08-02T03:03:43.9Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/4d/21/8a2f8a415722f39985b0111cdd1890ee3f1fec1ef7501a914774b67552fc/types_aiobotocore_s3vectors-3.9.0-py3-none-any.whl", hash = "sha256:3b9c8e7eb7593fcb2bf4f8e70a4646cd56148aaf8ee30459a2bac518782da9a7", size = 25561, upload-time = "2026-08-02T03:03:42.214Z" },
+]
+
+[[package]]
+name = "types-s3transfer"
+version = "0.16.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/fe/64/42689150509eb3e6e82b33ee3d89045de1592488842ddf23c56957786d05/types_s3transfer-0.16.0.tar.gz", hash = "sha256:b4636472024c5e2b62278c5b759661efeb52a81851cde5f092f24100b1ecb443", size = 13557, upload-time = "2025-12-08T08:13:09.928Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/98/27/e88220fe6274eccd3bdf95d9382918716d312f6f6cef6a46332d1ee2feff/types_s3transfer-0.16.0-py3-none-any.whl", hash = "sha256:1c0cd111ecf6e21437cb410f5cddb631bfb2263b77ad973e79b9c6d0cb24e0ef", size = 19247, upload-time = "2025-12-08T08:13:08.426Z" },
 ]
 
 [[package]]

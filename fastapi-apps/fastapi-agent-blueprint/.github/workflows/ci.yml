@@ -173,10 +173,13 @@ jobs:
         with:
           python-version: "3.12"
 
-      # The extras are not optional here. [tool.pyright] include covers
-      # src/user, which contains an admin page importing nicegui; a core-only
-      # install makes pyright report reportMissingImports rather than type-check
-      # it. The same environment is what pip-audit needs to see the optional
+      # The extras are not optional here. [tool.pyright] include covers all of
+      # src/, including admin pages importing nicegui and the four AWS-backed
+      # client modules; a core-only install makes pyright report
+      # reportMissingImports rather than type-check them. The aws extra also
+      # carries the stub packages the boto surface needs to be checkable at all
+      # (types-aioboto3 for Session.client, types-aiobotocore-* per service).
+      # The same environment is what pip-audit needs to see the optional
       # production dependencies, so install it once.
       #
       # pydantic-ai / anthropic / otel were added in #381: without them pyright
@@ -186,8 +189,9 @@ jobs:
       - name: Install dependencies
         run: uv sync --locked --group dev --extra admin --extra aws --extra sqs --extra rabbitmq --extra pydantic-ai --extra pydantic-ai-anthropic --extra otel
 
-      # Scope comes from [tool.pyright] in pyproject.toml: an allow-list of the
-      # packages that are clean today, not all of src/ (58 errors). Blocking on
+      # Scope comes from [tool.pyright] in pyproject.toml, and since #381 it is
+      # all of src/ at 0 errors — it started as an allow-list of clean packages
+      # (58 errors outside it) and was widened package by package. Blocking on
       # purpose — an advisory type check is what the manual-stage mypy hook
       # already was, and it caught nothing for two releases.
       - name: Pyright

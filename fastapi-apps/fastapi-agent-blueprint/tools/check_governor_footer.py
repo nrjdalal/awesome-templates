@@ -316,12 +316,12 @@ def _is_governor_changing(changed_files: list[str]) -> bool:
 
     sys.path.insert(0, str(REPO_ROOT / ".agents" / "shared"))
     try:
-        from governor.completion_gate import (  # type: ignore[import-not-found]
+        from governor.completion_gate import (
             is_governor_changing,
             is_log_only_backfill,
             parse_trigger_globs,
         )
-        from governor.paths import GOVERNOR_PATHS_MD  # type: ignore[import-not-found]
+        from governor.paths import GOVERNOR_PATHS_MD
     finally:
         sys.path.pop(0)
     if not changed_files:

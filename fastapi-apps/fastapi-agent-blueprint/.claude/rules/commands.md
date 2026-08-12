@@ -1,6 +1,6 @@
 # Suggested Commands
 
-> Last synced: 2026-08-12 via #374 (the `make test-pg` clean-database caveat is gone — the fixture now loads every model, so a pre-existing schema no longer breaks it) and #368 (no new commands). Prior: 2026-08-11 via #365/PR #366 (Admin Dashboard — the UI theming block now names the neutral-mono theme instead of the Toss-style one, and records that the `--q-*` brand group must be emitted under `body` with `!important`, because NiceGUI writes that palette as an inline body style and a `:root` declaration is inert — the pre-#365 state, in which the whole brand half of the palette never applied). Prior: 2026-08-01 via #286/PR #313 + #315/PR #319 (Error Notification — severity channel routing section and example added; `:159` corrected, it had contradicted the Coverage bullet in the same block since #310). Prior: 2026-07-28 via #310 (Error Notification — dispatch extended to Taskiq worker task failures; the server-only scope note from PR #311 is superseded). Prior: 2026-07-27 via #307/PR #311 (Error Notification section — runbook pointer, server-only dispatch scope, first-dispatch disabled warning). Prior: 2026-07-23 via #17/PR #304 (added the Error Notification section — `NOTIFICATION_*` env vars for Slack/Discord webhook alerts fired from the exception handlers). Prior: 2026-07-20 via ADR 056 (added `tools/check_migration_safety.py` — advisory unsafe-DDL scan for zero-downtime migrations — to Architecture Verification + DB Migrations). Prior: 2026-07-20 via #293 (added `make perf-test` — Locust performance-test harness — to the Test section).
+> Last synced: 2026-08-12 via #375 / #381 / #387 (PRs #382–#386, #388, #390) — the Lint / Format section now names `uv run pyright` as the single type check and no longer claims `pre-commit run --all-files` runs mypy; that hook is gone. Two command-level consequences worth knowing: `make scheduler` **had never actually run the scheduler** before #375 (the coroutine was created and dropped, so the process exited 0 having scheduled nothing), and `make quickstart` runs `uv sync --extra admin`, which **removes the dev extras** — running it inside a dev checkout takes the suite from 4 skips to 29 and makes `uv run pyright` report ~28 unresolved-import errors until you re-sync. Prior: 2026-08-12 via #374 (the `make test-pg` clean-database caveat is gone — the fixture now loads every model, so a pre-existing schema no longer breaks it) and #368 (no new commands). Prior: 2026-08-11 via #365/PR #366 (Admin Dashboard — the UI theming block now names the neutral-mono theme instead of the Toss-style one, and records that the `--q-*` brand group must be emitted under `body` with `!important`, because NiceGUI writes that palette as an inline body style and a `:root` declaration is inert — the pre-#365 state, in which the whole brand half of the palette never applied). Prior: 2026-08-01 via #286/PR #313 + #315/PR #319 (Error Notification — severity channel routing section and example added; `:159` corrected, it had contradicted the Coverage bullet in the same block since #310). Prior: 2026-07-28 via #310 (Error Notification — dispatch extended to Taskiq worker task failures; the server-only scope note from PR #311 is superseded). Prior: 2026-07-27 via #307/PR #311 (Error Notification section — runbook pointer, server-only dispatch scope, first-dispatch disabled warning). Prior: 2026-07-23 via #17/PR #304 (added the Error Notification section — `NOTIFICATION_*` env vars for Slack/Discord webhook alerts fired from the exception handlers). Prior: 2026-07-20 via ADR 056 (added `tools/check_migration_safety.py` — advisory unsafe-DDL scan for zero-downtime migrations — to Architecture Verification + DB Migrations). Prior: 2026-07-20 via #293 (added `make perf-test` — Locust performance-test harness — to the Test section).
 > Purpose: Quick reference for Claude Code when executing shell commands.
 > Also referenced when running Skills.
 > Default Flow context: see [`AGENTS.md` § Default Coding Flow](../../AGENTS.md#default-coding-flow). The commands below are consulted by the `implement` and `verify` steps; this file is **not** a primary entry point in the Default Flow.
@@ -18,7 +18,11 @@ make setup
 # CodeBuddy) copy the env files themselves but still need the extras.
 make worktree-setup
 
-# Zero-config quickstart (SQLite + InMemory broker, no external infra)
+# Zero-config quickstart (SQLite + InMemory broker, no external infra).
+# NOTE: this runs `uv sync --extra admin`, which *removes* the dev extras from the
+# environment. In a dev checkout that silently changes what the tooling can see —
+# 29 skipped tests instead of 4, and ~28 pyright unresolved-import errors. Re-run
+# `make setup` (or the CI-parity sync in the Test section) afterwards.
 make quickstart
 make demo            # in a second terminal — curl CRUD walkthrough
 make demo-rag        # RAG end-to-end (seed 3 docs → list → query, #80)
@@ -36,7 +40,9 @@ make demo-rag        # RAG end-to-end (seed 3 docs → list → query, #80)
 make dev
 make worker
 
-# Taskiq scheduler — a FOURTH process, separate from the worker. Enqueues tasks
+# Taskiq scheduler — a FOURTH process, separate from the worker. Actually runs
+# since #375: `run_scheduler` is a coroutine function and the call was not
+# awaited, so this target used to exit 0 having scheduled nothing. Enqueues tasks
 # carrying a `schedule=[{"cron": ...}]` label; today that is audit_cleanup_task
 # (`0 3 * * *`), whose job is an irreversible DELETE bounded only by
 # AUDIT_LOG_RETENTION_DAYS. Optional: the same @broker.task is also reachable
@@ -94,8 +100,14 @@ make test-dynamo
 
 ## Lint / Format
 ```bash
-# pre-commit (ruff + mypy)
+# pre-commit (ruff check --fix + ruff format + the local policy hooks)
 pre-commit run --all-files
+
+# Type check — pyright is the single authority, blocking in CI. This is exactly
+# what the `typecheck` job runs; scope is [tool.pyright] include in pyproject.toml.
+# There is no mypy hook: the manual-stage one was retired in #375 because it
+# aborted on a duplicate module name and inspected no source at all.
+uv run pyright
 ```
 
 ## DB Migrations

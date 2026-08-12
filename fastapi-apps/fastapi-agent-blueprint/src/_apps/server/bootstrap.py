@@ -67,9 +67,16 @@ def _configure_logging_pipeline() -> None:
 
 
 def _install_exception_handlers(app: FastAPI) -> None:
-    app.add_exception_handler(RequestValidationError, validation_exception_handler)
-    app.add_exception_handler(StarletteHTTPException, http_exception_handler)
-    app.add_exception_handler(BaseCustomException, custom_exception_handler)
+    # Starlette declares `handler` as taking `Exception`, so a handler annotated
+    # for the one exception it actually serves is formally unsound — parameters
+    # are contravariant — even though the registration key is precisely what
+    # guarantees the runtime type. Widening the three annotations to `Exception`
+    # would delete the only thing that documents which exception each handler is
+    # for, so they carry a targeted ignore instead. `generic_exception_handler`
+    # needs none: it really does accept `Exception`.
+    app.add_exception_handler(RequestValidationError, validation_exception_handler)  # pyright: ignore[reportArgumentType]
+    app.add_exception_handler(StarletteHTTPException, http_exception_handler)  # pyright: ignore[reportArgumentType]
+    app.add_exception_handler(BaseCustomException, custom_exception_handler)  # pyright: ignore[reportArgumentType]
     app.add_exception_handler(Exception, generic_exception_handler)
 
 

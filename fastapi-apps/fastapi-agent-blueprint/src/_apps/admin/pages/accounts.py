@@ -74,9 +74,12 @@ async def accounts_page():
         temp_pw_label.set_visibility(False)
 
         async def create_account():
-            username = new_username.value.strip()
-            full_name = new_full_name.value.strip()
-            email = new_email.value.strip()
+            # `ui.input().value` is `str | None`; the falsy guard below already
+            # treats a blank field as missing, so coercing None to "" keeps the
+            # same behaviour instead of relying on the widget never being None.
+            username = (new_username.value or "").strip()
+            full_name = (new_full_name.value or "").strip()
+            email = (new_email.value or "").strip()
             if not (username and full_name and email):
                 ui.notify("All fields are required", type="warning")
                 return

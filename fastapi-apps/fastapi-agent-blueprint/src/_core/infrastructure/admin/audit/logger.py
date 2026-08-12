@@ -97,8 +97,8 @@ class AuditLogger:
         after_state: dict | None = None,
         failure_reason: str | None = None,
         ip_address: str | None = None,
-        admin_user_id: int | None = _UNSET,  # type: ignore[assignment]
-        admin_username: str | None = _UNSET,  # type: ignore[assignment]
+        admin_user_id: int | None = _UNSET,  # pyright: ignore[reportArgumentType]
+        admin_username: str | None = _UNSET,  # pyright: ignore[reportArgumentType]
     ) -> None:
         """Best-effort write of one audit-log entry. Never raises.
 
@@ -331,7 +331,7 @@ async def _safe_capture(
         result = hook(*args, **kwargs, **extra)
         if inspect.isawaitable(result):
             result = await result
-        return result  # type: ignore[return-value]
+        return result
     except Exception as exc:  # noqa: BLE001 - capture is best-effort
         _logger.warning(
             "audit_capture_hook_failed",

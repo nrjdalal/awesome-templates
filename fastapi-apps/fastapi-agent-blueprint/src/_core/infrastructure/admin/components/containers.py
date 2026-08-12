@@ -36,8 +36,13 @@ def section(title: str | None = None, *, classes: str = "") -> Iterator[ui.colum
 
 
 def stat_card(label: str, value: str | int, *, icon: str | None = None) -> ui.card:
-    """A metric tile: caption label + large value (replaces ai_usage tiles)."""
-    with ui.card().classes("q-pa-md") as element:
+    """A metric tile: caption label + large value (replaces ai_usage tiles).
+
+    Carries a minimum width because a card sizes to its own content: without it a
+    row of tiles came out ragged — 88px / 64px / 62px for "AI Usage" / "Docs" /
+    "User" — which reads as three unrelated boxes instead of one row of metrics.
+    """
+    with ui.card().classes(f"q-pa-md {AdminClasses.STAT_CARD}") as element:
         if icon is not None:
             ui.icon(icon).classes("text-h5 text-primary")
         ui.label(str(label)).classes(f"text-caption {AdminClasses.MUTED}")

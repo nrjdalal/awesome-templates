@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from typing import Any
 
 from pydantic import BaseModel
@@ -36,7 +37,9 @@ class DocumentChunkS3VectorStore(BaseS3VectorStore[BaseChunkDTO]):
             chunk_index=chunk["chunk_index"],
         )
 
-    def _deserialize_result(self, raw: dict[str, Any]) -> BaseChunkDTO:
+    # ``Mapping`` mirrors the base signature — the argument is an aiobotocore
+    # response TypedDict, which is not assignable to ``dict[str, Any]``.
+    def _deserialize_result(self, raw: Mapping[str, Any]) -> BaseChunkDTO:
         """Include the store ``key`` as ``chunk_id`` on the returned DTO."""
         metadata = dict(raw.get("metadata", {}))
         metadata.setdefault("chunk_id", raw.get("key", ""))

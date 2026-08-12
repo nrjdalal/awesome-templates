@@ -163,6 +163,11 @@ class ObjectStorage:
                 )
                 if "Contents" not in response:
                     return []
-                return [obj["Key"] for obj in response["Contents"]]
+                # `Key` is optional in the S3 response model, so the direct
+                # subscript was an unguarded KeyError. Real S3 always sends it;
+                # skipping a keyless entry is still the right fallback, because
+                # this method's contract is "keys you can address" and an empty
+                # string would be handed straight to a download or delete call.
+                return [key for obj in response["Contents"] if (key := obj.get("Key"))]
         except ClientError as e:
             raise _storage_failure("list", e) from e

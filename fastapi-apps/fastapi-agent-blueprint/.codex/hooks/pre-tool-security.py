@@ -34,7 +34,7 @@ try:
     _SHARED_OK = True
 except Exception as exc:  # noqa: BLE001 — HC-5.5 fail-open
     debug_log("codex pre-tool shared import failed", exc)
-    check_bash_command = None  # type: ignore[assignment]
+    check_bash_command = None
     _SHARED_OK = False
 
 

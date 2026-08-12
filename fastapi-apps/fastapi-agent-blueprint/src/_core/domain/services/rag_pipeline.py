@@ -50,7 +50,7 @@ class RagPipeline(Generic[TChunk]):
         # citations without a second search round-trip. Underscore-
         # prefixed so it does not leak into serialisation.
         for chunk, distance in zip(chunks, distances, strict=False):
-            chunk._distance = distance  # type: ignore[attr-defined]
+            chunk._distance = distance  # pyright: ignore[reportAttributeAccessIssue]
 
         answer = await self._answer_agent.answer(
             question=question, context_chunks=chunks

@@ -51,11 +51,11 @@ try:
     _SHARED_OK = True
 except Exception as exc:  # noqa: BLE001 — HC-5.5 fail-open, must not raise SystemExit
     debug_log("claude user-prompt shared import failed", exc)
-    TOKEN_REGEX = None  # type: ignore[assignment]
+    TOKEN_REGEX = None
     _shared_write_marker = None
     _SHARED_OK = False
 
-    def parse_exception_token(prompt: str) -> dict:  # type: ignore[no-redef]
+    def parse_exception_token(prompt: str) -> dict:
         return {"matched": False, "token": None, "rationale_required": False}
 
 

@@ -8,8 +8,9 @@ detail dialog), and ``delete_older_than`` (retention cleanup).
 
 from collections.abc import Callable
 from datetime import UTC, datetime
+from typing import cast
 
-from sqlalchemy import delete, func, select
+from sqlalchemy import CursorResult, delete, func, select
 
 from src._core.infrastructure.admin.audit.dtos.audit_log_dto import (
     AdminAction,
@@ -177,7 +178,9 @@ class AdminAuditLogRepository:
                 delete(AdminAuditLog).where(AdminAuditLog.created_at < naive_cutoff)
             )
             await session.commit()
-            return result.rowcount or 0
+            # `AsyncSession.execute` is typed `Result[Any]`, but a DML statement
+            # returns a `CursorResult`, which is where `rowcount` lives.
+            return cast(CursorResult, result).rowcount or 0
 
     # ── Helpers ──────────────────────────────────────────────────────────────
 

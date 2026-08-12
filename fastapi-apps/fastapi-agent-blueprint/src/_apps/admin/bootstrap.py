@@ -59,9 +59,24 @@ def bootstrap_admin(fastapi_app: FastAPI) -> None:
     if not _global_exception_handler_registered:
         app.on_exception(handle_uncaught_admin_exception)
         _global_exception_handler_registered = True
+    # Every type-checker suppression in this module has one of two causes, both
+    # framework contracts rather than annotations this repo can fix:
+    #
+    #   reportAttributeAccessIssue on a container attribute — dependency-injector
+    #   resolves sub-containers and providers dynamically, and its stubs can only
+    #   type that access as Provider[Any].
+    #
+    #   reportAttributeAccessIssue on page_module.page_configs — the assignment
+    #   targets a module obtained from importlib.import_module(), and a ModuleType
+    #   has no such attribute until the assignment creates it. That indirection is
+    #   how a domain page receives the shared config list without importing it.
+    #
+    # Written without a literal suppression directive on purpose: pyright parses
+    # one inside a comment even when it is only being quoted as an example, which
+    # would silence the rule on this line for good.
     configure_admin_auth_provider(
         AdminAuthProvider(
-            admin_auth_use_case_provider=admin_container.admin_identity_container.admin_auth_use_case
+            admin_auth_use_case_provider=admin_container.admin_identity_container.admin_auth_use_case  # pyright: ignore[reportAttributeAccessIssue]
         )
     )
     # Wire the audit infrastructure (#196 Phase 1 + #206 Phase 2) before any
@@ -72,7 +87,7 @@ def bootstrap_admin(fastapi_app: FastAPI) -> None:
     # connection into module state, so an override applied after bootstrap
     # (override_database in the e2e harness) was invisible to every audit write
     # and query while /v1/* ran on the swapped database.
-    audit_repo = AdminAuditLogRepository(admin_container.core_container.database)
+    audit_repo = AdminAuditLogRepository(admin_container.core_container.database)  # pyright: ignore[reportAttributeAccessIssue]
     configure_audit_repository(audit_repo)
     # Pass the notifier so a persistent audit-write failure reaches an operator
     # instead of only structlog (#348). The *provider*, not a resolved notifier,
@@ -82,11 +97,11 @@ def bootstrap_admin(fastapi_app: FastAPI) -> None:
     configure_audit_logger(
         AuditLogger(
             audit_repo,
-            error_notifier=admin_container.core_container.error_notifier,
+            error_notifier=admin_container.core_container.error_notifier,  # pyright: ignore[reportAttributeAccessIssue]
         )
     )
     configure_admin_account_use_case_provider(
-        admin_container.admin_identity_container.admin_account_use_case
+        admin_container.admin_identity_container.admin_account_use_case  # pyright: ignore[reportAttributeAccessIssue]
     )
     _install_bootstrap_admin_seed(fastapi_app, admin_container)
 
@@ -102,7 +117,7 @@ def bootstrap_admin(fastapi_app: FastAPI) -> None:
 
     # Populate the permission registry from successfully registered page_configs.
     # Fixed keys (e.g. 'accounts') are pre-seeded in the registry; domain keys are added here.
-    permission_registry = admin_container.admin_identity_container.permission_registry()
+    permission_registry = admin_container.admin_identity_container.permission_registry()  # pyright: ignore[reportAttributeAccessIssue]
     for cfg in page_configs:
         permission_registry.register(cfg.domain_name)
 
@@ -180,6 +195,6 @@ def _discover_and_register_pages(
             # 4) Routes: 모듈 import로 @ui.page 등록 트리거 + page_configs 주입
             page_module_path = f"src.{name}.interface.admin.pages.{name}_page"
             page_module = importlib.import_module(page_module_path)
-            page_module.page_configs = page_configs
+            page_module.page_configs = page_configs  # pyright: ignore[reportAttributeAccessIssue]
         except (ModuleNotFoundError, AttributeError):
             continue

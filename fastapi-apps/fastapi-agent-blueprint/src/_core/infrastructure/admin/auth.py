@@ -110,7 +110,7 @@ class AdminAuthProvider:
         """Re-derive session from DB. Returns None if user is gone or not admin."""
         user_id = app.storage.user.get("user_id")
         try:
-            parsed_user_id = int(user_id)  # type: ignore[arg-type]
+            parsed_user_id = int(user_id)  # pyright: ignore[reportArgumentType]
         except (TypeError, ValueError):
             return None
 

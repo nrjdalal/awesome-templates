@@ -3,7 +3,7 @@
 # absolute-import pattern the real `src/auth -> src/user` dependency uses. It
 # does not resolve while the file still lives under examples/; the blog unit
 # tests provide a src-layout shadow via tests/unit/blog/conftest.py.
-from src.author.domain.protocols.author_repository_protocol import (
+from src.author.domain.protocols.author_repository_protocol import (  # pyright: ignore[reportMissingImports]
     AuthorRepositoryProtocol,
 )
 

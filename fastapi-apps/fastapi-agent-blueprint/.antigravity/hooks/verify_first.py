@@ -20,7 +20,7 @@ try:
 except Exception:  # noqa: BLE001
     EXPLORATION_TOKENS = frozenset()
     REMINDER_TEXT = ""
-    MarkerLifecycle = None  # type: ignore[assignment,misc]
+    MarkerLifecycle = None
     _shared_read_latest_token = None
     _SHARED_OK = False
 
@@ -30,7 +30,7 @@ try:
     )
 except Exception:  # noqa: BLE001
 
-    def _resolve_locale_string(key: str) -> str:  # type: ignore[no-redef]
+    def _resolve_locale_string(key: str) -> str:
         return ""
 
 

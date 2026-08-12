@@ -74,36 +74,32 @@ except Exception:  # noqa: BLE001 — HC-5.5 fail-open
     EXPLORATION_TOKENS = frozenset()
     GOVERNOR_REMINDER_WITH_PR = ""
     GOVERNOR_REMINDER_NO_PR = ""
-    MarkerLifecycle = None  # type: ignore[assignment,misc]
-    _shared_read_latest_token = None  # type: ignore[assignment]
-    _shared_consume_phase2_markers = None  # type: ignore[assignment]
-    _shared_governor_subset = None  # type: ignore[assignment]
-    _shared_is_sync_cosmetic_only = None  # type: ignore[assignment]
+    MarkerLifecycle = None
+    _shared_read_latest_token = None
+    _shared_consume_phase2_markers = None
+    _shared_governor_subset = None
+    _shared_is_sync_cosmetic_only = None
     _SHARED_OK = False
 
-    def _within_24h(ts: str) -> bool:  # type: ignore[no-redef]
+    def _within_24h(ts: str) -> bool:
         return True
 
-    def parse_trigger_globs(md_path: Path = GOVERNOR_PATHS_MD) -> list[str]:  # type: ignore[no-redef]
+    def parse_trigger_globs(md_path: Path = GOVERNOR_PATHS_MD) -> list[str]:
         return []
 
-    def _matches_glob(path: str, glob: str) -> bool:  # type: ignore[no-redef]
+    def _matches_glob(path: str, glob: str) -> bool:
         return False
 
-    def is_log_only_backfill(changed: list[str]) -> bool:  # type: ignore[no-redef]
+    def is_log_only_backfill(changed: list[str]) -> bool:
         return False
 
-    def is_governor_changing(  # type: ignore[no-redef]
-        changed: list[str], globs: list[str]
-    ) -> bool:
+    def is_governor_changing(changed: list[str], globs: list[str]) -> bool:
         return False
 
-    def match_log_entry(  # type: ignore[no-redef, misc]
-        changed: list[str], current_pr: int | None
-    ) -> str:
+    def match_log_entry(changed: list[str], current_pr: int | None) -> str:
         return "missing"
 
-    def pr_number_from_branch() -> int | None:  # type: ignore[no-redef]
+    def pr_number_from_branch() -> int | None:
         return None
 
 
@@ -115,7 +111,7 @@ try:
     )
 except Exception:  # noqa: BLE001 — HC-5.5 fail-open
 
-    def _resolve_locale_string(key: str) -> str:  # type: ignore[no-redef]
+    def _resolve_locale_string(key: str) -> str:
         return ""
 
 

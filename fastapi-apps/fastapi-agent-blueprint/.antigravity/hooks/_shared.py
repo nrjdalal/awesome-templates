@@ -38,7 +38,7 @@ try:
     _CHANGED_FILES_OK = True
 except Exception as exc:  # noqa: BLE001 — fail-open import
     debug_log("antigravity shared changed-files import failed", exc)
-    _shared_changed_files = None  # type: ignore[assignment]
+    _shared_changed_files = None
     _CHANGED_FILES_OK = False
 
 

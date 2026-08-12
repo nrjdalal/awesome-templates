@@ -11,8 +11,8 @@ try:
 
     _SHARED_OK = True
 except Exception:  # noqa: BLE001
-    check_code_safety = None  # type: ignore[assignment]
-    check_bash_command = None  # type: ignore[assignment]
+    check_code_safety = None
+    check_bash_command = None
     _SHARED_OK = False
 
 

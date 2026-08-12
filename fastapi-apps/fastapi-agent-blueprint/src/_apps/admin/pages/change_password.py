@@ -54,10 +54,14 @@ async def change_password_page():
         )
 
         async def do_change():
-            if len(new_pw.value) < 8:
+            # Widget values are `str | None`; read them once, coerced.
+            current_value = current_pw.value or ""
+            new_value = new_pw.value or ""
+            confirm_value = confirm_pw.value or ""
+            if len(new_value) < 8:
                 ui.notify("New password must be at least 8 characters", type="warning")
                 return
-            if new_pw.value != confirm_pw.value:
+            if new_value != confirm_value:
                 ui.notify("Passwords do not match", type="warning")
                 return
 
@@ -65,8 +69,8 @@ async def change_password_page():
                 try:
                     await get_admin_account_use_case().change_password(
                         admin_id=session.user_id,
-                        current_password=current_pw.value,
-                        new_password=new_pw.value,
+                        current_password=current_value,
+                        new_password=new_value,
                     )
                 except AdminInvalidCredentialsException as exc:
                     await get_audit_logger().log(

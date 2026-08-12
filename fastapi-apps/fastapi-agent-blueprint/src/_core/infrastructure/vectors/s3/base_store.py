@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from collections.abc import Sequence
-from typing import Any, Generic, TypeVar
+from collections.abc import Mapping, Sequence
+from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
 from pydantic import BaseModel
 
@@ -11,12 +11,41 @@ from src._core.domain.value_objects.vector_search_result import VectorSearchResu
 from src._core.infrastructure.vectors.s3.client import S3VectorClient
 from src._core.infrastructure.vectors.vector_model import VectorModel
 
+if TYPE_CHECKING:
+    from types_aiobotocore_s3vectors.type_defs import PutInputVectorTypeDef
+
 ReturnDTO = TypeVar("ReturnDTO", bound=BaseModel)
 
 # S3 Vectors API batch limits
 _PUT_BATCH_SIZE = 500
 _GET_BATCH_SIZE = 100
 _DELETE_BATCH_SIZE = 500
+
+
+def _to_put_input(model: VectorModel) -> PutInputVectorTypeDef:
+    """Bridge the shared serialisation format onto the AWS input TypedDict.
+
+    ``VectorModel.to_s3vector()`` stays a plain dict on purpose: the in-memory
+    backend — the quickstart default, which must work without the ``[aws]``
+    extra — reuses it as its own record format and reads ``raw["metadata"]``
+    directly, which a ``NotRequired`` TypedDict key would reject. So the AWS
+    contract is applied here, at the one place that actually calls the API.
+
+    Re-stating the keys is not busywork: this literal is checked against
+    ``PutInputVectorTypeDef``, so a renamed or missing key fails the type check
+    instead of reaching S3 Vectors as a rejected request. ``float32`` is read off
+    the model rather than the serialised dict so the vector itself is checked too
+    (``list[float]`` against ``Sequence[float]``) instead of arriving as ``Any``.
+
+    The one thing this cannot catch: if ``VectorData`` gains a second field, that
+    field is silently dropped here until it is added below.
+    """
+    raw = model.to_s3vector()
+    return {
+        "key": raw["key"],
+        "data": {"float32": model.data.float32},
+        "metadata": raw["metadata"],
+    }
 
 
 class BaseS3VectorStore(Generic[ReturnDTO], ABC):
@@ -66,7 +95,7 @@ class BaseS3VectorStore(Generic[ReturnDTO], ABC):
         total = 0
         for i in range(0, len(entities), _PUT_BATCH_SIZE):
             batch = entities[i : i + _PUT_BATCH_SIZE]
-            vectors = [self._to_model(e).to_s3vector() for e in batch]
+            vectors = [_to_put_input(self._to_model(e)) for e in batch]
 
             async with self.s3vector_client.client() as client:
                 await client.put_vectors(
@@ -146,7 +175,11 @@ class BaseS3VectorStore(Generic[ReturnDTO], ABC):
     # Private helpers
     # ------------------------------------------------------------------
 
-    def _deserialize_result(self, raw: dict[str, Any]) -> ReturnDTO:
+    # ``Mapping``, not ``dict``: the response items are aiobotocore TypedDicts
+    # (``QueryOutputVectorTypeDef`` / ``GetOutputVectorTypeDef``), and a TypedDict
+    # is not assignable to the mutable, invariant ``dict[str, Any]``. This method
+    # only reads, so the read-only protocol is also the accurate contract.
+    def _deserialize_result(self, raw: Mapping[str, Any]) -> ReturnDTO:
         """Convert S3 Vectors response item to ReturnDTO.
 
         Default: validates metadata dict into ReturnDTO.

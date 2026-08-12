@@ -28,7 +28,7 @@ try:
     _GATE_OK = True
 except Exception as exc:  # noqa: BLE001 — HC-5.5 fail-open
     debug_log("codex shared changed-files import failed", exc)
-    _impl = None  # type: ignore[assignment]
+    _impl = None
     _GATE_OK = False
 
 

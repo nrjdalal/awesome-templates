@@ -65,37 +65,37 @@ except Exception:  # noqa: BLE001 — HC-5.5 fail-open
     EXPLORATION_TOKENS = frozenset()
     GOVERNOR_REMINDER_WITH_PR = ""
     GOVERNOR_REMINDER_NO_PR = ""
-    MarkerLifecycle = None  # type: ignore[assignment,misc]
-    _shared_read_latest_token = None  # type: ignore[assignment]
-    _shared_consume_phase2_markers = None  # type: ignore[assignment]
-    _shared_changed_files = None  # type: ignore[assignment]
-    _shared_governor_subset = None  # type: ignore[assignment]
-    _shared_is_sync_cosmetic_only = None  # type: ignore[assignment]
+    MarkerLifecycle = None
+    # The sibling names above all carry the sentinel; this one did not, so on the
+    # failure path it was simply unbound and its call site below relied on
+    # `contextlib.suppress` catching the NameError. Same sentinel, explicit guard.
+    cleanup_stale_verify_logs = None
+    _shared_read_latest_token = None
+    _shared_consume_phase2_markers = None
+    _shared_changed_files = None
+    _shared_governor_subset = None
+    _shared_is_sync_cosmetic_only = None
     _SHARED_OK = False
 
-    def _within_24h(ts: str) -> bool:  # type: ignore[no-redef]
+    def _within_24h(ts: str) -> bool:
         return True
 
-    def parse_trigger_globs(md_path: Path = GOVERNOR_PATHS_MD) -> list[str]:  # type: ignore[no-redef]
+    def parse_trigger_globs(md_path: Path = GOVERNOR_PATHS_MD) -> list[str]:
         return []
 
-    def _matches_glob(path: str, glob: str) -> bool:  # type: ignore[no-redef]
+    def _matches_glob(path: str, glob: str) -> bool:
         return False
 
-    def is_log_only_backfill(changed: list[str]) -> bool:  # type: ignore[no-redef]
+    def is_log_only_backfill(changed: list[str]) -> bool:
         return False
 
-    def is_governor_changing(  # type: ignore[no-redef]
-        changed: list[str], globs: list[str]
-    ) -> bool:
+    def is_governor_changing(changed: list[str], globs: list[str]) -> bool:
         return False
 
-    def match_log_entry(  # type: ignore[no-redef, misc]
-        changed: list[str], current_pr: int | None
-    ) -> str:
+    def match_log_entry(changed: list[str], current_pr: int | None) -> str:
         return "missing"
 
-    def pr_number_from_branch() -> int | None:  # type: ignore[no-redef]
+    def pr_number_from_branch() -> int | None:
         return None
 
 
@@ -107,7 +107,7 @@ try:
     )
 except Exception:  # noqa: BLE001 — HC-5.5 fail-open
 
-    def _resolve_locale_string(key: str) -> str:  # type: ignore[no-redef]
+    def _resolve_locale_string(key: str) -> str:
         return ""
 
 
@@ -227,7 +227,7 @@ def main() -> int:
             # harnesses clean up here too. Never touches this session's file —
             # and when the session cannot be identified, nothing at all.
             _session = _verify_session_id()
-            if _session:
+            if _session and cleanup_stale_verify_logs is not None:
                 cleanup_stale_verify_logs(STATE_DIR, _session)
         if reminder:
             print(reminder)

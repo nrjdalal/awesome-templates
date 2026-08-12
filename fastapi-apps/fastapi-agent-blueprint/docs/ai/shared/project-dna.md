@@ -577,20 +577,43 @@ class {Name}Container(containers.DeclarativeContainer):
 
 ### Pre-commit (Manual Stage)
 
-- mypy (--ignore-missing-imports, --check-untyped-defs). `stages: [manual]`, so
-  `pre-commit run --all-files` — including the CI `architecture` job — does **not** run it.
-  Until #333 that meant nothing in CI type-checked anything; the blocking check now lives in
-  the `typecheck` job below rather than here.
+- Empty since #375. It held one hook, mypy, which was retired rather than repaired: two
+  harness copies of `completion_gate.py` map to one top-level module name, so mypy aborted
+  during resolution — `errors prevented further checking` — and inspected no source under
+  `src/` at all. Because `stages: [manual]` meant nothing ever ran it, one error and zero
+  findings read as coverage for two releases. Even repaired it would have been shallow: its
+  `additional_dependencies` were `types-requests` and `pydantic` only, so under
+  `--ignore-missing-imports` every fastapi / sqlalchemy / nicegui type resolved to `Any`.
+  pyright is now the single type-check authority (below).
 
 ### CI Type Check and Dependency Audit (#333)
 
-- **pyright — blocking, scoped.** `[tool.pyright] include` in `pyproject.toml` is an
-  allow-list of packages that pass today (`_core/domain`, `_core/application`,
-  `_core/exceptions`, `_core/common`, `user`), not all of `src/`, which reports 58 errors
-  concentrated in `infrastructure/` and `interface/admin/`. Widen the list as packages are
-  cleaned; never widen it by relaxing the rules. `tests/unit/tools/test_pyright_scope.py`
-  fails if an include path stops existing, because pyright silently checks less rather
-  than erroring.
+- **pyright — blocking, and the only type checker.** `[tool.pyright] include` covers `src`,
+  `tools`, `scripts`, `examples`, `.agents`, the three harness hook directories and the three
+  root runners — 684 files at 0 errors: a new file under any of them is checked from the
+  moment it is written. It began (#333) as an allow-list of the packages that passed, widened
+  package by package through #381, and reached 0 errors across `src` from a starting 91. Two lessons from that run are worth keeping. First, an allow-list is
+  itself a drift generator — this bullet still named five packages after four PRs had
+  added six more, and nobody noticed, because a stale allow-list fails nothing. Second,
+  about half the findings were real defects (possibly-unbound locals, a wrong return type,
+  `hasattr` where it cannot narrow, an unguarded optional key in an S3 listing) and the
+  other half was AWS typing nobody had installed: without `types-aioboto3` every
+  `async with … .client()` resolved to an untypeable placeholder, and the four s3vectors
+  calls had never been checked at all. Never widen coverage by relaxing the rules.
+  `tests/unit/tools/test_pyright_scope.py` fails if the include list stops covering a
+  package under `src/` — pyright checks less rather than erroring — and pins where
+  suppression comments are allowed to live, so `# pyright: ignore` cannot become the way
+  the tree stays green. `reportUnnecessaryTypeIgnoreComment` is on, so a suppression that
+  stops being needed is itself an error; enabling it is what retiring mypy bought, since
+  two of the three it flagged were mypy-only comments pyright never needed.
+- **The scope trap worth knowing (#375).** pyright's default `exclude` contains `**/.*`, so
+  a dot-directory named in `include` is skipped in silence. Measured: `.claude/hooks`
+  reported `0 errors` while analysing **0 of its 7 files**. `exclude` is therefore set
+  explicitly, and the scope test pins that pairing — "0 errors" and "nothing checked" print
+  identically, which is the same illusion the mypy hook sustained. The three harness hook
+  directories joined in #387 — `extraPaths = [".agents/shared"]` resolved 70 of their 177
+  findings outright, 88 were `# type: ignore` comments orphaned by retiring mypy, and 19
+  were real. `tests/` (152 errors) stays out by decision, as its own piece of work.
 - **pip-audit — advisory** (`continue-on-error`), writing to the job summary. A newly
   published CVE would otherwise redden a PR that changed nothing, which the §0
   advisory-first direction rules out. It installs the shipped extras before scanning so
@@ -643,7 +666,7 @@ class {Name}Container(containers.DeclarativeContainer):
 | WebSocket | Not implemented | |
 | Error Notification (Slack/Discord webhooks) | Active | Optional infra (#17): `NOTIFICATION_PROVIDER` + `SLACK_WEBHOOK_URL`/`DISCORD_WEBHOOK_URL` enable it via `providers.Selector` → `NoopNotificationClient` fallback (ADR 042 pattern; `BaseNotificationProtocol` in `_core/domain/protocols/`). `ErrorNotifier` gates by an alerting floor of `NOTIFICATION_SEVERITY_THRESHOLD` (default 500) + a per-process `NOTIFICATION_COOLDOWN_SECONDS` keyed on `error_code`; fire-and-forget dispatch from the global exception handlers via the shared `HttpClient` (webhook response bodies never JSON-parsed; send failures logged `exc_type`-only so the secret webhook URL never reaches logs). **Dispatch surface (#310)**: two `maybe_dispatch` call sites, reached from four places. `_core/exceptions/exception_handlers.py` has one `maybe_dispatch` inside the `_dispatch_error_notification` helper, invoked from three handlers (`custom_exception_handler`, and `generic_exception_handler` twice — mapped provider error and unhandled exception); `TaskFailureNotificationMiddleware` (`_core/infrastructure/notification/taskiq_middleware.py`) calls `maybe_dispatch` directly for Taskiq task failures. Grepping `maybe_dispatch` alone finds 2, not 4 — grep `_dispatch_error_notification\(` for the HTTP fan-out. The worker path synthesises severity (`BaseCustomException` keeps its `status_code`, else 500), scopes the cooldown key to `{task_name}:{error_code}`, and alerts once per incident on the terminal failure (permanent errors immediately; retryable ones after the last attempt). Registration order in `_install_middleware` is load-bearing — the notifier must run its `on_error` before the retry middleware increments `_retries`. `validation_exception_handler` / `http_exception_handler` do not dispatch at all (pinned by negative tests), and NiceGUI admin exceptions stay log-only as a stated non-goal (the operator already sees a toast or `/admin/error`). Operator runbook: [`docs/operations/error-notifications.md`](../../operations/error-notifications.md). **Severity channel routing (#286, PR #313)**: `NOTIFICATION_WARNING_THRESHOLD` is the sole switch — set below `NOTIFICATION_SEVERITY_THRESHOLD` it lowers the alerting floor to `min(severity, warning)` (`ErrorNotifier._effective_min_threshold`) and `NotificationRouter.resolve()` picks the tier client; `resolve()` returning `None` means do-not-dispatch. The cooldown key becomes `{tier}:{error_code}`, composing with the worker prefix to `{tier}:{task_name}:{error_code}` — a bare key would let a warning-tier 4xx mute a critical-tier 5xx, reachable without any subclass because `BaseCustomException` takes `status_code` and `error_code` per instance. `CoreContainer` now holds four notification Selectors. The three client Selectors (`notification_client`, `notification_critical_client`, `notification_warning_client`) share **one** `_noop_notification_client` Singleton on their `disabled` branch, so the disabled path still logs `notification_client_disabled` exactly once regardless of tier count; `notification_router` instead declares `providers.Object(None)` on its `disabled` branch, so it resolves to `None` (pinned by `test_noop_notification_client_disabled_warning_emitted_once`). Unset, the router Selector's `disabled` branch is `providers.Object(None)`, so `notification_router()` resolves to `None` and the #17 single-target path is what runs. Three `[Notification/Routing]` boot validations reject an overlapping warning threshold, a per-tier URL without a provider, and a per-tier URL without the threshold (#315, PR #319 — the last one previously booted and silently ignored both URLs). |
 
-> Extras note (#104, ADR 042): `nicegui` belongs to the `admin` extra; `boto3` / `aioboto3` / `types-aiobotocore-*` belong to the `aws` extra. Deployments install only what they need — `uv sync --extra admin --extra aws`; `make setup` installs both by default. When an extra is missing, the corresponding Selector branch returns `None` / `StubEmbedder` / `TestModel` for graceful degradation.
+> Extras note (#104, ADR 042): `nicegui` belongs to the `admin` extra; `boto3` / `aioboto3` / `types-aioboto3` / `types-aiobotocore-*` belong to the `aws` extra. Deployments install only what they need — `uv sync --extra admin --extra aws`; `make setup` installs both by default. When an extra is missing, the corresponding Selector branch returns `None` / `StubEmbedder` / `TestModel` for graceful degradation.
 
 ## §9. Router Pattern
 

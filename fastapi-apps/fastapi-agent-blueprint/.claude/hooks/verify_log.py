@@ -41,7 +41,12 @@ try:
 except Exception:  # noqa: BLE001 — HC-5.5 fail-open
     _SHARED_OK = False
 
-    def append_verify_log(*_args, **_kwargs):  # type: ignore[misc]
+    # Same signature as the real one, not `*args, **kwargs`: a fallback whose
+    # shape differs from what it stands in for cannot be checked against its call
+    # sites, which is the one thing worth knowing about a fail-open stub.
+    def append_verify_log(
+        command: str, state_dir: Path, session_id: str
+    ) -> Path | None:
         return None
 
 

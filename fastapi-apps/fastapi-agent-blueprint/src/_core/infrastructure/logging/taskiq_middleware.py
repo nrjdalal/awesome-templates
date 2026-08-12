@@ -185,4 +185,11 @@ class PermanentAwareSmartRetryMiddleware(SmartRetryMiddleware):
         """
         if delay is not None and isinstance(self.broker, InMemoryBroker):
             await asyncio.sleep(delay)
-        await super().on_send(kicker, message, delay)
+        # `delay` is deliberately wider than the parent's `float`: taskiq has no
+        # `on_send` on its base middleware, so nothing fixes this signature, and
+        # `test_no_delay_means_no_sleep` pins that a delay-less send neither
+        # sleeps nor loses the re-kick. Forwarding None is unreachable in
+        # practice — `SmartRetryMiddleware` has exactly one call site and it
+        # always passes a computed float — so the parent's `timedelta(seconds=…)`
+        # branch never sees it.
+        await super().on_send(kicker, message, delay)  # pyright: ignore[reportArgumentType]

@@ -45,8 +45,8 @@ try:
     _SHARED_OK = True
 except Exception:  # noqa: BLE001 — HC-5.5 fail-open (ADR054-G5)
     PLAN_EXECUTE_REMINDER = ""
-    default_ledger_path = None  # type: ignore[assignment]
-    should_block_plan_execute_edit = None  # type: ignore[assignment]
+    default_ledger_path = None
+    should_block_plan_execute_edit = None
     _SHARED_OK = False
 
 # AGENT_LOCALE resolver (issue #133) — separate try block so a locale.py
@@ -57,7 +57,7 @@ try:
     )
 except Exception:  # noqa: BLE001 — HC-5.5 fail-open
 
-    def _resolve_locale_string(key: str) -> str:  # type: ignore[no-redef]
+    def _resolve_locale_string(key: str) -> str:
         return ""
 
 
@@ -67,7 +67,16 @@ _BLOCK = 2
 
 
 def main() -> int:
-    if not _SHARED_OK:
+    # The names are checked individually, not just via the `_OK` flag: the flag
+    # and the sentinels are set in the same `except` branch, but nothing links them
+    # for a reader or a type checker — the guard reads as "the import group
+    # succeeded" while the call sites depend on "these three names are not None".
+    # Same form as the shared-import guards in .claude/hooks/completion_gate.py.
+    if (
+        not _SHARED_OK
+        or default_ledger_path is None
+        or should_block_plan_execute_edit is None
+    ):
         return _ALLOW
     try:
         raw = sys.stdin.read()

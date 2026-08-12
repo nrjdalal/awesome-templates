@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass, field
+from datetime import date, datetime
 from typing import TYPE_CHECKING, Any
 
 from nicegui import ui
@@ -268,8 +269,13 @@ class BaseAdminPage:
     def render_pagination(self, pagination: PaginationInfo, search: str) -> None:
         """Hook: render prev/next pagination (delegates to the pagination builder)."""
 
-        def _build_page_url(target_page: int) -> str:
-            params = f"page={target_page}"
+        def _build_page_url(target_page: int | None) -> str:
+            # `previous_page` / `next_page` are None at the ends of the range.
+            # `c.pagination` disables the corresponding button there, so this
+            # branch is unreachable in practice — falling back to the current
+            # page keeps it harmless rather than building `page=None` if that
+            # ever changes.
+            params = f"page={target_page or pagination.current_page}"
             if search:
                 params += f"&search={search}"
             return f"/admin/{self.domain_name}?{params}"
@@ -303,7 +309,10 @@ class BaseAdminPage:
                     display_value = "****" if value else EMPTY_DISPLAY
                 elif is_empty:
                     display_value = EMPTY_DISPLAY
-                elif hasattr(value, "isoformat"):
+                elif isinstance(value, (datetime, date)):
+                    # `isinstance`, not `hasattr("isoformat")`: a type checker
+                    # cannot narrow through hasattr, and these are the only two
+                    # types the branch was ever meant to catch.
                     display_value = value.isoformat()
                 else:
                     display_value = str(value)

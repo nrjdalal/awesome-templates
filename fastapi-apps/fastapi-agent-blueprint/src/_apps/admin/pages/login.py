@@ -66,8 +66,10 @@ def login_page(request: Request):
             async with button_loading(login_btn):
                 try:
                     session = await get_admin_auth_provider().authenticate(
-                        username.value,
-                        password.value,
+                        # `str | None` from the widgets; an empty string reaches
+                        # the same invalid-credentials path as a wrong one.
+                        username.value or "",
+                        password.value or "",
                         ip_address=client_ip,
                     )
                 except AdminSetupRequiredException:

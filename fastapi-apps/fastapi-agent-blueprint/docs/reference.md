@@ -69,7 +69,7 @@ python run_server_local.py --env local
 | Extra | What it installs | Enables |
 |---|---|---|
 | `admin` | `nicegui` | The NiceGUI admin dashboard at `/admin`. Drop for API-only deployments; the server still boots, `/api/*` still serves, just no dashboard |
-| `aws` | `boto3`, `aioboto3`, `types-aiobotocore-*` | Object storage (S3/MinIO), DynamoDB, S3 Vectors. Drop for non-AWS deployments — the 4 AWS-backed client modules still import, CoreContainer Selectors resolve to `None` when the matching `*_TYPE` / `*_ACCESS_KEY` env vars are unset |
+| `aws` | `boto3`, `aioboto3`, `types-aioboto3`, `types-aiobotocore-*` | Object storage (S3/MinIO), DynamoDB, S3 Vectors. Drop for non-AWS deployments — the 4 AWS-backed client modules still import, CoreContainer Selectors resolve to `None` when the matching `*_TYPE` / `*_ACCESS_KEY` env vars are unset |
 | `sqs` | `taskiq-aws` | `BROKER_TYPE=sqs` broker backend |
 | `rabbitmq` | `taskiq-aio-pika` | `BROKER_TYPE=rabbitmq` broker backend |
 | `pydantic-ai` | `pydantic-ai-slim` + `tiktoken` | `EMBEDDING_PROVIDER` / `LLM_PROVIDER` and any agent-based domain |

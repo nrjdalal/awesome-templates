@@ -84,7 +84,11 @@ def _admin_page_permission_keys() -> list[str]:
     """
     from src._core.infrastructure.discovery import discover_domains
 
-    keys = set(_FIXED_PERMISSION_KEYS)
+    # Annotated: `_FIXED_PERMISSION_KEYS` is an ALL_CAPS module constant, so its
+    # inferred type is a tuple of *literals* and the set would be
+    # `set[Literal["accounts", "audit_log"]]` — narrow enough to reject every
+    # discovered domain key added below.
+    keys: set[str] = set(_FIXED_PERMISSION_KEYS)
     for domain in discover_domains():
         config = (
             _REPO_ROOT
@@ -104,9 +108,13 @@ async def _seed(username: str, secret: str, email: str, full_name: str) -> int:
     from src._apps.server.di.container import create_server_container
     from src.admin_identity.domain.dtos.admin_identity_dto import CreateAdminAccountDTO
 
+    # The three suppressions below have the same cause as the ones in
+    # `_apps/admin/bootstrap.py`: dependency-injector resolves sub-container and
+    # provider attributes dynamically, and its stubs can only type that access as
+    # Provider[Any].
     container = create_server_container()
-    service = container.admin_identity_container.admin_identity_service()
-    repository = container.admin_identity_container.admin_repository()
+    service = container.admin_identity_container.admin_identity_service()  # pyright: ignore[reportAttributeAccessIssue]
+    repository = container.admin_identity_container.admin_repository()  # pyright: ignore[reportAttributeAccessIssue]
 
     try:
         existing = await repository.select_data_by_username(username)
@@ -141,7 +149,7 @@ async def _seed(username: str, secret: str, email: str, full_name: str) -> int:
         # alive after the coroutine returns. A long-lived server exits by
         # process teardown; a one-shot script would just hang. Observed:
         # seeding printed its success line and never returned.
-        await container.core_container.database().dispose()
+        await container.core_container.database().dispose()  # pyright: ignore[reportAttributeAccessIssue]
 
 
 def main() -> int:

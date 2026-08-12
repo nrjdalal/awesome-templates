@@ -269,7 +269,7 @@ def _stored_dark_preference() -> bool | None:
 
 
 def _app_username() -> str | None:
-    return app.storage.user.get("username")  # type: ignore[return-value]
+    return app.storage.user.get("username")
 
 
 async def _handle_logout() -> None:

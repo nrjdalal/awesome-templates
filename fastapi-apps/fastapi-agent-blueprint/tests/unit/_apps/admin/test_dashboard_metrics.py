@@ -14,7 +14,9 @@ from __future__ import annotations
 from datetime import date, datetime
 
 from src._apps.admin import dashboard_metrics as dm
+from src._apps.admin.operational_status import InfraState
 from src._core.domain.value_objects.daily_count import DailyCount
+from src._core.infrastructure.admin.theme import AdminClasses
 
 
 class _FakeService:
@@ -311,3 +313,52 @@ class TestInfrastructurePanelGate:
         )
 
         assert AdminPermissionRegistry().is_valid_key(_INFRA_PERMISSION)
+
+
+class TestEveryInfraStateHasADecidedAppearance:
+    """A new `InfraState` must not inherit a hue by omission (#380).
+
+    The dashboard's infrastructure panel stopped being an AG Grid — the list-page
+    builder brought `selection="single"`, which put a row-selection radio in every
+    row of a panel with no row action, and spread one-word values across 488px
+    columns. It is now a status list whose leading dot carries the state, mapped
+    per enum member.
+
+    `DISABLED` is deliberately absent from that map: the dot's base colour is
+    already the muted token, and "not configured" is not an outcome worth a hue.
+    That is a decision, so it is asserted rather than left to look like an
+    oversight — and a member added later fails here until someone decides.
+    """
+
+    def test_the_map_covers_exactly_the_states_with_a_hue(self):
+        from src._apps.admin.pages.dashboard import _STATE_DOT_CLASS
+
+        assert set(_STATE_DOT_CLASS) == {InfraState.ACTIVE, InfraState.STUB}
+
+    def test_disabled_falls_through_to_the_muted_default(self):
+        from src._apps.admin.pages.dashboard import _STATE_DOT_CLASS
+
+        assert _STATE_DOT_CLASS.get(InfraState.DISABLED, "") == ""
+
+    def test_every_enum_member_is_accounted_for(self):
+        """Mapped with a hue, or explicitly listed as intentionally unmapped."""
+        from src._apps.admin.pages.dashboard import _STATE_DOT_CLASS
+
+        deliberately_unmapped = {InfraState.DISABLED}
+        unaccounted = set(InfraState) - set(_STATE_DOT_CLASS) - deliberately_unmapped
+        assert not unaccounted, (
+            f"{sorted(s.value for s in unaccounted)} would render with the muted "
+            "default by accident. Give each a hue in _STATE_DOT_CLASS, or add it "
+            "to this test's deliberately_unmapped set with a reason."
+        )
+
+    def test_the_hue_classes_exist_in_the_emitted_css(self):
+        """A class name typo would silently render the muted default."""
+        from src._apps.admin.pages.dashboard import _STATE_DOT_CLASS
+        from src._core.infrastructure.admin.theme import build_admin_css
+
+        css = build_admin_css()
+        for state, cls in _STATE_DOT_CLASS.items():
+            assert f".{AdminClasses.STATUS_DOT}.{cls}" in css, (
+                f"{state.value} maps to .{cls}, which theme.py does not emit"
+            )

@@ -2,7 +2,9 @@ import argparse
 
 from dotenv import load_dotenv
 from taskiq.cli.worker.args import WorkerArgs
-from taskiq.cli.worker.cmd import run_worker
+
+# The defining module, not the `cmd` shim — see run_scheduler_local.py.
+from taskiq.cli.worker.run import run_worker
 
 from src._apps.worker.guards import InMemoryWorkerError, ensure_worker_capable_broker
 
@@ -20,7 +22,10 @@ def main():
         reload=True,
     )
 
-    run_worker(worker_args)
+    # Propagated, not discarded: `run_worker` returns a status code and taskiq's
+    # own `WorkerCMD.exec` returns it, so swallowing it made this runner exit 0
+    # on a failed worker start. `SystemExit(None)` is still a 0 exit.
+    raise SystemExit(run_worker(worker_args))
 
 
 if __name__ == "__main__":
