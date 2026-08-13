@@ -26,6 +26,8 @@ from __future__ import annotations
 
 import base64
 import codecs
+from collections.abc import Mapping, Sequence
+from typing import Any
 
 import pytest
 from structlog.testing import capture_logs
@@ -67,11 +69,15 @@ def _classifier() -> PydanticAIClassifier:
     return PydanticAIClassifier(llm_model=TestModel(), guardrails_enabled=True)
 
 
-def _guardrail_events(logs: list[dict]) -> list[dict]:
+def _guardrail_events(
+    logs: Sequence[Mapping[str, Any]],
+) -> list[Mapping[str, Any]]:
     return [e for e in logs if e.get("event") == "guardrail_triggered"]
 
 
-def _assert_no_raw_payload_in_logs(logs: list[dict], payload: str) -> None:
+def _assert_no_raw_payload_in_logs(
+    logs: Sequence[Mapping[str, Any]], payload: str
+) -> None:
     """The defining safety property: the raw attacker string never leaks."""
     blob = repr(logs)
     assert payload not in blob

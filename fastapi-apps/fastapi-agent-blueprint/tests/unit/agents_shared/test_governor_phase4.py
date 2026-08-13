@@ -24,6 +24,7 @@ from governor import (
     render_reminder,
     write_marker,
 )
+from governor.completion_gate import GateStatus
 
 
 # ---------------------------------------------------------------------------
@@ -163,7 +164,7 @@ def test_evaluate_gate_unknown_pr(tmp_path) -> None:
         "unknown",
     ],
 )
-def test_render_reminder_silent_for_silent_or_match(status: str) -> None:
+def test_render_reminder_silent_for_silent_or_match(status: GateStatus) -> None:
     governor_changing = status in ("match", "unknown")
     result = GateResult(status, governor_changing, 128)
     assert render_reminder(result) is None
@@ -172,6 +173,7 @@ def test_render_reminder_silent_for_silent_or_match(status: str) -> None:
 def test_render_reminder_with_pr_format() -> None:
     result = GateResult("missing", True, 128)
     text = render_reminder(result)
+    assert text is not None
     assert text == GOVERNOR_REMINDER_WITH_PR.format(pr=128)
     assert "PR #128" in text
 
@@ -179,6 +181,7 @@ def test_render_reminder_with_pr_format() -> None:
 def test_render_reminder_no_pr_format() -> None:
     result = GateResult("missing", True, None)
     text = render_reminder(result)
+    assert text is not None
     assert text == GOVERNOR_REMINDER_NO_PR
     assert "PR number unknown" in text
 

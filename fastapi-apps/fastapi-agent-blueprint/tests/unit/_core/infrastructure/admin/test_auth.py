@@ -39,8 +39,12 @@ class FakeUseCase:
             raise self.exc
         return self.session
 
-    async def get_admin_session(self, user_id: int) -> AdminSessionDTO:
-        self.session_user_ids.append(user_id)
+    # `admin_id`, not `user_id`: protocol conformance compares parameter names,
+    # and the real use case renamed this when the admin realm split from the
+    # customer one (#218). The double kept the old name until tests entered the
+    # type gate.
+    async def get_admin_session(self, admin_id: int) -> AdminSessionDTO:
+        self.session_user_ids.append(admin_id)
         if self.exc:
             raise self.exc
         return self.session

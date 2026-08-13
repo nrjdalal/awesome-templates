@@ -142,3 +142,55 @@ def test_sensitive_fields_masked():
 def test_searchable_fields_configured():
     assert len({name}_admin_page.searchable_fields) > 0
 ```
+
+## Harness Hook Tests — `tests/unit/agents_shared/`
+
+**Load a harness hook by path, never by basename.** Eight hook filenames exist in
+more than one harness directory — `verify_first.py` and `completion_gate.py` in all
+three — so `import verify_first` names three files and `sys.modules` decides which
+one arrives:
+
+```python
+# wrong: which copy this is depends on what ran first
+sys.path.insert(0, str(REPO_ROOT / ".claude" / "hooks"))
+import verify_first as vf
+
+# right: the alias says which harness, and the path settles it
+spec = importlib.util.spec_from_file_location("claude_verify_first", path)
+assert spec is not None and spec.loader is not None
+module = importlib.util.module_from_spec(spec)
+sys.modules["claude_verify_first"] = module
+spec.loader.exec_module(module)
+```
+
+Three properties make this the rule rather than a preference:
+
+- **The pollution cannot be fixed on the test side.** The hook files import their own
+  siblings by bare name (`.codex/hooks/completion_gate.py` does `import _shared` and
+  `import verify_first`), which is correct for a standalone hook process where one
+  harness directory is on `sys.path`. It only collides inside a shared pytest
+  process, so tests have to be the ones that stop relying on the bare key.
+- **A `sys.modules.pop(...)` + `sys.path.insert(0, …)` pair does work** — that is
+  measured, and it is why nothing was actually broken when #401 was filed — but it
+  is two halves that both have to be remembered. The next test to omit one passes
+  while exercising another harness.
+- **Subprocess tests are immune** and need none of this: a subprocess gets its own
+  `sys.modules`. Several tests in that directory correctly build a script string and
+  run it, and the AST guard below does not flag those.
+
+Enforced by `tests/unit/agents_shared/test_hook_module_resolution.py`: an AST check
+that no test in the directory imports a colliding basename, plus a check that a
+path-based load beats a poisoned bare key. The second one calls the *real* loader
+rather than reproducing it — a guard that re-implements what it guards would pass
+while the real loader regressed to a dynamic `importlib.import_module(name)`, which
+no AST rule can see.
+
+If a double must temporarily occupy a bare name (the Codex `completion_gate` does
+`from verify_first import …` at import time, so its dependency has to be installed
+under the canonical name first), save the previous binding and restore it in a
+`finally` — see `test_locale.py::_load_codex_completion_gate`.
+
+Background: [#401](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/401).
+The issue was filed claiming tests were resolving the wrong copy; they were not, and
+the correction is worth as much as the rule — **the value left in `sys.modules` at
+the end of a run is not the value an earlier test used.**

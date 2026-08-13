@@ -8,6 +8,8 @@ membership — never on rendered HTML.
 
 from __future__ import annotations
 
+from typing import Any
+
 import pytest
 
 pytest.importorskip("nicegui")
@@ -112,7 +114,12 @@ def test_data_grid_does_not_use_ag_grid_dom_layout_auto_height():
     paints over the following section. Reaching for the option again is the
     natural instinct; this test is the tripwire.
     """
-    for kwargs in ({}, {"compact": True}, {"auto_height": True}):
+    variants: tuple[dict[str, Any], ...] = (
+        {},
+        {"compact": True},
+        {"auto_height": True},
+    )
+    for kwargs in variants:
         grid = c.data_grid([], [], **kwargs)
         assert "domLayout" not in grid._props["options"]
 

@@ -24,6 +24,8 @@ import importlib
 
 import pytest
 
+from src._core.exceptions.base_exception import BaseCustomException
+
 _DELETED_MODULES = [
     "src._core.infrastructure.taskiq.manager",
     "src._core.infrastructure.http.base_http_gateway",
@@ -83,6 +85,10 @@ class TestKeptOnPurpose:
         with pytest.raises(Exception) as exc:  # noqa: B017 - identity checked below
             raise_if_errors(errors, status_code=409)
 
+        # `Exception` on purpose — the point is that the raised type is not
+        # assumed. Narrowed here so reading `error_code` is checked rather than
+        # taken on faith.
+        assert isinstance(exc.value, BaseCustomException)
         assert exc.value.error_code == BUSINESS_CONFLICT
 
     def test_the_422_default_is_unchanged(self) -> None:
@@ -96,6 +102,7 @@ class TestKeptOnPurpose:
         with pytest.raises(Exception) as exc:  # noqa: B017 - identity checked below
             raise_if_errors(errors)
 
+        assert isinstance(exc.value, BaseCustomException)
         assert exc.value.error_code == BUSINESS_VALIDATION_ERROR
 
     def test_build_stub_llm_model_is_still_wired(self) -> None:
@@ -137,4 +144,4 @@ class TestOtelGuardCollapsedIntoOneHome:
             otel_enabled = False
 
         # Must not raise and must not import otel_setup.
-        assert maybe_configure_otel(_Settings(), service_name="probe") is None
+        assert maybe_configure_otel(_Settings(), service_name="probe") is None  # pyright: ignore[reportArgumentType]

@@ -13,7 +13,7 @@ def create_app():
         # tests/unit/_apps/test_openapi_metadata.py. The package is not
         # installed as a distribution (no [build-system]), so
         # importlib.metadata cannot resolve it at runtime.
-        version="0.11.0",
+        version="0.11.1",
         root_path="/api",
         docs_url=settings.docs_url,
         redoc_url=settings.redoc_url,

@@ -24,7 +24,7 @@ x-app: &app
   build:
     context: .
     dockerfile: _docker/docker.Dockerfile
-  image: fastapi-agent-blueprint:0.11.0
+  image: fastapi-agent-blueprint:0.11.1
   env_file:
     # Order is the whole point. Entries later in this list override earlier
     # ones, so `_env/prod.env` genuinely wins over the reference defaults. An

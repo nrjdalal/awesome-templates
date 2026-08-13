@@ -26,6 +26,12 @@ Coverage layers (verified through 8 rounds of Codex cross-validation, v8):
 10. Shell subprocess in temp git repo — Bash hook emits ko/en correctly.
 """
 
+# The harness hook modules below are imported by *basename* after a `sys.path`
+# insertion a few lines up, and the same basenames exist in `.claude/hooks`,
+# `.codex/hooks` and `.antigravity/hooks`. No static path can resolve them
+# unambiguously — which is the same collision that made the retired mypy hook
+# abort (#375) — so each import carries a scoped suppression rather than the
+# config pretending one directory is the answer.
 from __future__ import annotations
 
 import ast
@@ -237,7 +243,7 @@ def test_locale_py_passes_language_policy_checker() -> None:
     """find_violations() returns [] for the locale data file via
     LOCALE_DATA_FILES file-wide skip."""
     sys.path.insert(0, str(REPO_ROOT / "tools"))
-    import check_language_policy as clp  # noqa: PLC0415
+    import check_language_policy as clp  # noqa: PLC0415  # pyright: ignore[reportMissingImports]
 
     locale_path = SHARED_DIR / "governor" / "locale.py"
     assert clp.find_violations(locale_path, repo_root=REPO_ROOT) == []

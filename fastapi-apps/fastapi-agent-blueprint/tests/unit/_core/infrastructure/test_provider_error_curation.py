@@ -22,11 +22,21 @@ message a client receives:
   URL *is* the credential.
 """
 
+# The client parameters below are annotated with their concrete wrapper classes
+# on purpose: `ObjectStorage`, `BaseS3VectorStore` and the notification adapters
+# reach through `client()` / `session` to a *typed* boto or aiohttp object, and
+# that annotation is what type-checks the provider calls inside them (#386). A
+# protocol loose enough to admit a double would give that up, so the doubles are
+# accepted here instead, at the one line where the substitution happens.
 from __future__ import annotations
+
+from collections.abc import Mapping, Sequence
+from typing import Any
 
 import aiohttp
 import pytest
 from botocore.exceptions import ClientError
+from multidict import CIMultiDict, CIMultiDictProxy
 from yarl import URL
 
 from src._core.exceptions.base_exception import BaseCustomException
@@ -64,7 +74,7 @@ class TestObjectStorageDoesNotLeakProviderText:
             def client(self):
                 raise _access_denied()
 
-        return ObjectStorage(storage_client=_FailingClient(), bucket_name=BUCKET)
+        return ObjectStorage(storage_client=_FailingClient(), bucket_name=BUCKET)  # pyright: ignore[reportArgumentType]
 
     @pytest.mark.parametrize(
         "call",
@@ -114,7 +124,7 @@ class TestObjectStorageDoesNotLeakProviderText:
                     "GetObject",
                 )
 
-        storage = ObjectStorage(storage_client=_NoSuchKey(), bucket_name=BUCKET)
+        storage = ObjectStorage(storage_client=_NoSuchKey(), bucket_name=BUCKET)  # pyright: ignore[reportArgumentType]
         with pytest.raises(BaseCustomException) as info:
             await storage.download_file("k")
         assert info.value.status_code == 404
@@ -126,7 +136,9 @@ class TestHttpClientDoesNotLeakTheOutboundUrl:
         from src._core.infrastructure.http.http_client import _curate_client_error
 
         exc = aiohttp.ClientResponseError(
-            request_info=aiohttp.RequestInfo(URL(WEBHOOK), "POST", {}, URL(WEBHOOK)),
+            request_info=aiohttp.RequestInfo(
+                URL(WEBHOOK), "POST", CIMultiDictProxy(CIMultiDict()), URL(WEBHOOK)
+            ),
             history=(),
             status=403,
             message="Forbidden",
@@ -139,11 +151,13 @@ class TestHttpClientDoesNotLeakTheOutboundUrl:
         assert "SECRET" not in str(curated)
 
     def test_connector_error_host_is_not_in_the_message(self):
+        # `aiohttp.client_reqrep` is not re-exported from the package root, so the
+        # attribute path resolves to `object`.
+        from aiohttp.client_reqrep import ConnectionKey
+
         from src._core.infrastructure.http.http_client import _curate_client_error
 
-        key = aiohttp.client_reqrep.ConnectionKey(
-            "internal-svc.prod", 8443, False, True, None, None, None
-        )
+        key = ConnectionKey("internal-svc.prod", 8443, False, True, None, None, None)
         exc = aiohttp.ClientConnectorError(key, OSError("refused"))
         assert "internal-svc" in str(exc), "precondition: aiohttp embeds the host"
 
@@ -207,7 +221,7 @@ class TestProviderMessageStaysOutOfStructlogKwargs:
     `__cause__` renders it.
     """
 
-    def _kwargs_only(self, logs: list[dict]) -> str:
+    def _kwargs_only(self, logs: Sequence[Mapping[str, Any]]) -> str:
         """Rendered structured fields, excluding the exception chain."""
         return repr(
             [
@@ -225,7 +239,7 @@ class TestProviderMessageStaysOutOfStructlogKwargs:
             def client(self):
                 raise _access_denied()
 
-        storage = ObjectStorage(storage_client=_FailingClient(), bucket_name=BUCKET)
+        storage = ObjectStorage(storage_client=_FailingClient(), bucket_name=BUCKET)  # pyright: ignore[reportArgumentType]
         with capture_logs() as logs:
             with pytest.raises(BaseCustomException):
                 await storage.upload_file(b"x", KEY, "text/plain")

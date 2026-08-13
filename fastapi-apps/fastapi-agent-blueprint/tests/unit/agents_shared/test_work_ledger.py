@@ -142,6 +142,7 @@ def test_update_last_prompt_empty_string_stores_none():
 def test_update_goal_scope_plan_all_fields():
     wl.update_goal_scope_plan(goal="g", scope="s", plan="p")
     ledger = wl.read_ledger()
+    assert ledger is not None
     assert ledger["goal"] == "g"
     assert ledger["scope"] == "s"
     assert ledger["plan"] == "p"
@@ -151,6 +152,7 @@ def test_update_goal_scope_plan_partial_does_not_overwrite():
     wl.update_goal_scope_plan(goal="original", scope="orig-scope")
     wl.update_goal_scope_plan(scope="new-scope")  # goal untouched
     ledger = wl.read_ledger()
+    assert ledger is not None
     assert ledger["goal"] == "original"
     assert ledger["scope"] == "new-scope"
 
@@ -193,6 +195,7 @@ def test_update_verification_from_git_sets_pending_when_py_files(monkeypatch):
     monkeypatch.setattr(wl, "_changed_py_files", lambda: ["src/foo/bar.py"])
     wl.update_verification_from_git()
     ledger = wl.read_ledger()
+    assert ledger is not None
     assert ledger["verification"]["changed_py_files"] == ["src/foo/bar.py"]
     assert ledger["verification"]["status"] == "pending"
 
@@ -202,12 +205,14 @@ def test_update_verification_from_git_keeps_passed_status(monkeypatch):
     # demote it back to "pending" just because files exist.
     wl.update_goal_scope_plan(goal="g")  # initialise ledger
     ledger = wl.read_ledger()
+    assert ledger is not None
     ledger["verification"]["status"] = "passed"
     wl.write_ledger(ledger)
 
     monkeypatch.setattr(wl, "_changed_py_files", lambda: ["src/x.py"])
     wl.update_verification_from_git()
     ledger2 = wl.read_ledger()
+    assert ledger2 is not None
     assert ledger2["verification"]["status"] == "passed"
 
 
@@ -215,6 +220,7 @@ def test_update_verification_from_git_no_files(monkeypatch):
     monkeypatch.setattr(wl, "_changed_py_files", lambda: [])
     wl.update_verification_from_git()
     ledger = wl.read_ledger()
+    assert ledger is not None
     assert ledger["verification"]["changed_py_files"] == []
     assert ledger["verification"]["status"] == "unknown"
 
@@ -227,11 +233,13 @@ def test_update_verification_from_git_no_files(monkeypatch):
 def test_mark_verified_passed_clears_changed_files():
     wl.update_goal_scope_plan(goal="x")
     ledger = wl.read_ledger()
+    assert ledger is not None
     ledger["verification"]["changed_py_files"] = ["a.py"]
     wl.write_ledger(ledger)
 
     wl.mark_verified("pytest tests/", passed=True)
     ledger2 = wl.read_ledger()
+    assert ledger2 is not None
     assert ledger2["verification"]["status"] == "passed"
     assert ledger2["verification"]["changed_py_files"] == []
     assert ledger2["verification"]["last_command"] == "pytest tests/"
@@ -240,6 +248,7 @@ def test_mark_verified_passed_clears_changed_files():
 def test_mark_verified_failed():
     wl.mark_verified("pytest tests/", passed=False)
     ledger = wl.read_ledger()
+    assert ledger is not None
     assert ledger["verification"]["status"] == "failed"
 
 

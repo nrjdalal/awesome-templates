@@ -155,6 +155,7 @@ class TestProviderExceptionsStillMap:
         )
         throttling = client.exceptions.ThrottlingException
         assert throttling.__module__.startswith("botocore")
+        assert throttling is not None
         assert issubclass(throttling, botocore.exceptions.ClientError)
 
         exc = throttling(

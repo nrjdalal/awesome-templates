@@ -146,7 +146,9 @@ class TestTheAnnouncedDelayIsHonouredOnTheInlineBroker:
         mw.set_broker(AsyncSharedBroker())
 
         started = time.monotonic()
-        await mw.on_send(None, None, self.DELAY)
+        # `None` for kicker/message: this test drives the sleep behaviour and the
+        # middleware does not read either before delegating.
+        await mw.on_send(None, None, self.DELAY)  # pyright: ignore[reportArgumentType]
         assert time.monotonic() - started < self.DELAY / 2
         assert captured_sends == [self.DELAY]
 

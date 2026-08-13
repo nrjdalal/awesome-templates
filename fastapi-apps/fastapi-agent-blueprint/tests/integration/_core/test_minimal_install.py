@@ -109,8 +109,7 @@ class TestMinimalInstall:
         dashboard_paths = [
             str(route.path)  # type: ignore[attr-defined]
             for route in app.routes
-            if hasattr(route, "path")  # type: ignore[attr-defined]
-            and str(route.path).startswith("/admin")  # type: ignore[attr-defined]
+            if hasattr(route, "path") and str(route.path).startswith("/admin")  # type: ignore[attr-defined]
         ]
         assert not dashboard_paths, (
             f"Expected no NiceGUI /admin dashboard routes, found: {dashboard_paths}"

@@ -25,7 +25,7 @@ def _import(name: str, path: Path):
 def gov():
     sys.path.insert(0, str(SHARED))
     try:
-        from governor import (  # type: ignore[import-not-found]
+        from governor import (
             completion_gate,
             sync_cosmetic,
         )

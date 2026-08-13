@@ -93,8 +93,8 @@ async def test_pipeline_attaches_distance_attribute_to_chunks():
 
     _, returned = await pipeline.answer(question="q")
 
-    assert returned[0]._distance == 0.25  # type: ignore[attr-defined]
-    assert returned[1]._distance == 0.75  # type: ignore[attr-defined]
+    assert returned[0]._distance == 0.25
+    assert returned[1]._distance == 0.75
 
 
 @pytest.mark.asyncio
@@ -117,5 +117,5 @@ async def test_pipeline_handles_none_distances():
 
     _, returned = await pipeline.answer(question="q")
 
-    assert returned[0]._distance is None  # type: ignore[attr-defined]
-    assert returned[1]._distance is None  # type: ignore[attr-defined]
+    assert returned[0]._distance is None
+    assert returned[1]._distance is None

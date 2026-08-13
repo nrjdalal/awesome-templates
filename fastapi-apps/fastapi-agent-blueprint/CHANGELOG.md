@@ -7,6 +7,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.1] - 2026-08-13
+
+### Added
+
+- **The type check covers the whole repository.** `[tool.pyright] include` gained
+  `tests`, taking the gate to **944 files at 0 errors**. `tests/` started at 155
+  findings and produced six production ones, so the premise that test code is not
+  worth checking did not survive contact: a `cast` that existed only because `list`
+  is invariant, three functions asking for a class where they use one member, and
+  two test doubles that had silently stopped matching the protocols they impersonate
+  ([#394](https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/394)–[#399](https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/399))
+
+### Changed
+
+- **`insert_datas` and `batch_put_items` take `Sequence[BaseModel]`.** `BaseRepositoryProtocol`, `BaseRepository`,
+  `BaseDynamoRepository` and the one domain override moved together;
+  `BaseS3VectorStore.upsert` already had it. `list` is invariant, so the old
+  signature forced `BaseService.create_datas` to launder its argument through
+  `cast(list[BaseModel], entities)` — widening deleted that cast rather than moving
+  it. **For forks:** every caller keeps working, but an implementation or test double
+  that still declares `list[BaseModel]` is now *narrower* than the protocol and no
+  longer satisfies it. Widen it to `Sequence[BaseModel]`
+  ([#394](https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/394))
+
+- **Three admin functions take consumer-local protocols instead of concrete
+  classes.** `AuditLogger` needed one repository method, the bootstrap seed one app
+  method, `button_loading` one element member, and `AdminAuthProvider` two use-case
+  methods. Naming the class over-stated the requirement and made each seam
+  untestable — `ui.button` is nominal, so no double could satisfy it. Runtime
+  behaviour is unchanged; a fork passing the real objects is unaffected
+  ([#396](https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/396),
+  [#398](https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/398))
+
+- **Harness hook tests load by path, not by basename.** Eight hook filenames exist
+  in more than one harness copy, so `import verify_first` named three files and
+  `sys.modules` picked one. Nothing was resolving the wrong copy — the issue was
+  filed on a misreading — but the tests' correctness came from an unstated
+  `sys.modules.pop` + `sys.path[0]` pair, so it is now a rule with an AST guard, and
+  the rule is recorded in `test-patterns.md` § Harness Hook Tests. Test-only; the
+  hook files are unchanged, and the fail-open contract's assertions are untouched
+  ([#401](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/401))
+
+- **`tests/support/fake_repository.py`** declares the 13-member
+  `BaseRepositoryProtocol` surface once, every member raising until overridden, so a
+  partial double satisfies the annotation it is passed to and the next protocol
+  change breaks one file instead of drifting silently through N doubles
+  ([#395](https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/395))
+
 ## [0.11.0] - 2026-08-13
 
 ### Added
@@ -967,7 +1015,8 @@ Quality Gate review contract, `/plan-feature` Approach Options stage,
 - ADR documentation (001-013)
 - CONTRIBUTING guide and issue templates
 
-[Unreleased]: https://github.com/Mr-DooSun/fastapi-agent-blueprint/compare/v0.11.0...HEAD
+[Unreleased]: https://github.com/Mr-DooSun/fastapi-agent-blueprint/compare/v0.11.1...HEAD
+[0.11.1]: https://github.com/Mr-DooSun/fastapi-agent-blueprint/compare/v0.11.0...v0.11.1
 [0.11.0]: https://github.com/Mr-DooSun/fastapi-agent-blueprint/compare/v0.10.1...v0.11.0
 [0.10.1]: https://github.com/Mr-DooSun/fastapi-agent-blueprint/compare/v0.10.0...v0.10.1
 [0.10.0]: https://github.com/Mr-DooSun/fastapi-agent-blueprint/compare/v0.9.0...v0.10.0

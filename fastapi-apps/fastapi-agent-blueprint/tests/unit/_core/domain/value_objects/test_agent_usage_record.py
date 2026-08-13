@@ -36,7 +36,9 @@ def test_agent_usage_record_rejects_unknown_prompt_source():
             call_id="call-1",
             agent_name="classifier",
             model="gpt-test",
-            prompt_source="database",
+            # Deliberately outside `PromptSource`: this test exists to prove the
+            # runtime validator rejects it, so the static error is the premise.
+            prompt_source="database",  # pyright: ignore[reportArgumentType]
         )
 
 

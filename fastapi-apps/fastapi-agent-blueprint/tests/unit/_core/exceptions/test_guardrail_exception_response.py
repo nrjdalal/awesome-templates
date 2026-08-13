@@ -35,7 +35,8 @@ async def test_guardrail_exception_response_has_no_details(
     response = await custom_exception_handler(request=None, exc=exc)  # type: ignore[arg-type]
     assert response.status_code == expected_status
 
-    body = json.loads(response.body)
+    # `response.body` is `bytes | memoryview`; json.loads takes the former.
+    body = json.loads(bytes(response.body))
     assert body["success"] is False
     # Response uses camelCase serialization (errorCode / errorDetails).
     assert body["errorCode"] == expected_code

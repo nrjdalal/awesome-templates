@@ -81,7 +81,10 @@ def test_extract_python_paths_confines_to_repo(tmp_path: Path) -> None:
         ("cx_shared_f1", ".codex/hooks/_shared.py"),
     ):
         module = _load_module(name, REPO_ROOT / rel)
-        module.REPO_ROOT = fake_repo  # patch the confinement root
+        # Assigning onto a module object: a `ModuleType` has no such attribute
+        # until the assignment creates it — the same indirection the admin
+        # bootstrap uses for `page_configs`.
+        module.REPO_ROOT = fake_repo  # pyright: ignore[reportAttributeAccessIssue]  # patch the confinement root
 
         escaped = module.extract_python_paths(f"cat {fake_repo}/../outside.py")
         assert escaped == [], f"{name} leaked an out-of-repo path: {escaped}"

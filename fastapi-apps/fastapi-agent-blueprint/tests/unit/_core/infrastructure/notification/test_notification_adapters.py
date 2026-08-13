@@ -4,6 +4,12 @@ body is never JSON-parsed — Slack's success body is plain-text ``ok`` and
 Discord's is ``204 No Content`` by default, so parsing either as JSON would
 misreport every successful send as a failure."""
 
+# The client parameters below are annotated with their concrete wrapper classes
+# on purpose: `ObjectStorage`, `BaseS3VectorStore` and the notification adapters
+# reach through `client()` / `session` to a *typed* boto or aiohttp object, and
+# that annotation is what type-checks the provider calls inside them (#386). A
+# protocol loose enough to admit a double would give that up, so the doubles are
+# accepted here instead, at the one line where the substitution happens.
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
@@ -62,7 +68,8 @@ class TestSlackNotificationAdapter:
         http_client = _FakeHttpClient()
         webhook_url = "https://hooks.slack.com/services/T/B/X"
         adapter = SlackNotificationAdapter(
-            http_client=http_client, webhook_url=webhook_url
+            http_client=http_client,  # pyright: ignore[reportArgumentType]
+            webhook_url=webhook_url,
         )
 
         await adapter.send("boom")
@@ -70,6 +77,7 @@ class TestSlackNotificationAdapter:
         assert http_client.fake_session.post_calls == [
             {"url": webhook_url, "json": {"text": "boom"}}
         ]
+        assert http_client.fake_session.last_response is not None
         http_client.fake_session.last_response.raise_for_status.assert_called_once()
         http_client.fake_session.last_response.json.assert_not_called()
 
@@ -79,7 +87,8 @@ class TestDiscordNotificationAdapter:
         http_client = _FakeHttpClient()
         webhook_url = "https://discord.com/api/webhooks/<id>/<token>"
         adapter = DiscordNotificationAdapter(
-            http_client=http_client, webhook_url=webhook_url
+            http_client=http_client,  # pyright: ignore[reportArgumentType]
+            webhook_url=webhook_url,
         )
 
         await adapter.send("boom")
@@ -87,5 +96,6 @@ class TestDiscordNotificationAdapter:
         assert http_client.fake_session.post_calls == [
             {"url": webhook_url, "json": {"content": "boom"}}
         ]
+        assert http_client.fake_session.last_response is not None
         http_client.fake_session.last_response.raise_for_status.assert_called_once()
         http_client.fake_session.last_response.json.assert_not_called()

@@ -20,6 +20,9 @@ of them". Either way the two that *do* log — `dynamodb_client` and
 
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
+from typing import Any
+
 import pytest
 from fastapi import FastAPI, HTTPException
 from fastapi.testclient import TestClient
@@ -35,8 +38,11 @@ from src._core.exceptions.exception_handlers import (
 
 def _app() -> FastAPI:
     app = FastAPI()
-    app.add_exception_handler(BaseCustomException, custom_exception_handler)
-    app.add_exception_handler(HTTPException, http_exception_handler)
+    # Starlette types `handler` as taking `Exception`; the narrow annotations are
+    # the record of which exception each handler serves. Same suppression the
+    # production registration carries.
+    app.add_exception_handler(BaseCustomException, custom_exception_handler)  # pyright: ignore[reportArgumentType]
+    app.add_exception_handler(HTTPException, http_exception_handler)  # pyright: ignore[reportArgumentType]
     app.add_exception_handler(Exception, generic_exception_handler)
 
     @app.get("/custom/{status}")
@@ -58,7 +64,7 @@ def _app() -> FastAPI:
     return app
 
 
-def _exception_records(logs: list[dict]) -> list[dict]:
+def _exception_records(logs: Sequence[Mapping[str, Any]]) -> list[Mapping[str, Any]]:
     """Records that carry exception identity — the thing an operator greps for."""
     return [
         r

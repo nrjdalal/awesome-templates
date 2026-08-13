@@ -4,6 +4,12 @@ This test file also serves as the usage reference for implementing
 S3 vector stores in domains (no example domain created).
 """
 
+# The client parameters below are annotated with their concrete wrapper classes
+# on purpose: `ObjectStorage`, `BaseS3VectorStore` and the notification adapters
+# reach through `client()` / `session` to a *typed* boto or aiohttp object, and
+# that annotation is what type-checks the provider calls inside them (#386). A
+# protocol loose enough to admit a double would give that up, so the doubles are
+# accepted here instead, at the one line where the substitution happens.
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
@@ -175,7 +181,7 @@ class DocS3VectorStore(BaseS3VectorStore[DocResultDTO]):
 
     def __init__(self, s3vector_client: FakeS3VectorClient) -> None:
         super().__init__(
-            s3vector_client=s3vector_client,
+            s3vector_client=s3vector_client,  # pyright: ignore[reportArgumentType]
             model=DocVectorModel,
             return_entity=DocResultDTO,
             bucket_name="test-bucket",

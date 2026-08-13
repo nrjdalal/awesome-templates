@@ -21,6 +21,9 @@ These tests pin the three properties that make the swallow survivable:
 
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
+from typing import Any
+
 import pytest
 import structlog
 from structlog.testing import capture_logs
@@ -76,7 +79,10 @@ def _integrity_error() -> DatabaseException:
     )
 
 
-async def _log_once(repository, notifier=None) -> list[dict]:
+# `Sequence`, not `list`: `list` is invariant, so `list[EventDict]` is not a
+# `list[Mapping[str, Any]]` — the same rule that put a `cast` in
+# `BaseService.create_datas` before #394 removed it.
+async def _log_once(repository, notifier=None) -> Sequence[Mapping[str, Any]]:
     logger = AuditLogger(repository, error_notifier=notifier)
     with capture_logs() as logs:
         await logger.log(

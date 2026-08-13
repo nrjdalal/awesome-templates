@@ -67,6 +67,7 @@ def test_safe_user_snapshot_none_passthrough():
 
 def test_safe_user_snapshot_json_ready_datetime():
     snap = safe_user_snapshot(_user())
+    assert snap is not None
     assert isinstance(snap["created_at"], str)  # ISO string, not datetime
 
 

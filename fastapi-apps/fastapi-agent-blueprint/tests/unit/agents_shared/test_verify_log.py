@@ -80,6 +80,7 @@ class TestAppendVerifyLog:
         path = append_verify_log("pytest tests/ -q", tmp_path, _SESSION)
 
         assert path == verify_log_path(tmp_path, _SESSION)
+        assert path is not None
         record = json.loads(path.read_text(encoding="utf-8").strip())
         assert record["cmd"] == "pytest tests/ -q"
         assert isinstance(record["ts_epoch_ns"], int)
@@ -96,6 +97,7 @@ class TestAppendVerifyLog:
         append_verify_log("pytest a", tmp_path, _SESSION)
         path = append_verify_log("pytest b", tmp_path, _SESSION)
 
+        assert path is not None
         lines = path.read_text(encoding="utf-8").strip().splitlines()
         assert [json.loads(line)["cmd"] for line in lines] == ["pytest a", "pytest b"]
 

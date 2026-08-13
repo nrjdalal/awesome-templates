@@ -14,6 +14,7 @@ from src._core.common.jwt_codec import ACCESS_TOKEN_TYPE, JwtCodecConfig, JwtTok
 from src._core.common.security import hash_password
 from src.admin_identity.domain.dtos.admin_identity_dto import (
     AdminIdentityDTO,
+    AdminRefreshTokenCreateDTO,
     AdminRefreshTokenDTO,
 )
 from src.admin_identity.domain.exceptions.admin_identity_exceptions import (
@@ -67,6 +68,9 @@ class MockAdminRefreshTokenRepository(FakeRepositoryBase[AdminRefreshTokenDTO]):
         self._id = 0
 
     async def insert_data(self, entity) -> AdminRefreshTokenDTO:
+        # The base protocol takes `BaseModel`; this double reads the create DTO's
+        # own fields, so it narrows once here rather than eight times below.
+        assert isinstance(entity, AdminRefreshTokenCreateDTO)
         self._id += 1
         dto = AdminRefreshTokenDTO(
             id=self._id,

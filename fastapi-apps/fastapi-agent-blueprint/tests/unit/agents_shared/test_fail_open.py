@@ -11,6 +11,11 @@ Three tiers:
        subclass) is not caught by suppress(Exception).
 """
 
+# The harness hook modules here are loaded *by path* under harness-qualified
+# aliases, because the same basenames exist in `.claude/hooks`, `.codex/hooks` and
+# `.antigravity/hooks` — `import verify_first` names three files and `sys.modules`
+# picks one (#401). The suppressions this comment used to explain are gone with the
+# bare imports that needed them.
 from __future__ import annotations
 
 import contextlib
@@ -34,6 +39,27 @@ CODEX_HOOKS = [
     REPO_ROOT / ".codex" / "hooks" / "verify_first.py",
     REPO_ROOT / ".codex" / "hooks" / "completion_gate.py",
 ]
+
+
+def _load_claude_hook(stem: str):
+    """Load a Claude hook by path, under a harness-qualified alias.
+
+    `verify_first` and `completion_gate` exist in all three harness directories,
+    so `import verify_first` names three files and `sys.modules` picks one. The
+    tier-2 tests below used to guard against that with `sys.modules.pop(...)`
+    plus a `sys.path` insert, which does work — measured — but only while every
+    future test remembers both halves. Loading by path removes the bare key from
+    the question entirely, and it is what tier 3 and the Codex tests in this same
+    file already do.
+    """
+    path = REPO_ROOT / ".claude" / "hooks" / f"{stem}.py"
+    alias = f"claude_{stem}"
+    spec = importlib.util.spec_from_file_location(alias, str(path))
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[alias] = module
+    spec.loader.exec_module(module)
+    return module
 
 
 # ---------------------------------------------------------------------------
@@ -107,7 +133,7 @@ def test_tier2_function_call_import_error_returns_safe_default(
 
     sys.path.insert(0, str(REPO_ROOT / ".claude" / "hooks"))
     try:
-        import user_prompt_submit as ups  # noqa: PLC0415
+        ups = _load_claude_hook("user_prompt_submit")
 
         def boom(*_args, **_kwargs):
             raise ImportError("simulated shared failure")
@@ -123,9 +149,7 @@ def test_tier2_function_call_import_error_returns_safe_default(
         assert ups.main() == 0
     finally:
         sys.path.pop(0)
-        for mod in list(sys.modules):
-            if mod == "user_prompt_submit":
-                del sys.modules[mod]
+        sys.modules.pop("claude_user_prompt_submit", None)
 
 
 # ---------------------------------------------------------------------------
@@ -139,9 +163,8 @@ def test_tier2_verify_first_read_latest_token_marker_safe_default(
     the shared reader raises rather than propagating to the Stop hook."""
 
     sys.path.insert(0, str(REPO_ROOT / ".claude" / "hooks"))
-    sys.modules.pop("verify_first", None)
     try:
-        import verify_first as vf  # noqa: PLC0415
+        vf = _load_claude_hook("verify_first")
 
         def boom(*_args, **_kwargs):
             raise ImportError("simulated shared reader failure")
@@ -161,7 +184,7 @@ def test_tier2_verify_first_read_latest_token_marker_safe_default(
         assert isinstance(result, bool)
     finally:
         sys.path.pop(0)
-        sys.modules.pop("verify_first", None)
+        sys.modules.pop("claude_verify_first", None)
 
 
 def test_tier2_completion_gate_entry_points_safe_default(monkeypatch, tmp_path) -> None:
@@ -170,9 +193,8 @@ def test_tier2_completion_gate_entry_points_safe_default(monkeypatch, tmp_path) 
     silent rather than propagating to the Stop hook."""
 
     sys.path.insert(0, str(REPO_ROOT / ".claude" / "hooks"))
-    sys.modules.pop("completion_gate", None)
     try:
-        import completion_gate as cg  # noqa: PLC0415
+        cg = _load_claude_hook("completion_gate")
 
         # Force the degraded path; both entry points must short-circuit.
         monkeypatch.setattr(cg, "_SHARED_OK", False)
@@ -181,7 +203,7 @@ def test_tier2_completion_gate_entry_points_safe_default(monkeypatch, tmp_path) 
         cg.consume_phase2_markers(tmp_path)
     finally:
         sys.path.pop(0)
-        sys.modules.pop("completion_gate", None)
+        sys.modules.pop("claude_completion_gate", None)
 
 
 # ---------------------------------------------------------------------------
@@ -195,6 +217,7 @@ def test_codex_write_marker_oserror_still_returns_zero() -> None:
 
     codex_hook = REPO_ROOT / ".codex" / "hooks" / "user-prompt-submit.py"
     spec = importlib.util.spec_from_file_location("codex_ups_a1", str(codex_hook))
+    assert spec is not None and spec.loader is not None
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     try:
@@ -202,7 +225,7 @@ def test_codex_write_marker_oserror_still_returns_zero() -> None:
         def _boom(payload: dict) -> None:
             raise OSError("disk full simulated A-1")
 
-        mod.write_marker = _boom
+        mod.write_marker = _boom  # pyright: ignore[reportAttributeAccessIssue]
         orig_stdin = sys.stdin
         sys.stdin = io.StringIO('{"prompt": "[trivial] A-1 regression"}')
         try:
@@ -222,6 +245,7 @@ def test_codex_write_marker_oserror_does_not_silence_stderr_payload() -> None:
 
     codex_hook = REPO_ROOT / ".codex" / "hooks" / "user-prompt-submit.py"
     spec = importlib.util.spec_from_file_location("codex_ups_a1s", str(codex_hook))
+    assert spec is not None and spec.loader is not None
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     try:
@@ -229,7 +253,7 @@ def test_codex_write_marker_oserror_does_not_silence_stderr_payload() -> None:
         def _boom(payload: dict) -> None:
             raise OSError("disk full simulated A-1 stderr")
 
-        mod.write_marker = _boom
+        mod.write_marker = _boom  # pyright: ignore[reportAttributeAccessIssue]
         captured = io.StringIO()
         orig_stdin, orig_stderr = sys.stdin, sys.stderr
         sys.stdin = io.StringIO('{"prompt": "[trivial] A-1 stderr check"}')

@@ -1,3 +1,9 @@
+# The harness hook modules below are imported by *basename* after a `sys.path`
+# insertion a few lines up, and the same basenames exist in `.claude/hooks`,
+# `.codex/hooks` and `.antigravity/hooks`. No static path can resolve them
+# unambiguously — which is the same collision that made the retired mypy hook
+# abort (#375) — so each import carries a scoped suppression rather than the
+# config pretending one directory is the answer.
 from __future__ import annotations
 
 import json
@@ -9,7 +15,9 @@ _TOOLS_DIR = _REPO_ROOT / "tools"
 if str(_TOOLS_DIR) not in sys.path:
     sys.path.insert(0, str(_TOOLS_DIR))
 
-from check_harness_hook_surface import check_root  # noqa: E402
+from check_harness_hook_surface import (  # noqa: E402  # pyright: ignore[reportMissingImports]
+    check_root,
+)
 
 
 def _write_codex_hooks(root: Path, command: str) -> None:

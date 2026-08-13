@@ -64,13 +64,15 @@ def _make_validation_error() -> ValidationError:
 class RecordingRetryMiddleware(PermanentAwareSmartRetryMiddleware):
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
-        self.sent: list[tuple[TaskiqMessage, float]] = []
+        self.sent: list[tuple[TaskiqMessage, float | None]] = []
 
     async def on_send(
         self,
         kicker: Any,
         message: TaskiqMessage,
-        delay: float,
+        # `float | None` mirrors the parent, which widened in #375; a narrower
+        # parameter in an override does not satisfy the base signature.
+        delay: float | None,
     ) -> None:
         self.sent.append((message, delay))
 

@@ -1,6 +1,6 @@
 [project]
 name = "fastapi-agent-blueprint"
-version = "0.11.0"
+version = "0.11.1"
 description = "FastAPI backend blueprint for AI agent apps: DDD domains, SQLAlchemy, Taskiq, RAG infra, and Claude/Codex collaboration harness"
 readme = "README.md"
 requires-python = ">=3.12.9"
@@ -121,14 +121,18 @@ otel = [
 # to give a sentinel, and 17 call sites guarded by an `_OK` flag that nothing
 # links to the `None` sentinels it sets.
 #
-# Deliberately still out of scope:
-#   tests/                152 errors. mypy excluded it too; widening it is its own
-#                         piece of work, not a side effect of retiring mypy.
+# `tests/` joined last (#394-#399). It started at 155 findings and the split was
+# not "test noise": a `cast` in `BaseService.create_datas` that existed only because
+# `list` is invariant, three functions asking for a class where they use one method,
+# and two test doubles that had silently stopped matching the protocols they
+# impersonate — one missing `count_datas_by_day` since #368, one still naming a
+# parameter `user_id` that the admin realm renamed in #218.
 #
 # Never widen coverage by relaxing the rules below.
 [tool.pyright]
 include = [
     "src",
+    "tests",
     "tools",
     "scripts",
     "examples",

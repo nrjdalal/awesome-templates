@@ -43,6 +43,12 @@ class _FakeUseCase:
             raise self.exc
         return self.session
 
+    # Present so the double satisfies what AdminAuthProvider asks for; raising
+    # because this file exercises the login path only. An absent method left the
+    # double unable to stand in at all.
+    async def get_admin_session(self, admin_id: int) -> AdminSessionDTO:
+        raise NotImplementedError("this double covers the login path only")
+
 
 @pytest.fixture
 def audit_recorder(monkeypatch):

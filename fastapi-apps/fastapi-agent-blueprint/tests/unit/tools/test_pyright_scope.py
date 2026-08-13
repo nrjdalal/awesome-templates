@@ -11,8 +11,12 @@ is the whole reason this file exists:
   entirely. Measured before this was fixed: `.claude/hooks` reported `0 errors`
   while analysing **0 of its 7 files**. "0 errors" and "nothing checked" print
   identically.
+- **Losing `tests/`.** It joined the scope last (155 findings, cleared across
+  #394–#399) and is the newest thing a future widening-under-pressure would drop
+  first. Two of those findings were doubles that had silently stopped matching the
+  protocols they impersonate, which is the coverage this buys.
 - **Suppression creep.** `# pyright: ignore` is the other way to hold a tree at 0
-  errors without fixing anything. 21 exist, in 10 files, each with its cause
+  errors without fixing anything. 48 exist, in 26 files, each with its cause
   written at the call site. That is defensible *because* it is pinned; unpinned,
   it is a trend. #387 is the counter-example worth remembering: the three harness
   hook directories carried **88** `# type: ignore` comments, every one of them
@@ -58,6 +62,22 @@ _ALLOWED_SUPPRESSIONS = {
     "src/_core/infrastructure/admin/auth.py": 1,
     "src/_core/infrastructure/admin/error_handler.py": 2,
     "src/_core/infrastructure/logging/taskiq_middleware.py": 1,
+    "tests/e2e/ai_usage/test_ai_usage_router.py": 1,
+    "tests/unit/_apps/worker/test_task_bootstrap_order.py": 3,
+    "tests/unit/_core/domain/value_objects/test_agent_usage_record.py": 1,
+    "tests/unit/_core/exceptions/test_exception_handler_logging.py": 2,
+    "tests/unit/_core/infrastructure/logging/test_retry_middleware_inline_broker.py": 1,
+    "tests/unit/_core/infrastructure/notification/test_notification_adapters.py": 2,
+    "tests/unit/_core/infrastructure/persistence/nosql/dynamodb/test_batch_semantics.py": 1,
+    "tests/unit/_core/infrastructure/test_object_storage_list_files.py": 1,
+    "tests/unit/_core/infrastructure/test_provider_error_curation.py": 3,
+    "tests/unit/_core/infrastructure/vectors/s3/test_base_store.py": 1,
+    "tests/unit/_core/test_dead_code_stays_deleted.py": 1,
+    "tests/unit/agents_shared/test_antigravity_hardening.py": 1,
+    "tests/unit/agents_shared/test_fail_open.py": 2,
+    "tests/unit/agents_shared/test_harness_hook_surface.py": 1,
+    "tests/unit/agents_shared/test_locale.py": 1,
+    "tests/unit/blog/domain/test_post_service.py": 5,
 }
 
 # Matches a real directive, not a mention of one in prose. Pyright itself is this
@@ -85,6 +105,12 @@ def _src_packages() -> list[str]:
     )
 
 
+# This file quotes the directive syntax in prose, and the scan below matches text
+# rather than parsing comments — so it would count itself. Pyright is unaffected:
+# a mention inside a docstring is a string, not a comment.
+_SELF = Path(__file__).resolve()
+
+
 def _checked_files() -> list[Path]:
     files: list[Path] = []
     for path in _include_paths():
@@ -93,7 +119,7 @@ def _checked_files() -> list[Path]:
             files.append(resolved)
         else:
             files.extend(sorted(resolved.rglob("*.py")))
-    return files
+    return [f for f in files if f.resolve() != _SELF]
 
 
 def test_pyright_is_configured() -> None:
@@ -189,6 +215,7 @@ def test_every_src_package_is_covered(package: str) -> None:
         "examples",
         ".agents",
         "run_scheduler_local.py",
+        "tests",
         ".claude/hooks",
         ".antigravity/hooks",
         ".codex/hooks",

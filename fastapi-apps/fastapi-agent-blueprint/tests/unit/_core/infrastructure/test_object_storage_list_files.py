@@ -11,6 +11,12 @@ method's contract is "keys you can address", and an empty key handed to
 `download_file` or `delete_file` is worse than a shorter list.
 """
 
+# The client parameters below are annotated with their concrete wrapper classes
+# on purpose: `ObjectStorage`, `BaseS3VectorStore` and the notification adapters
+# reach through `client()` / `session` to a *typed* boto or aiohttp object, and
+# that annotation is what type-checks the provider calls inside them (#386). A
+# protocol loose enough to admit a double would give that up, so the doubles are
+# accepted here instead, at the one line where the substitution happens.
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
@@ -33,7 +39,7 @@ def _storage(response: dict[str, Any]) -> ObjectStorage:
         async def client(self):
             yield _Client()
 
-    return ObjectStorage(storage_client=_StorageClient(), bucket_name=BUCKET)
+    return ObjectStorage(storage_client=_StorageClient(), bucket_name=BUCKET)  # pyright: ignore[reportArgumentType]
 
 
 @pytest.mark.asyncio

@@ -1,16 +1,27 @@
+# `src.author.*` / `src.post.*` do not exist on disk. `conftest.py` in this
+# directory builds a temp-directory shadow of `examples/blog` and registers it
+# under those names, because that is the layout the example runs in after
+# `cp -r examples/blog/* src/`. Unresolvable statically by construction; the same
+# suppression the example's own production imports carry (#386).
 from datetime import UTC, datetime
 from unittest.mock import AsyncMock
 
 import pytest
-from src.author.domain.dtos.author_dto import AuthorDTO
-from src.author.domain.protocols.author_repository_protocol import (
+from src.author.domain.dtos.author_dto import (  # pyright: ignore[reportMissingImports]
+    AuthorDTO,
+)
+from src.author.domain.protocols.author_repository_protocol import (  # pyright: ignore[reportMissingImports]
     AuthorRepositoryProtocol,
 )
-from src.post.domain.protocols.post_repository_protocol import (
+from src.post.domain.protocols.post_repository_protocol import (  # pyright: ignore[reportMissingImports]
     PostRepositoryProtocol,
 )
-from src.post.domain.services.post_service import PostService
-from src.post.interface.server.schemas.post_schema import CreatePostRequest
+from src.post.domain.services.post_service import (  # pyright: ignore[reportMissingImports]
+    PostService,
+)
+from src.post.interface.server.schemas.post_schema import (  # pyright: ignore[reportMissingImports]
+    CreatePostRequest,
+)
 
 from src._core.domain.validation import ValidationFailed
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from typing import Protocol
 
 import structlog
 from nicegui import app, ui
@@ -33,11 +34,24 @@ _admin_auth_provider: AdminAuthProvider | None = None
 _admin_account_use_case_provider: Callable[[], AdminAccountUseCase] | None = None
 
 
+class _AdminAuthOperations(Protocol):
+    """The two use-case methods this provider calls, declared where it calls them.
+
+    `AdminAuthUseCase` was the annotation, which asks a caller for the whole use
+    case — and makes a two-method test double unusable without lying about its
+    type. Same reasoning as `_UsageSummaryService` in `ai_usage_page.py`.
+    """
+
+    async def admin_login(self, request: AdminLoginRequest) -> AdminSessionDTO: ...
+
+    async def get_admin_session(self, admin_id: int) -> AdminSessionDTO: ...
+
+
 class AdminAuthProvider:
     """admin_identity-domain backed admin authentication provider."""
 
     def __init__(
-        self, admin_auth_use_case_provider: Callable[[], AdminAuthUseCase]
+        self, admin_auth_use_case_provider: Callable[[], _AdminAuthOperations]
     ) -> None:
         self._admin_auth_use_case_provider = admin_auth_use_case_provider
 

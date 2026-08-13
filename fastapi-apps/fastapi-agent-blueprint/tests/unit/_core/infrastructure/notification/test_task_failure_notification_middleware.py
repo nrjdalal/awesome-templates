@@ -383,7 +383,7 @@ class TestMiddlewareOrderingContract:
         async def _no_send(kicker, message, delay):
             return None
 
-        retry.on_send = _no_send  # type: ignore[method-assign]
+        retry.on_send = _no_send
 
         message = _make_message(labels={"max_retries": 3})
         exception = RuntimeError("connection reset")

@@ -39,8 +39,8 @@ def reset_tracer_provider():
         if isinstance(existing, SdkTracerProvider):
             with contextlib.suppress(Exception):
                 existing.shutdown()
-        trace._TRACER_PROVIDER_SET_ONCE._done = False  # type: ignore[attr-defined]
-        trace._TRACER_PROVIDER = None  # type: ignore[attr-defined]
+        trace._TRACER_PROVIDER_SET_ONCE._done = False
+        trace._TRACER_PROVIDER = None
 
     _reset()
     yield
@@ -134,7 +134,7 @@ class TestConfigureOtel:
         with patch(
             "builtins.__import__",
             side_effect=lambda name, *a, **kw: (
-                (_ for _ in ()).throw(unrelated_err)  # type: ignore[misc]
+                (_ for _ in ()).throw(unrelated_err)
                 if name == "pydantic_ai"
                 else __import__(name, *a, **kw)
             ),

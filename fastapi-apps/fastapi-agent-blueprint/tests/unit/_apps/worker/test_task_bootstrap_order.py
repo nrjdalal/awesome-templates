@@ -60,7 +60,9 @@ class TestTheStartupEventKeyWasWrong:
     def test_a_string_and_the_enum_are_different_handler_keys(self):
         broker = InMemoryBroker()
 
-        @broker.on_event("startup")
+        # A raw string where taskiq wants `TaskiqEvents` — deliberately, since
+        # this test asserts the two land in different handler buckets.
+        @broker.on_event("startup")  # pyright: ignore[reportArgumentType]
         async def _by_string(state): ...
 
         @broker.on_event(TaskiqEvents.WORKER_STARTUP)
@@ -69,7 +71,7 @@ class TestTheStartupEventKeyWasWrong:
         assert "startup" in broker.event_handlers
         assert TaskiqEvents.WORKER_STARTUP in broker.event_handlers
         assert (
-            broker.event_handlers["startup"]
+            broker.event_handlers["startup"]  # pyright: ignore[reportArgumentType]
             != broker.event_handlers[TaskiqEvents.WORKER_STARTUP]
         ), "the two registrations landed in the same bucket; recheck the fix"
 
@@ -155,7 +157,9 @@ class TestInstallTaskMiddlewareIsReusable:
             for m in broker.middlewares
             if type(m).__name__ == "TaskFailureNotificationMiddleware"
         )
-        assert notifier._error_notifier_provider is sentinel
+        # Private by design; the assertion is that bootstrap wired the provider
+        # rather than a resolved notifier, which is only observable here.
+        assert notifier._error_notifier_provider is sentinel  # pyright: ignore[reportAttributeAccessIssue]
 
     def test_the_only_load_bearing_inequality_is_retry_before_notifier(self):
         """taskiq runs `on_error` over `reversed(middlewares)`, so registered-last

@@ -52,7 +52,7 @@ def _build_usage_api_app(test_db) -> FastAPI:
     container = create_server_container()
     app.state.container = container
     override_database(app, test_db)
-    create_ai_usage_container(ai_usage_container=container.ai_usage_container)
+    create_ai_usage_container(ai_usage_container=container.ai_usage_container)  # pyright: ignore[reportArgumentType]
     app.include_router(router=ai_usage_router.router, prefix="/v1", tags=["AI Usage"])
     app.add_event_handler("shutdown", lambda: reset_database_override(app))
     return app

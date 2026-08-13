@@ -11,8 +11,10 @@ class FakeFastAPI:
     def __init__(self) -> None:
         self.handlers = {}
 
-    def add_event_handler(self, event_type: str, handler) -> None:
-        self.handlers[event_type] = handler
+    # `func`, not `handler`: protocol conformance compares parameter *names*
+    # for anything not positional-only, and Starlette calls it `func`.
+    def add_event_handler(self, event_type: str, func) -> None:
+        self.handlers[event_type] = func
 
 
 class FakeAdminIdentityService:
@@ -55,6 +57,7 @@ async def test_install_bootstrap_admin_seed_registers_startup_handler(monkeypatc
     admin_bootstrap._install_bootstrap_admin_seed(app, container)
     await app.handlers["startup"]()
 
+    assert service.entity is not None
     assert service.entity.username == "admin"
     assert service.entity.password == "secret"
 

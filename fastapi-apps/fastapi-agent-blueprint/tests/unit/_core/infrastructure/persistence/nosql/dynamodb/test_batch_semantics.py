@@ -32,6 +32,12 @@ existing `DynamoDBThrottlingException`: throttling is the usual cause but not th
 only one, and the count is what a caller needs to act.
 """
 
+# The client parameters below are annotated with their concrete wrapper classes
+# on purpose: `ObjectStorage`, `BaseS3VectorStore` and the notification adapters
+# reach through `client()` / `session` to a *typed* boto or aiohttp object, and
+# that annotation is what type-checks the provider calls inside them (#386). A
+# protocol loose enough to admit a double would give that up, so the doubles are
+# accepted here instead, at the one line where the substitution happens.
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
@@ -321,7 +327,7 @@ class TestRetryBehaviour:
     async def test_a_later_retry_succeeding_does_not_raise(self) -> None:
         client = _PartialClient(refuse_rounds=1)
 
-        results = await _repository(client).batch_put_items(_entities(4), max_retries=3)
+        results = await _repository(client).batch_put_items(_entities(4), max_retries=3)  # pyright: ignore[reportArgumentType]
 
         assert len(results) == 4
         assert client.write_calls == 2  # refused once, then accepted

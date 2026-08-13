@@ -270,6 +270,36 @@ def __init__(
 ) -> None:
 ```
 
+### Two signature conventions (#394, #396, #399)
+
+**A parameter that is only read takes `Sequence`, not `list`.** `list` is invariant,
+so `list[MyDTO]` is not a `list[BaseModel]` — a caller holding its own DTOs cannot
+pass them. `BaseService.create_datas` paid that toll as
+`cast(list[BaseModel], entities)` until #394 widened the three repository-layer
+signatures; the cast then deleted itself rather than moving. The same rule caught
+`list[EventDict]` against `list[Mapping[str, Any]]` on the last error of that arc.
+`Sequence` is also the accurate type when the body only iterates — it is not merely
+the permissive one.
+
+**A consumer that uses one or two members of a collaborator declares a local
+`Protocol`,** underscore-prefixed, next to the code that consumes it, with the
+reason in its docstring. Five exist: `_UsageSummaryService` (ai_usage page),
+`_AuditLogSink`, `_SupportsEventHandler`, `_SupportsProps`, `_AdminAuthOperations`.
+Naming the class instead over-states the requirement and makes the seam untestable —
+`ui.button` is nominal, so no double can satisfy it however faithful.
+
+Two limits, both learned by getting them wrong:
+
+- **The protocol must not exclude the real implementation.** A `_SupportsProps`
+  declaring `props` as a method excluded every real `Button`, because NiceGUI's
+  `props` is a *property* returning a callable wrapper. A protocol that rejects the
+  production object is worse than the concrete annotation it replaced.
+- **Keep the concrete annotation where it is what type-checks a provider API.**
+  `ObjectStorage`, `BaseS3VectorStore` and the notification adapters reach through
+  `client()` / `session` to typed boto and aiohttp objects; a protocol loose enough
+  to admit a test double would give that checking up. There, the double is accepted
+  at the substitution site instead.
+
 ## §4. Base CRUD Methods
 
 ### BaseRepositoryProtocol Methods
@@ -277,7 +307,7 @@ def __init__(
 | Method | Signature |
 |--------|---------|
 | insert_data | `async (entity: BaseModel) -> ReturnDTO` |
-| insert_datas | `async (entities: list[BaseModel]) -> list[ReturnDTO]` |
+| insert_datas | `async (entities: Sequence[BaseModel]) -> list[ReturnDTO]` |
 | select_datas | `async (page: int, page_size: int) -> list[ReturnDTO]` |
 | select_data_by_id | `async (data_id: int) -> ReturnDTO` |
 | select_datas_by_ids | `async (data_ids: list[int]) -> list[ReturnDTO]` |
@@ -589,8 +619,8 @@ class {Name}Container(containers.DeclarativeContainer):
 ### CI Type Check and Dependency Audit (#333)
 
 - **pyright — blocking, and the only type checker.** `[tool.pyright] include` covers `src`,
-  `tools`, `scripts`, `examples`, `.agents`, the three harness hook directories and the three
-  root runners — 684 files at 0 errors: a new file under any of them is checked from the
+  `tests`, `tools`, `scripts`, `examples`, `.agents`, the three harness hook directories and
+  the three root runners — the whole repository at 0 errors: a new file under any of them is checked from the
   moment it is written. It began (#333) as an allow-list of the packages that passed, widened
   package by package through #381, and reached 0 errors across `src` from a starting 91. Two lessons from that run are worth keeping. First, an allow-list is
   itself a drift generator — this bullet still named five packages after four PRs had
@@ -613,7 +643,13 @@ class {Name}Container(containers.DeclarativeContainer):
   identically, which is the same illusion the mypy hook sustained. The three harness hook
   directories joined in #387 — `extraPaths = [".agents/shared"]` resolved 70 of their 177
   findings outright, 88 were `# type: ignore` comments orphaned by retiring mypy, and 19
-  were real. `tests/` (152 errors) stays out by decision, as its own piece of work.
+  were real. `tests/` joined last (#394-#399), from 155 findings to zero — and not one of
+  them was test noise: a `cast` in `BaseService.create_datas` that existed only because
+  `list` is invariant, three functions asking for a class where they use one method, and
+  **two doubles that had silently stopped matching the protocols they impersonate** — one
+  missing `count_datas_by_day` since #368, one still naming a parameter `user_id` that the
+  admin realm renamed in #218. Nothing had caught either, because a double that no longer
+  matches its interface still runs.
 - **pip-audit — advisory** (`continue-on-error`), writing to the job summary. A newly
   published CVE would otherwise redden a PR that changed nothing, which the §0
   advisory-first direction rules out. It installs the shipped extras before scanning so

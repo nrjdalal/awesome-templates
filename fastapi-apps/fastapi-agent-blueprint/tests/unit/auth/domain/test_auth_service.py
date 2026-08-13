@@ -33,7 +33,7 @@ class MockUserRepository(FakeRepositoryBase[UserDTO]):
     async def select_data_by_id(self, data_id: int) -> UserDTO:
         return self._users[data_id]
 
-    async def insert_data(self, entity) -> UserDTO:  # type: ignore[override]
+    async def insert_data(self, entity) -> UserDTO:
         raise NotImplementedError
 
     async def insert_datas(self, entities) -> list[UserDTO]:

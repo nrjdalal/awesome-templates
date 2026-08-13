@@ -290,7 +290,7 @@ def test_gatestatus_variants_referenced_by_completion_gate_shims() -> None:
         "missing",
         "unknown",
     }
-    actual_variants = set(GateStatus.__args__)  # type: ignore[attr-defined]
+    actual_variants = set(GateStatus.__args__)
     assert actual_variants == expected_variants, (
         f"GateStatus variants changed: {actual_variants ^ expected_variants}. "
         "Update the shim flow in .{claude,codex}/hooks/completion_gate.py "
