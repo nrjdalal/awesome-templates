@@ -1,3 +1,5 @@
+from collections.abc import Sequence
+
 from pydantic import BaseModel
 from sqlalchemy import select
 
@@ -27,7 +29,7 @@ class UserRepository(BaseRepository[UserDTO]):
             await self._raise_user_unique_conflict_if_present(entity, exc)
             raise
 
-    async def insert_datas(self, entities: list[BaseModel]) -> list[UserDTO]:
+    async def insert_datas(self, entities: Sequence[BaseModel]) -> list[UserDTO]:
         try:
             return await super().insert_datas(entities=entities)
         except DatabaseException as exc:

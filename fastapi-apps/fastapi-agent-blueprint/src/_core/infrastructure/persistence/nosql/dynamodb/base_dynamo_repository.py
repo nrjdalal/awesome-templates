@@ -6,7 +6,7 @@ import binascii
 import json
 import random
 from abc import ABC
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
 import structlog
@@ -283,7 +283,7 @@ class BaseDynamoRepository(Generic[ReturnDTO], ABC):
     # ------------------------------------------------------------------
 
     async def batch_put_items(
-        self, entities: list[BaseModel], *, max_retries: int = 3
+        self, entities: Sequence[BaseModel], *, max_retries: int = 3
     ) -> list[ReturnDTO]:
         """Batch write items (auto-chunks to 25, retries UnprocessedItems)."""
         results: list[ReturnDTO] = []

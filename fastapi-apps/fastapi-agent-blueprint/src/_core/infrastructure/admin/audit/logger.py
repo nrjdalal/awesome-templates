@@ -25,7 +25,7 @@ from __future__ import annotations
 import functools
 import inspect
 from collections.abc import Awaitable, Callable
-from typing import Any, ParamSpec, TypeVar
+from typing import Any, ParamSpec, Protocol, TypeVar
 
 import structlog
 from asgi_correlation_id import correlation_id as _correlation_id
@@ -63,12 +63,25 @@ def _loggable(value: Any) -> Any:
     return "<unset>" if value is _UNSET else value
 
 
+class _AuditLogSink(Protocol):
+    """The one method this logger needs, declared where it is needed.
+
+    `AdminAuditLogRepository` was the annotation, which asks a caller for the
+    whole repository — including its read side, which the logger never touches —
+    and makes a write-only test double unusable without lying about its type. The
+    narrow protocol is also the accurate description of the seam: an audit sink
+    is something you can hand an entry to.
+    """
+
+    async def insert(self, dto: AuditLogDTO) -> None: ...
+
+
 class AuditLogger:
     """Thin facade callers use to record an audit entry."""
 
     def __init__(
         self,
-        repository: AdminAuditLogRepository,
+        repository: _AuditLogSink,
         error_notifier: Any | None = None,
     ) -> None:
         self._repository = repository

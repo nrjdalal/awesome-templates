@@ -1,3 +1,5 @@
+from typing import Any
+
 import pytest
 
 from src._core.infrastructure.admin.base_admin_page import BaseAdminPage, ColumnConfig
@@ -59,8 +61,27 @@ def test_get_service_raises_when_provider_not_set():
         config._get_service()
 
 
+class _MinimalService:
+    """The two members `AdminCrudServiceProtocol` declares, and nothing else.
+
+    A bare `object()` was the previous sentinel. It works at runtime — the test
+    only asserts identity — but `_service_provider` is typed
+    `Callable[[], AdminCrudServiceProtocol]`, so an `object` provider claims the
+    wiring is valid when it is not. Giving the stand-in the shape of the thing it
+    stands in for keeps the identity assertion and makes the annotation true.
+    """
+
+    async def get_datas(
+        self, page: int, page_size: int, query_filter: Any
+    ) -> tuple[list[Any], Any]:
+        raise NotImplementedError
+
+    async def get_data_by_data_id(self, data_id: int) -> Any:
+        raise NotImplementedError
+
+
 def test_get_service_calls_provider():
-    sentinel = object()
+    sentinel = _MinimalService()
     config = _make_page_config()
     config._service_provider = lambda: sentinel
 

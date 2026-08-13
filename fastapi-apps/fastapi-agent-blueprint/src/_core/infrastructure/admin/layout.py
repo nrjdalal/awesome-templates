@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Protocol
 
 from nicegui import app, ui
 
@@ -22,8 +22,26 @@ if TYPE_CHECKING:
     from src._core.infrastructure.admin.base_admin_page import BaseAdminPage
 
 
+class _SupportsProps(Protocol):
+    """What this helper actually needs: something with callable Quasar props.
+
+    `ui.button` was the annotation, and it is *nominal* — no test double can ever
+    satisfy it, however faithful, which is why the one in `test_loading_states.py`
+    had to be passed against the type. Only `.props()` is used here, so the narrow
+    protocol is both accurate and testable.
+
+    Declared as a read-only attribute of type `Any` rather than a method, because
+    NiceGUI's own shape is neither: `Element.props` is a *property* returning a
+    callable `Props` wrapper. A method signature here would exclude the real
+    button, which is worse than the annotation it replaced.
+    """
+
+    @property
+    def props(self) -> Any: ...
+
+
 @asynccontextmanager
-async def button_loading(button: ui.button) -> AsyncIterator[None]:
+async def button_loading(button: _SupportsProps) -> AsyncIterator[None]:
     """Show Quasar ``loading`` + ``disable`` on a button while an async op runs.
 
     Gives immediate feedback on slow admin write actions and blocks duplicate

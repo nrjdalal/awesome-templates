@@ -4,9 +4,10 @@ import pytest
 
 from examples.url_shortener.domain.dtos.link_dto import LinkDTO
 from examples.url_shortener.domain.services.link_service import LinkService
+from tests.support.fake_repository import FakeRepositoryBase
 
 
-class InMemoryLinkRepository:
+class InMemoryLinkRepository(FakeRepositoryBase[LinkDTO]):
     def __init__(self, links: list[LinkDTO]) -> None:
         self.links = {link.short_code: link for link in links}
 
@@ -19,6 +20,15 @@ class InMemoryLinkRepository:
         for short_code in expired_codes:
             self.links.pop(short_code)
         return len(expired_codes)
+
+    # The domain half of LinkRepositoryProtocol; this test only exercises
+    # delete_expired. Raising rather than absent, so the double satisfies the
+    # protocol and a future caller fails loudly.
+    async def select_data_by_short_code(self, short_code: str) -> LinkDTO:
+        raise self._unsupported("select_data_by_short_code")
+
+    async def delete_data_by_short_code(self, short_code: str) -> bool:
+        raise self._unsupported("delete_data_by_short_code")
 
 
 def make_link(short_code: str, expires_at: datetime | None) -> LinkDTO:

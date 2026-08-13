@@ -1,4 +1,4 @@
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from typing import Any
 
 import pytest
@@ -12,9 +12,10 @@ from src.user.domain.exceptions.user_exceptions import UserAlreadyExistsExceptio
 from src.user.domain.services.user_service import UserService
 from src.user.interface.server.schemas.user_schema import UpdateUserRequest
 from tests.factories.user_factory import make_create_user_request, make_user_dto
+from tests.support.fake_repository import FakeRepositoryBase
 
 
-class MockUserRepository:
+class MockUserRepository(FakeRepositoryBase[UserDTO]):
     """Protocol-based Mock — no need to inherit UserRepository"""
 
     def __init__(self):
@@ -27,7 +28,7 @@ class MockUserRepository:
         self._next_id += 1
         return dto
 
-    async def insert_datas(self, entities: list[BaseModel]) -> list[UserDTO]:
+    async def insert_datas(self, entities: Sequence[BaseModel]) -> list[UserDTO]:
         return [await self.insert_data(e) for e in entities]
 
     async def select_datas(self, page: int, page_size: int) -> list[UserDTO]:

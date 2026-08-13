@@ -29,9 +29,12 @@ class BaseService(Generic[CreateDTO, UpdateDTO, ReturnDTO]):
 
     async def create_datas(self, entities: list[CreateDTO]) -> list[ReturnDTO]:
         await self._validate_create_many(entities)
-        return await self.repository.insert_datas(
-            entities=cast(list[BaseModel], entities)
-        )
+        # No cast: the repository takes `Sequence[BaseModel]`, and `Sequence` is
+        # covariant, so `list[CreateDTO]` is one directly. While it took
+        # `list[BaseModel]` this line needed `cast(list[BaseModel], entities)` —
+        # a claim that would also have permitted appending an unrelated BaseModel
+        # to the caller's list.
+        return await self.repository.insert_datas(entities=entities)
 
     async def get_datas(
         self,

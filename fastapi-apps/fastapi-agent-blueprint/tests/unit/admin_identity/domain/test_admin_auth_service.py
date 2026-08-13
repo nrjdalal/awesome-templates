@@ -12,7 +12,10 @@ import pytest
 
 from src._core.common.jwt_codec import ACCESS_TOKEN_TYPE, JwtCodecConfig, JwtTokenCodec
 from src._core.common.security import hash_password
-from src.admin_identity.domain.dtos.admin_identity_dto import AdminRefreshTokenDTO
+from src.admin_identity.domain.dtos.admin_identity_dto import (
+    AdminIdentityDTO,
+    AdminRefreshTokenDTO,
+)
 from src.admin_identity.domain.exceptions.admin_identity_exceptions import (
     AdminInvalidCredentialsException,
     AdminInvalidTokenException,
@@ -24,9 +27,10 @@ from tests.factories.admin_identity_factory import (
     make_admin_token_config,
 )
 from tests.factories.auth_factory import make_auth_token_config
+from tests.support.fake_repository import FakeRepositoryBase
 
 
-class MockAdminRepository:
+class MockAdminRepository(FakeRepositoryBase[AdminIdentityDTO]):
     def __init__(self, admins=None) -> None:
         self._admins = {a.id: a for a in (admins or [])}
 
@@ -39,8 +43,25 @@ class MockAdminRepository:
     async def select_data_by_id(self, data_id: int):
         return self._admins[data_id]
 
+    # The domain half of AdminIdentityRepositoryProtocol. Present so the double
+    # satisfies the protocol it is passed as, raising so a call this test was
+    # never written to serve fails loudly — same convention as FakeRepositoryBase.
+    async def has_real_admin(self) -> bool:
+        raise self._unsupported("has_real_admin")
 
-class MockAdminRefreshTokenRepository:
+    async def delete_data_by_username(self, username: str) -> bool:
+        raise self._unsupported("delete_data_by_username")
+
+    async def count_accounts_permission_holders(
+        self, exclude_admin_id: int | None = None
+    ) -> int:
+        raise self._unsupported("count_accounts_permission_holders")
+
+    async def select_all_admins(self) -> list[AdminIdentityDTO]:
+        raise self._unsupported("select_all_admins")
+
+
+class MockAdminRefreshTokenRepository(FakeRepositoryBase[AdminRefreshTokenDTO]):
     def __init__(self) -> None:
         self._store: dict[str, AdminRefreshTokenDTO] = {}
         self._id = 0

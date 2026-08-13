@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from typing import Any
 
 import pytest
@@ -25,11 +25,12 @@ from src.admin_identity.domain.services.admin_identity_service import (
     AdminIdentityService,
 )
 from tests.factories.admin_identity_factory import make_admin_identity_dto
+from tests.support.fake_repository import FakeRepositoryBase
 
 # ── Fakes ──────────────────────────────────────────────────────────────────
 
 
-class FakeAdminRepository:
+class FakeAdminRepository(FakeRepositoryBase[AdminIdentityDTO]):
     """In-memory repo satisfying AdminIdentityService + AdminAccountUseCase."""
 
     def __init__(self, admins: list[AdminIdentityDTO] | None = None) -> None:
@@ -113,7 +114,9 @@ class FakeAdminRepository:
             and getattr(dto, field) in value_set
         }
 
-    async def insert_datas(self, entities: list[BaseModel]) -> list[AdminIdentityDTO]:
+    async def insert_datas(
+        self, entities: Sequence[BaseModel]
+    ) -> list[AdminIdentityDTO]:
         return [await self.insert_data(e) for e in entities]
 
     async def count_datas(self) -> int:

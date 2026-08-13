@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from typing import TYPE_CHECKING, Any, Generic, Protocol, TypeVar
 
 from pydantic import BaseModel
@@ -17,7 +17,10 @@ ReturnDTO = TypeVar("ReturnDTO", bound=BaseModel)
 class BaseRepositoryProtocol(Protocol, Generic[ReturnDTO]):
     async def insert_data(self, entity: BaseModel) -> ReturnDTO: ...
 
-    async def insert_datas(self, entities: list[BaseModel]) -> list[ReturnDTO]: ...
+    # `Sequence`, not `list`: the parameter is only iterated, and `list` is
+    # invariant — a caller holding `list[MyDTO]` could not pass it without a
+    # cast, which is exactly what `BaseService.create_datas` used to do.
+    async def insert_datas(self, entities: Sequence[BaseModel]) -> list[ReturnDTO]: ...
 
     async def select_datas(self, page: int, page_size: int) -> list[ReturnDTO]: ...
 

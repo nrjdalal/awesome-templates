@@ -17,9 +17,10 @@ from src.auth.domain.services.auth_service import AuthService
 from src.user.domain.dtos.user_dto import UserDTO
 from tests.factories.auth_factory import make_auth_token_config
 from tests.factories.user_factory import make_user_dto
+from tests.support.fake_repository import FakeRepositoryBase
 
 
-class MockUserRepository:
+class MockUserRepository(FakeRepositoryBase[UserDTO]):
     def __init__(self, users: list[UserDTO] | None = None) -> None:
         self._users = {user.id: user for user in users or []}
 
@@ -72,7 +73,7 @@ class MockUserRepository:
         return len(self._users)
 
 
-class MockRefreshTokenRepository:
+class MockRefreshTokenRepository(FakeRepositoryBase[RefreshTokenDTO]):
     def __init__(self) -> None:
         self._store: dict[str, RefreshTokenDTO] = {}
         self._next_id = 1

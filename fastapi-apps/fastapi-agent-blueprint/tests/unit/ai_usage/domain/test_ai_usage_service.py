@@ -4,6 +4,7 @@ import pytest
 
 from src.ai_usage.domain.dtos.ai_usage_dto import (
     AiUsageByOrgDTO,
+    AiUsageDTO,
     AiUsageSummaryDTO,
 )
 from src.ai_usage.domain.exceptions.ai_usage_exceptions import (
@@ -15,9 +16,10 @@ from tests.factories.ai_usage_factory import (
     make_ai_usage_dto,
     make_create_ai_usage_request,
 )
+from tests.support.fake_repository import FakeRepositoryBase
 
 
-class MockAiUsageRepository:
+class MockAiUsageRepository(FakeRepositoryBase[AiUsageDTO]):
     def __init__(self) -> None:
         self.inserted = []
 

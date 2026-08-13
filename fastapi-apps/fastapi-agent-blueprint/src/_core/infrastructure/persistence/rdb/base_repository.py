@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from datetime import date, datetime
 from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
@@ -48,7 +48,7 @@ class BaseRepository(Generic[ReturnDTO], ABC):
             await session.refresh(data)
             return self.return_entity.model_validate(data, from_attributes=True)
 
-    async def insert_datas(self, entities: list[BaseModel]) -> list[ReturnDTO]:
+    async def insert_datas(self, entities: Sequence[BaseModel]) -> list[ReturnDTO]:
         async with self.database.session() as session:
             datas = [
                 self.model(**entity.model_dump(exclude_none=True))

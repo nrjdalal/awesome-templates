@@ -1,4 +1,6 @@
 import importlib
+from collections.abc import Callable
+from typing import Any, Protocol
 
 import structlog
 from fastapi import FastAPI
@@ -139,7 +141,21 @@ def bootstrap_admin(fastapi_app: FastAPI) -> None:
     )
 
 
-def _install_bootstrap_admin_seed(fastapi_app: FastAPI, admin_container) -> None:
+class _SupportsEventHandler(Protocol):
+    """The one method this function needs, declared where it is needed.
+
+    It registers a `startup` handler and touches nothing else on the app, so
+    asking for `FastAPI` over-states the requirement and forces a test to build a
+    real application (or pass a double the type checker rejects) to exercise one
+    line of registration.
+    """
+
+    def add_event_handler(self, event_type: str, func: Callable[..., Any]) -> None: ...
+
+
+def _install_bootstrap_admin_seed(
+    fastapi_app: _SupportsEventHandler, admin_container
+) -> None:
     if not settings.admin_bootstrap_enabled:
         return
 

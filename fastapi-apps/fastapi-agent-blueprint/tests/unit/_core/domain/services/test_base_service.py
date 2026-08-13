@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from datetime import date, datetime
 from typing import Any
 
@@ -37,7 +37,7 @@ class FakeRepository:
         self.next_id += 1
         return item
 
-    async def insert_datas(self, entities: list[BaseModel]) -> list[ItemDTO]:
+    async def insert_datas(self, entities: Sequence[BaseModel]) -> list[ItemDTO]:
         return [await self.insert_data(entity) for entity in entities]
 
     async def select_datas(self, page: int, page_size: int) -> list[ItemDTO]:
