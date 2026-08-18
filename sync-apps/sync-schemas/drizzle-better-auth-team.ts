@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm"
-import { boolean, index, pgTable, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core"
+import { boolean, index, integer, pgTable, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core"
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
@@ -93,6 +93,7 @@ export const team = pgTable(
   {
     id: text("id").primaryKey(),
     name: text("name").notNull(),
+    memberCount: integer("member_count").default(0).notNull(),
     organizationId: text("organization_id")
       .notNull()
       .references(() => organization.id, { onDelete: "cascade" }),
@@ -112,6 +113,7 @@ export const teamMember = pgTable(
     userId: text("user_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
+    membershipKey: text("membership_key").unique(),
     createdAt: timestamp("created_at"),
   },
   (table) => [
