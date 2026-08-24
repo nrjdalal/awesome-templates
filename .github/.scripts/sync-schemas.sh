@@ -3,7 +3,7 @@ mkdir awesomedir
 # 1. drizzle-better-auth (base - no organization)
 bunx gitpick nrjdalal/awesome-templates/tree/main/next.js-apps/next.js-pro next.js-pro
 cd next.js-pro
-bun i && bunx @better-auth/cli generate --config src/lib/auth/index.ts -y
+bun i && bunx auth@$(bun -e "console.log(require('better-auth/package.json').version)") generate --config src/lib/auth/index.ts -y
 bunx prettier --write auth-schema.ts
 cd ..
 mv next.js-pro/auth-schema.ts awesomedir/drizzle-better-auth.ts
@@ -21,7 +21,7 @@ awk '
     inMagicLink = 0
   }
 ' src/lib/auth/index.ts >_ && mv _ src/lib/auth/index.ts
-bun i && bunx @better-auth/cli generate --config src/lib/auth/index.ts -y
+bun i && bunx auth@$(bun -e "console.log(require('better-auth/package.json').version)") generate --config src/lib/auth/index.ts -y
 bunx prettier --write auth-schema.ts
 cd ..
 mv next.js-pro/auth-schema.ts awesomedir/drizzle-better-auth-organization.ts
@@ -41,7 +41,7 @@ awk '
     inMagicLink = 0
   }
 ' src/lib/auth/index.ts >_ && mv _ src/lib/auth/index.ts
-bun i && bunx @better-auth/cli generate --config src/lib/auth/index.ts -y
+bun i && bunx auth@$(bun -e "console.log(require('better-auth/package.json').version)") generate --config src/lib/auth/index.ts -y
 bunx prettier --write auth-schema.ts
 cd ..
 mv next.js-pro/auth-schema.ts awesomedir/drizzle-better-auth-team.ts
