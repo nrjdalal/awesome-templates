@@ -58,7 +58,7 @@
     "tailwindcss": "^4",
     "typescript": "^5"
   },
-  "packageManager": "bun@1.4.0",
+  "packageManager": "bun@1.4.1",
   "ignoreScripts": [
     "sharp",
     "unrs-resolver"

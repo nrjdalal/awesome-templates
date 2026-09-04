@@ -1,7 +1,7 @@
 "use client"
 
-import { cn } from "@/lib/utils"
 import { ContextMenu as ContextMenuPrimitive } from "@base-ui/react/context-menu"
+import { cn } from "cn"
 import { CheckIcon, ChevronRightIcon } from "lucide-react"
 import * as React from "react"
 

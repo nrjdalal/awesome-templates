@@ -1,8 +1,8 @@
 "use client"
 
 import { buttonVariants, type Button } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
 import { Questionnaire as QuestionnairePrimitive } from "@shadcn/react/questionnaire"
+import { cn } from "cn"
 import { CheckIcon } from "lucide-react"
 import * as React from "react"
 

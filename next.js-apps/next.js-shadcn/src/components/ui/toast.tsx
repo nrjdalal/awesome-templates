@@ -1,8 +1,8 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
 import { Toast as ToastPrimitive } from "@base-ui/react/toast"
+import { cn } from "cn"
 import {
   CircleCheckIcon,
   InfoIcon,

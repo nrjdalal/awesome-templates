@@ -1,13 +1,13 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
 import {
   MessageScroller as MessageScrollerPrimitive,
   useMessageScroller,
   useMessageScrollerScrollable,
   useMessageScrollerVisibility,
 } from "@shadcn/react/message-scroller"
+import { cn } from "cn"
 import { ArrowDownIcon } from "lucide-react"
 import * as React from "react"
 
