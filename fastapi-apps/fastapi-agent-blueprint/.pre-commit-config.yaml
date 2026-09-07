@@ -147,6 +147,46 @@ repos:
         pass_filenames: false
         always_run: true
 
+      # Markdown link check (issue #408):
+      # every relative link in a git-tracked *.md file must resolve against the
+      # git index, and every `#anchor` into a Markdown file must match a heading.
+      #
+      # BLOCKING, unlike the advisory migration-safety hook above. The line this
+      # crosses is `project-dna.md` §0 ("the harness nudges; humans and CI
+      # decide"), so the reasoning is recorded here rather than assumed. That
+      # non-goal governs the *governor* layer — stage gates and verify-first
+      # reminders, which judge intent and are wrong often enough that blocking
+      # would cost more than it saves. The discriminator this repo actually
+      # applies is determinism, not subject matter: language-policy,
+      # examples-copyflow, no-domain-infra-import and the tracked-state-file
+      # branch of state-lifecycle-check all block, because each asserts a fact;
+      # migration-safety is advisory because "is this DDL unsafe?" is a heuristic
+      # that depends on table size and deploy strategy. `(dir / target) in the
+      # git index` is a fact, in the same class. Measured on the tree this hook
+      # shipped with: 646 relative targets and 86 anchors, 0 false positives.
+      # `/execute-plan` § Advisory-First Enforcement sets the bar for promotion —
+      # tests, and no broad false positives — and the test file pins exactly the
+      # cases that would otherwise produce them (fenced blocks, inline-code
+      # regexes, YAML frontmatter, external URLs, `#L10` line refs).
+      #
+      # pass_filenames: false + always_run: true — a FULL-REPO scan, matching the
+      # two hooks above. A changed-files hook cannot catch the anchor half at
+      # all: renaming a heading in README.md orphans pointers in files that
+      # commit never touched. That is not hypothetical — `## AI-Native
+      # Development` and `## Project Structure` were renamed away in #79 and
+      # orphaned two inbound anchors that nothing noticed until this hook was
+      # written. The scan costs ~0.1s over 192 files.
+      #
+      # Resolution authority is the git index, not the filesystem: macOS is
+      # case-insensitive by default, so `docs/History/x.md` would resolve on a
+      # developer's machine and 404 on Linux CI.
+      - id: doc-links
+        name: "Doc links: relative targets and anchors must resolve"
+        language: system
+        entry: python3 tools/check_doc_links.py
+        pass_filenames: false
+        always_run: true
+
       # Guard G closure enforcement (post-ADR 047):
       # The canonical Guard G enforcement target moved from the per-PR
       # governor-review-log/ archive to the PR-description Governor Footer

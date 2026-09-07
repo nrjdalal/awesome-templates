@@ -20,8 +20,9 @@ after architecture, security, or workflow changes.
 
 - standalone inspection mode - discover drift directly from the repo state
 - review follow-up mode - consume incoming drift candidates from
-  `/review-pr`, `/review-architecture`, or `/security-review`, then verify and
-  close them
+  `/review-pr`, `/review-architecture`, `/security-review`, or `/fix-bug`
+  (whose `Bug Fix Report` carries `Drift Candidates` + `Sync Required` in the
+  same shape), then verify and close them
 
 ## Input Contract
 

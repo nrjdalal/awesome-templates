@@ -139,7 +139,7 @@ Confirm that the session shows a `context7` MCP startup or tool call before trea
 
 ## Project Structure
 
-See [README.md](README.md#project-structure) for the full project structure.
+See [`docs/reference.md`](docs/reference.md#project-structure) for the full project structure.
 
 Each domain follows a consistent layout:
 
@@ -204,6 +204,12 @@ make lint        # Check for issues
 make format      # Auto-format
 make pre-commit  # Run all pre-commit hooks
 ```
+
+One hook is worth knowing about before it surprises you: `doc-links` scans **every**
+markdown file in the repository on every commit, not just the ones you changed, and
+fails on a relative link or `#anchor` that does not resolve. It has to work that way —
+renaming a heading breaks the files pointing at it, and your commit does not touch
+those. Run it directly with `uv run python tools/check_doc_links.py`.
 
 ## Architecture guardrails
 

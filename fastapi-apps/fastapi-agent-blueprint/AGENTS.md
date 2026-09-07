@@ -406,3 +406,4 @@ uv run alembic current
 - Shared rule sources: `AGENTS.md`, `docs/ai/shared/`, `.claude/`, `.codex/`, `.antigravity/`, `.gemini/`, `.agents/`
 - Update related docs in the same change when shared rules or harness behavior changes (see drift-checklist.md for the full sync checklist)
 - Language drift: new prose in Tier 1 paths must be English — run `python3 tools/check_language_policy.py` before closing work
+- Link drift: a document that points at a moved authority is drift the reader cannot see. `python3 tools/check_doc_links.py` resolves every relative markdown link and `#anchor` in the repository against the git index (#408); it runs blocking on every commit, so the usual reason to invoke it by hand is to check a target *before* moving or renaming it

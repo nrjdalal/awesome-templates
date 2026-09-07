@@ -89,7 +89,7 @@
 | Security audit | `/security-review` | `{domain}`, `{file}`, or `all` | 13 categories, feature-freshness preflight, stale-drift detection |
 | Guideline sync | `/sync-guidelines` | (none) | Close the quality gate after design changes or review drift |
 | Approved plan execution | `/execute-plan` / `$execute-plan` | `{Execution Packet or plan ref}` | Native execution workflow for complex, architecture-changing, governor-changing, or multi-task plans |
-| Bug fix | `/fix-bug` | `"{description}"` | Reproduce -> Trace -> Fix -> Verify |
+| Bug fix | `/fix-bug` | `"{description}"` | Reproduce (existence gate) -> Trace (Cause Impact Matrix) -> Fix -> Verify, then a Bug Fix Report carrying `Outcome` |
 | DB migration | `/migrate-domain` | `generate\|upgrade\|downgrade\|status` | Manual review required after autogenerate |
 | New member onboarding | `/onboard` | (none) | Experience-level adaptive (Beginner/Intermediate/Advanced) |
 | Sub-feature design | `/plan-feature` | `"{description}"` | Recursive use when splitting large features |

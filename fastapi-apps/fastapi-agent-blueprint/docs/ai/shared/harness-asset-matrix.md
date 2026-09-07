@@ -564,13 +564,13 @@ Bucket guideline:
 
 ### `fix-bug` (Overlay)
 
-- **Current role**: Reproduce → Trace → Fix → Verify 4-phase bug workflow.
-- **Why it exists**: Prevent symptom-only fixes.
+- **Current role**: Reproduce → Trace → Fix → Verify 4-phase bug workflow, with a Phase 1 existence gate (`not-a-bug` / `cannot-reproduce` exits), a Phase 2 Cause Impact Matrix, and an always-emitted `Bug Fix Report`.
+- **Why it exists**: Prevent symptom-only fixes — and, since the hardening, prevent fixes built on an unverified report (the #401 shape, where an issue was filed for a defect that did not exist).
 - **Replacement feasibility**: Partial. The four phases map naturally onto Default Flow's `framing`+`plan`+`implement`+`verify`.
 - **Bucket: Overlay**. The skill body remains valuable for the Trace/Verify detail; entry-point shifts.
 - **Final location**: unchanged.
 - **Phase 1 edit**: Default Flow Position section explaining the 1:1 phase mapping.
-- **Notes**: `[hotfix]` exception token is the natural escape for genuinely urgent bug-fix work.
+- **Notes**: the `hotfix` exception token (and its bilingual variant) remains the escape for genuinely urgent bug-fix work; `[trivial]` is explicitly *not* appropriate for a behaviour bug, because a regression test is required (`target-operating-model.md` Trace 2). The skill emits **`Outcome`** (`fixed` / `partial` / `not-a-bug` / `cannot-reproduce`) and deliberately does **not** consume the `review-protocol.md` §4 `Verdict` vocabulary — ADR 053 scopes that to the three review skills. It writes `update_goal_scope_plan(...)` for cross-session context only and never sets `workflow.stage`. A documented Small-Bug Lane carries the common one-line bug without an exception token.
 
 ### `onboard` (Overlay)
 

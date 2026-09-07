@@ -1,4 +1,7 @@
+import atexit
 import os
+import shutil
+import tempfile
 
 import pytest
 import pytest_asyncio
@@ -7,6 +10,42 @@ import structlog
 from migrations.env_utils import load_models
 from src._core.infrastructure.persistence.rdb.config import DatabaseConfig
 from src._core.infrastructure.persistence.rdb.database import Base, Database
+
+# Redirect every harness hook this session spawns away from the operator's live
+# state (#407).
+#
+# The eleven hook modules under `.agents/shared/`, `.claude/hooks/`,
+# `.codex/hooks/` and `.antigravity/hooks/` resolve their state directory as
+# `Path(os.environ.get("HARNESS_STATE_ROOT", REPO_ROOT))`. The default is the
+# real repository, so isolation is opt-in *per call site* — and a call site
+# that forgets it does not fail, it succeeds against production state. Eight
+# sites opted in; five files did not, and a routine `pytest tests/` overwrote
+# `.agents/state/current-work.json`, which the SessionStart hook reads back as
+# session context. A fixture prompt beginning `[trivial]` therefore surfaced,
+# one session later, as a process-gate waiver nobody had issued.
+#
+# Setting the variable here inverts that default for the whole session, and
+# covers both leak mechanisms:
+#
+#   * subprocess — `subprocess.run` without `env=` hands the child
+#     `os.environ`, so the child now inherits an isolated root;
+#   * in-process — a hook exec'd inside pytest via `importlib` writes through
+#     `work_ledger`, whose `STATE_ROOT` is a *module-level constant* bound on
+#     first import. A fixture would run too late to change it; this module is
+#     imported before any test module in `tests/`, so it is early enough.
+#
+# A call site that builds `env` from scratch inherits nothing and must still
+# pass the variable itself (or restore what it touches) — see
+# `tests/integration/test_stop_hook_e2e.py`. `tests/unit/agents_shared/
+# test_no_live_ledger_write.py` guards both ends.
+#
+# Not `setdefault`: an ambient `HARNESS_STATE_ROOT` pointing at the repository
+# would silently reinstate the bug, and no test asserts the unset default —
+# `tests/unit/agents_shared/test_work_ledger.py` patches module attributes
+# instead, which is immune to this.
+_HARNESS_STATE_ROOT = tempfile.mkdtemp(prefix="pytest-harness-state-")
+os.environ["HARNESS_STATE_ROOT"] = _HARNESS_STATE_ROOT
+atexit.register(shutil.rmtree, _HARNESS_STATE_ROOT, ignore_errors=True)
 
 # Populate ``Base.metadata`` with *every* model before any fixture touches the
 # schema (#374).

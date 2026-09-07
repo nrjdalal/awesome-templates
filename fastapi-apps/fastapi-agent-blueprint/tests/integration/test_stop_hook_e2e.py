@@ -29,6 +29,25 @@ _STATE_DIR = REPO_ROOT / ".codex" / "state"
 # even if a real session runs concurrently.
 _E2E_INFIX = "e2etest"
 
+_LEDGER_PATH = REPO_ROOT / ".agents" / "state" / "current-work.json"
+
+
+def _read_live_ledger() -> str | None:
+    """Exact bytes of the live work ledger, or ``None`` when it is absent."""
+    try:
+        return _LEDGER_PATH.read_text(encoding="utf-8")
+    except OSError:
+        return None
+
+
+def _restore_live_ledger(snapshot: str | None) -> None:
+    """Put the live work ledger back the way this test found it (#407)."""
+    if snapshot is None:
+        _LEDGER_PATH.unlink(missing_ok=True)
+        return
+    if _read_live_ledger() != snapshot:
+        _LEDGER_PATH.write_text(snapshot, encoding="utf-8")
+
 
 def test_stop_hook_e2e_marker_cleanup() -> None:
     """stop-sync-reminder.py must consume all exception-token markers on Stop."""
@@ -37,6 +56,14 @@ def test_stop_hook_e2e_marker_cleanup() -> None:
     now = time.time()
     stale_epoch = now - (48 * 3600)
     written: list[Path] = []
+    # The stripped env below is built from scratch, so this test inherits none
+    # of the session isolation that `tests/conftest.py` installs (#407) — and
+    # that is deliberate, because the markers under test live in the *real*
+    # `.codex/state/`. What is not deliberate is the rest of the Stop hook's
+    # work: it also calls `update_verification_from_git()`, which rewrites the
+    # operator's live `.agents/state/current-work.json`. Snapshot it and put it
+    # back, the same contract the marker cleanup below already honours.
+    ledger_before = _read_live_ledger()
 
     try:
         # 3 fresh markers (within 24 h — removed by IC-11 Option A bulk sweep)
@@ -110,3 +137,4 @@ def test_stop_hook_e2e_marker_cleanup() -> None:
         for marker in written:
             if marker.exists():
                 marker.unlink(missing_ok=True)
+        _restore_live_ledger(ledger_before)

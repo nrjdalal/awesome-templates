@@ -30,7 +30,7 @@ This file intentionally keeps only Claude-specific setup and workflow guidance.
 - `/review-architecture {domain|all}` — Architecture compliance audit
 - `/security-review {domain|file|all}` — Security quality-gate audit with feature-freshness preflight
 - `/test-domain {domain} [generate|run]` — Generate or run tests
-- `/fix-bug {description}` — Structured bug-fix workflow
+- `/fix-bug {description}` — Structured bug-fix workflow (existence gate -> root-cause trace -> Cause Impact Matrix -> verify -> Bug Fix Report)
 - `/review-pr {number|URL}` — PR quality-gate review with drift-candidate detection
 - `/sync-guidelines` — Close the quality gate after design changes or review-detected drift
 - `/migrate-domain {generate|upgrade|downgrade|status}` — Alembic migration management

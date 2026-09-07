@@ -206,7 +206,7 @@ When the user approves the plan:
 
 1. Write the native workflow state (`stage="planned"`, see the block above). This
    is a required close-out, not optional: the plan→execute boundary gate
-   ([ADR 054](../../history/054-plan-execute-boundary-hard-gate.md)) fires only
+   ([ADR 054](../../../history/054-plan-execute-boundary-hard-gate.md)) fires only
    when the ledger positively reads `planned`, so skipping the write silently
    downgrades the Claude hard block to the ADR 050 advisory.
 2. **Stop. Hand control back to the user in the same turn — do not start

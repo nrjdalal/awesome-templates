@@ -6,7 +6,7 @@
 > This file is auto-extracted/updated from `src/user/` (reference domain) and `src/_core/` (Base classes)
 > when `/sync-guidelines` is run. **Run `/sync-guidelines` instead of editing manually.**
 >
-> Last updated: 2026-08-01 (#286 / PR #313 + #315 / PR #319 — Error Notification severity channel routing and its boot-validation gate recorded in §8). Prior: 2026-07-28 (#310 / PR #312 — worker task-failure dispatch and the NiceGUI admin non-goal added to §8; this header was not bumped at the time). Prior: 2026-07-23 (#17 / PR #304 — Error Notification optional infra added to §8 Active Features). Prior: 2026-07-02 (#260 — `examples-copyflow` pre-commit guard added to §7 Architecture Violation Check). Prior: 2026-06-01 (#211 / #197 Phase 5 — guardrail observability ledger + red-team suite)
+> Last updated: 2026-09-05 (#408 / PR #411 — §7 now carries the **whole** local pre-commit hook block, not three of eight. The new `doc-links` hook is recorded there with the rest, and the section states which hooks block and which is advisory and why: the discriminator this repo applies is determinism, not subject matter. The drift checklist already required §7 to match `.pre-commit-config.yaml`, and it had not since **#131** — five hooks were missing, the oldest of them `tier1-language-policy`, which is the failure mode the new hook exists to catch, one layer up). Prior: 2026-08-01 (#286 / PR #313 + #315 / PR #319 — Error Notification severity channel routing and its boot-validation gate recorded in §8). Prior: 2026-07-28 (#310 / PR #312 — worker task-failure dispatch and the NiceGUI admin non-goal added to §8; this header was not bumped at the time). Prior: 2026-07-23 (#17 / PR #304 — Error Notification optional infra added to §8 Active Features). Prior: 2026-07-02 (#260 — `examples-copyflow` pre-commit guard added to §7 Architecture Violation Check). Prior: 2026-06-01 (#211 / #197 Phase 5 — guardrail observability ledger + red-team suite)
 
 ## Section Index
 §0 Project Scale and Design Philosophy |
@@ -665,8 +665,21 @@ class {Name}Container(containers.DeclarativeContainer):
 ### Architecture Violation Check (Auto-run)
 
 - no-domain-infra-import: No Infrastructure imports from Domain layer
+- no-domain-infra-import-examples: the same prohibition inside `examples/`, which the hook above cannot reach -- its `files` is anchored on `src/`, and examples import *relatively* so the copy-to-src flow keeps working (#260). Different pattern, not a wider glob
 - no-entity-pattern: No Entity pattern -- unified to DTO (background: ADR 004)
 - examples-copyflow: No absolute `examples.*` imports inside `examples/` -- the cp-to-src activation contract (#260; AST-based `tools/check_examples_copyflow.py`, paired with the `tests/integration/examples/` boot smoke)
+
+### Content and Harness Guards (Auto-run)
+
+The rest of the local hook block. Listed here because this section is the one the
+drift checklist reconciles against `.pre-commit-config.yaml`, and a list that
+names only some of the hooks fails nothing when it goes stale.
+
+- tier1-language-policy: no Korean prose in Tier 1 paths (`tools/check_language_policy.py`; AGENTS.md § Language Policy). Blocking. The hook's `files:` regex mirrors `TIER1_GLOBS` and a drift test asserts the two stay aligned
+- doc-links: every relative markdown link must resolve against the git index, and every `#fragment` into a markdown file must match a heading (#408; `tools/check_doc_links.py`). Blocking, `pass_filenames: false` + `always_run: true` -- a full-repo scan, because a changed-files hook cannot see a heading rename orphaning anchors in files that commit did not touch. Resolution is against the git index rather than `Path.exists()` so a case-only mismatch cannot pass on macOS and 404 on Linux CI
+- state-lifecycle-check: **fail-hard** on git-tracked state files under `.claude/state/` / `.codex/state/` / `.antigravity/state/`; **warn-only** above the stale-marker threshold. The split is the rule in miniature -- a tracked state file is a fact, a marker count is a judgement
+- harness-hook-surface: live agent hook wrappers must invoke the shared launcher instead of bare `python3` (`tools/check_harness_hook_surface.py`). Blocking
+- migration-safety: **advisory only** (`verbose: true`, checker exits 0; ADR056-G1). It is the one local hook that does not block, because "is this DDL unsafe?" depends on table size and deploy strategy rather than on a fact the checker can see
 
 ### Claude Hook
 

@@ -1,6 +1,6 @@
 # AI-Native Development Guide
 
-> For a quick overview, see the [README](../README.md#ai-native-development).
+> For a quick overview, see the [README](../README.md#ai-collaboration-harness).
 
 ## Structure
 

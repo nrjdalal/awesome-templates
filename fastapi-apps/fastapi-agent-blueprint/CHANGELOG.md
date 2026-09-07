@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Markdown link checker.** `tools/check_doc_links.py` resolves every relative link in every
+  git-tracked `*.md` file against the git index, and every `#anchor` into a Markdown file against
+  its headings (GitHub slug rules, ATX and setext, plus explicit HTML `id=` / `name=` anchors).
+  It runs as the blocking, full-repository `doc-links` pre-commit hook, so a heading renamed in
+  one file is caught against the pointers in files the commit never touched — which is how two
+  anchors orphaned by the #79 README restructure went unnoticed for four months. Thirteen broken
+  links in six files were fixed on the way in. **For forks:** the hook blocks; `SKIP=doc-links` or
+  `--no-verify` are the escape hatches, and external URLs are deliberately not checked
+  ([#408](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/408))
+
+### Changed
+
+- **`/fix-bug` proves the bug exists before it fixes anything.** The four canonical phases are
+  unchanged, but Phase 1 now branches *before* a reproduction test is written: a confirmed failure
+  obliges a red test asserting the specific failure mode, a disproved causal claim exits
+  `not-a-bug`, and anything weaker exits `cannot-reproduce` — neither exit writes production code
+  or a test. `not-a-bug` is deliberately narrow (an authoritative contract calls the behaviour
+  intended, or the claim is disproved in the same environment and code path); "I could not make it
+  fail" is explicitly not enough. This is the #401 shape, where an issue was filed for a defect
+  that did not exist. Phase 2 adds a **Cause Impact Matrix** — candidate, reachability evidence,
+  disposition (`test added` / `already covered` / `not reached` / `deferred`), and a termination
+  condition — which is what bounds test additions to what the root cause actually reaches instead
+  of an open-ended edge-case sweep; `already covered` requires a test that *runs*, so a merely
+  supported engine cannot close a candidate. Phase 3 fixes at the boundary that **owns** the broken
+  invariant per AGENTS.md § Responsibility Matrix, replacing the old "prefer domain >
+  infrastructure" wording that contradicted it. Phase 4 gained `uv run pyright`. Every run emits a
+  `Bug Fix Report` carrying **`Outcome`** (`fixed` / `partial` / `not-a-bug` / `cannot-reproduce`) —
+  deliberately *not* the review protocol's `Verdict`, which ADR 053 scopes to the three review
+  skills. A documented Small-Bug Lane carries the common one-line bug with an explicit delta table
+  rather than an exception token. **For forks:** the skill is advisory documentation — no hook, CI
+  gate, or runtime behaviour changed ([#405](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/405))
+
 ## [0.11.1] - 2026-08-13
 
 ### Added
