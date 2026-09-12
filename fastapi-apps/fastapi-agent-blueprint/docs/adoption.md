@@ -12,13 +12,20 @@ Use the GitHub template button to start a fresh project with the full structure:
 2. Clone your new repository and run:
 
 ```bash
-make setup
 make quickstart   # verify it boots
 ```
 
-3. Follow the [10-minute domain tutorial](tutorial/first-domain.md) to add your first domain.
+3. From another terminal in the same directory, run `make demo` and `make demo-rag`.
+   The RAG demo uses deterministic stubs; it does not call an external model.
+4. After evaluation, stop the server and run `make setup` to install development
+   dependencies and commit hooks. Follow the [first-domain tutorial](tutorial/first-domain.md)
+   or [PostgreSQL development setup](reference.md#local-development-with-postgresql).
 
-Everything is pre-wired: DI container, auto-discovery, pre-commit hooks, Claude Code and Codex CLI skills.
+DI, domain discovery, and repository-local skills are supplied by the template.
+Commit hooks are installed by `make setup`; AI tools have their own
+[setup steps](ai-development.md). `make quickstart` is an evaluation command:
+it syncs only the admin extra and may remove other installed extras. Restore
+development dependencies with `make setup` after returning from evaluation.
 
 ---
 

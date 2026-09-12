@@ -1,7 +1,7 @@
 # Reference
 
 Deep details that used to live in the README. Start with the
-[60-second quickstart](quickstart.md) or the
+[quickstart](quickstart.md) or the
 [README](../README.md) for the high-level pitch; come here when you need
 environment specifics, the full tech stack, or a manual walkthrough.
 

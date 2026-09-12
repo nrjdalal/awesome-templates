@@ -34,16 +34,14 @@ If you wish to make changes to this template or add your own, please refer to th
 </p>
 
 <p align="center">
-  <b>FastAPI backend blueprint for AI agent applications.</b><br>
-  DDD domains · SQLAlchemy/Alembic · Taskiq workers · admin UI · RAG infrastructure · Claude/Codex collaboration harness.
+  <b>A FastAPI backend blueprint for teams building with AI coding agents.</b><br>
+  A modular backend to run your application. A shared collaboration harness to guide how your team develops it.
 </p>
 
 <p align="center">
-  <a href="#try-it-in-60-seconds">60s Quickstart</a>
-  · <a href="#why-this-blueprint">Why</a>
-  · <a href="#ai-collaboration-harness">AI Collaboration</a>
-  · <a href="#how-it-compares">Comparison</a>
-  · <a href="#architecture-at-a-glance">Architecture</a>
+  <a href="#quickstart">Run the backend</a>
+  · <a href="#ai-collaboration-harness">Explore the harness</a>
+  · <a href="#why-this-blueprint">Is it a fit?</a>
   · <a href="docs/README.ko.md">한국어</a>
 </p>
 
@@ -53,187 +51,150 @@ If you wish to make changes to this template or add your own, please refer to th
   </a>
 </p>
 
----
+| Backend foundation | AI collaboration harness |
+|---|---|
+| Domain logic shared by HTTP APIs, background tasks, and an admin UI. Optional AI and infrastructure adapters let you start locally and add services as needed. | Repository rules, task-specific skills, hooks, and review procedures guide changes to that backend across Claude Code, Codex, and Antigravity. |
+| [Run it locally](#quickstart) · [See the architecture](#architecture-at-a-glance) | [Follow an API change](#ai-collaboration-harness) · [Read the shared workflow](docs/ai/shared/target-operating-model.md) |
 
-## Try it in 60 seconds
+## Why this blueprint
 
-No Docker, no PostgreSQL, no cloud credentials — SQLite + in-memory broker.
+Use it when you need multiple business domains, API + worker + admin surfaces,
+or a shared development workflow for teammates using AI coding tools. The
+backend and harness are designed together: the harness references this repo's
+layering, contracts, and verification commands.
+
+Budget time to learn the domain layout, dependency-injector containers, and
+plan/review workflow. A small single-purpose API may not need that structure;
+a project needing a bundled customer frontend needs a different starting point.
+The harness is repository-specific, not a standalone drop-in package.
+
+You can develop without AI tools using the [manual domain tutorial](docs/tutorial/first-domain.md).
+For incremental adoption and trade-offs, see the [adoption guide](docs/adoption.md)
+and [selection guide](docs/comparison.md).
+
+<a id="try-it-in-60-seconds"></a>
+
+## Quickstart
+
+Prerequisites: Python **>=3.12.9**, [uv](https://docs.astral.sh/uv/), Git, and
+`make`. The demos also use `curl` and `python3` on your PATH.
+No Docker, PostgreSQL, cloud credentials, or AI coding tool required.
+
+**Terminal 1 — start the backend:**
 
 ```bash
 git clone https://github.com/Mr-DooSun/fastapi-agent-blueprint.git
 cd fastapi-agent-blueprint
-make setup        # one-time: venv + deps via uv
-make quickstart   # FastAPI on :8001, SQLite schema auto-created
+make quickstart
 ```
 
-In a second terminal, `make demo` exercises the `auth` + `user` domains across
-both token realms (customer register → seed a demo admin → admin login → user
-CRUD → refresh → logout) and `make demo-rag` exercises the
-`docs` domain (end-to-end RAG: upload → chunk → embed → retrieve → answer
-with citations, zero credentials):
+This installs the quickstart dependencies, creates a SQLite database, and keeps
+the server running on port 8001. Use a fresh checkout for evaluation:
+`quickstart` syncs the admin extra and can remove other installed extras.
+For development dependencies and commit hooks, use `make setup` when moving to
+the [development setup](docs/reference.md#local-development-with-postgresql).
 
-```text
-→ Health check
-{ "status": "ok" }
-
-→ Register
-{ "success": true, "data": { "accessToken": "...", "refreshToken": "..." } }
-
-→ Create a user
-{ "success": true, "data": { "id": 2, "username": "bob", ... } }
-
-→ List users (page=1, pageSize=10)
-{ "data": [ { "id": 1, "username": "alice" }, { "id": 2, "username": "bob" } ],
-  "pagination": { "currentPage": 1, "totalItems": 2, "hasNext": false } }
-
-→ Update the user    → Delete the user
-→ Refresh token      → Logout
-→ Done. API docs: http://127.0.0.1:8001/docs
-```
-
-- API docs: <http://127.0.0.1:8001/docs> (Stoplight Elements & Scalar recommended; spec download + frontend handoff link on the same page)
-- Admin UI: <http://127.0.0.1:8001/admin> (`admin` / `admin`)
-- Full walkthrough: [`docs/quickstart.md`](docs/quickstart.md)
-- Frontend handoff: [`docs/frontend-handoff.md`](docs/frontend-handoff.md)
-- Real dev stack (PostgreSQL + migrations): [`docs/reference.md`](docs/reference.md#local-development-with-postgresql)
-
----
-
-## Platform in action
-
-Clone → quickstart → CRUD → JWT auth → background worker → RAG query:
+**Terminal 2 — from the same repository directory:**
 
 ```bash
-make quickstart && make demo && make demo-rag
+make demo       # JWT auth, admin-realm login, user CRUD, refresh and logout
+make demo-rag   # document upload, retrieval and an answer with citations
 ```
 
+Keep terminal 1 running. Both demos check their API responses and report failure
+if a request does not succeed. The default RAG demo uses a keyword-based stub
+embedder and a templated stub answer agent; it demonstrates the pipeline without
+calling an external model.
+
+- [API docs](http://127.0.0.1:8001/docs) — browse the API or download its OpenAPI spec.
+- [Admin UI](http://127.0.0.1:8001/admin) — evaluation bootstrap login: `admin` / `admin`.
+- [Quickstart details](docs/quickstart.md) · [Full integration walkthrough](docs/canonical-demo.md).
+
+These defaults are for local evaluation. Follow the development and deployment
+guides before using real data or exposing the service.
+
+<a id="platform-in-action"></a>
+
 <!-- Regenerate with `make demo-gif` whenever scripts/demo.sh changes. -->
-![API demo: health check → register → JWT → admin realm → user CRUD](docs/assets/cast/demo.gif)
+![Backend demo: authentication and user CRUD](docs/assets/cast/demo.gif)
 
+## Backend foundation
 
-Full integration walkthrough (auth · RBAC · worker · admin · RAG · OTEL): [`docs/canonical-demo.md`](docs/canonical-demo.md)
+| Capability | What it provides |
+|---|---|
+| Domain structure | Router → Service → Repository, with an optional UseCase for orchestration; automatic domain registration and reusable CRUD base classes. |
+| API, worker, admin | FastAPI endpoints, Taskiq background tasks, and NiceGUI admin pages consuming domain services. |
+| Optional infrastructure | SQL databases, DynamoDB, object storage, vector storage, and AI providers behind adapters and configuration. Start with SQLite + InMemory. |
+| Operations | JWT/RBAC, structured logging, opt-in OpenTelemetry, AI usage accounting, and error notifications. |
 
----
+<a id="ai-use-case-document-qa-srcdocs"></a>
 
-## Why this blueprint
+### Worked example: document QA
 
-<table>
-<tr>
-<td width="60%" valign="top">
+The `docs` domain composes document upload, chunking, embedding, retrieval, and
+answers with citations. Its shared RAG pipeline can be reused by other domains
+([ADR 040](docs/history/040-rag-as-reusable-pattern.md)).
 
-**Production rigor**
+For real model calls, install the `pydantic-ai` extra, configure
+`EMBEDDING_PROVIDER` + `EMBEDDING_MODEL` and `LLM_PROVIDER` + `LLM_MODEL`, and
+supply the selected providers' credentials. See the
+[configuration reference](docs/reference.md) for optional extras and settings;
+the [RAG walkthrough](docs/canonical-demo.md) shows the flow.
 
-- **DDD layers (4-tier)** — Interface · Domain · Infrastructure · Application, enforced by pre-commit import guard
-- **Zero-boilerplate CRUD** — 8 async methods via `BaseService` + `BaseRepository`, paginated list with `QueryFilter` included
-- **Auto domain discovery** — drop a folder into `src/{name}/`, it auto-registers. No container edits, no bootstrap edits
-- **Agent backend surfaces** — REST API, async worker, admin UI, and a planned MCP interface over the same domain logic
-- **Pluggable infra** — PostgreSQL / MySQL / SQLite · DynamoDB · S3 / MinIO · S3 Vectors · SQS / RabbitMQ · OpenAI / Bedrock
-- **OpenTelemetry** — `[otel]` extra, `OTEL_ENABLED` env flag, Jaeger/Tempo/Phoenix recipe
-- **Error notifications** — optional Slack/Discord webhook alerts from the exception handlers and from worker task failures, severity + cooldown gated, with optional per-severity channel routing ([runbook](docs/operations/error-notifications.md))
-- **JWT + RBAC** — HS256 auth domain, DB-backed refresh rotation, `User.role` admin gating
-- **AI Usage Ledger** — per-call LLM accounting, `ai_usage` domain, admin + API surfaces
-- **Taskiq smart retry** — task-scoped structured logging, permanent-aware retry policy
-- **Frontend handoff** — OpenAPI download, Bruno/Postman/Hey API/Orval recipes, JWT flow, camelCase contract ([`docs/frontend-handoff.md`](docs/frontend-handoff.md))
+<a id="interfaces"></a>
 
-</td>
-<td width="40%" valign="top">
-
-**AI-assisted acceleration**
-
-- **Claude/Codex collaboration harness** — shared `AGENTS.md`, mirrored skills, and hook-backed workflow reminders
-- `/new-domain order` or `$new-domain order` scaffolds **44 files** (15 source + 25 `__init__.py` + 4 tests) in one command
-- **15 Claude Code + 15 Codex CLI skills** sharing the same architecture and review rules
-- **AI-assisted development (AIDD)** — humans keep product judgment; agents follow repeatable domain, test, review, and drift-check workflows
-- Full setup: [`docs/ai-development.md`](docs/ai-development.md)
-- Manual path: [`docs/tutorial/first-domain.md`](docs/tutorial/first-domain.md) (Path B)
-
-![/new-domain order → 44 files scaffolded → tests pass](docs/assets/cast/new-domain.gif)
-
-> Works as a normal FastAPI blueprint. With Claude Code or Codex CLI, the same production workflow becomes AI-assisted and repeatable.
-
-</td>
-</tr>
-</table>
-
----
+HTTP, worker, and admin interfaces are implemented. The MCP server interface
+is [planned](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/18), not
+part of the runnable backend today.
 
 ## AI collaboration harness
 
-Most templates stop at generated files. This blueprint also ships the
-collaboration layer that keeps AI coding agents useful after the first
-scaffold:
+The harness helps contributors work within the same backend conventions:
 
-- **Shared source of truth** — `AGENTS.md` defines the architecture, DTO rules, logging rules, security constraints, and default coding flow.
-- **Claude Code + Codex parity** — tool-specific harnesses point back to the same shared rules instead of drifting into separate playbooks.
-- **Repo-local skills** — domain scaffolding, API work, admin pages, worker tasks, migrations, tests, architecture review, security review, and guideline sync.
-- **Governed changes** — pre-commit checks, import guards, language policy, and review workflows catch architecture drift before it becomes team debt.
+| Capability | What it provides |
+|---|---|
+| Shared rules | `AGENTS.md` and shared references define architecture, contracts, security constraints, and the development workflow. |
+| Task-specific skills | Guides for domains, APIs, worker tasks, admin pages, migrations, testing, review, and documentation sync. |
+| Workflow boundaries | Planning and execution are separate steps. Scope changes, missing verification, and completion checks have explicit handling. |
+| Checks and review | Commit/CI checks inspect deterministic rules; reviews assess behavior, architectural fit, and documentation drift. |
 
-The result is a backend starter that can be used by hand, then accelerated by
-AI tools without asking every contributor to remember the whole architecture
-from scratch.
+### Worked example: add an API to an existing domain
 
----
+For a request such as “add a filtered list endpoint to the order domain,” the
+workflow is:
 
-## How it compares
+| Step | Contributor and agent actions |
+|---|---|
+| Frame and plan | Clarify the contract and affected layers with `/plan-feature` (Claude) or `$plan-feature` (Codex). Review the resulting execution packet. |
+| Start execution | The contributor explicitly invokes `/execute-plan` or `$execute-plan` with that packet. The executor routes API implementation through the `add-api` skill. |
+| Implement and verify | Reuse the existing layer patterns, add relevant tests, and run the packet's verification commands. Surface unplanned capability gaps before expanding the work. |
+| Review and sync | Review the diff; reconcile affected documentation with `sync-guidelines` when needed. Record verification and any unresolved items before PR completion. |
 
-| Feature | FastAPI Agent Blueprint | [tiangolo/full-stack](https://github.com/fastapi/full-stack-fastapi-template) | [s3rius/template](https://github.com/s3rius/FastAPI-template) | [teamhide/boilerplate](https://github.com/teamhide/fastapi-boilerplate) |
-|---|:-:|:-:|:-:|:-:|
-| Zero-boilerplate CRUD (8 methods) | **Yes** | No | No | No |
-| Auto domain discovery | **Yes** | No | No | No |
-| Architecture enforcement (pre-commit) | **Yes** | No | No | No |
-| AI workflow skills (Claude + Codex) | **15 + 15** | 0 | 0 | 0 |
-| Vector infrastructure (S3 Vectors) | **Yes** | No | No | No |
-| Multi-interface (API + Worker + Admin + MCP) | **3 + 1 planned** | 2 | 1 | 1 |
-| Architecture Decision Records | **29 active · 30 archived** | 0 | 0 | 0 |
-| Type-safe generics across layers | **Yes** | Partial | Partial | No |
-| IoC container DI | **Yes** | No | No | No |
+This is an illustrative workflow, not a command that runs every step
+automatically. Human decisions remain part of the process.
 
-Full comparison including Litestar, Robyn, cookiecutter, and adoption paths: [`docs/comparison.md`](docs/comparison.md)
+**What is enforced?** Configured pre-commit/CI checks block detected violations
+such as prohibited imports, broken documentation links, or shared-file language
+policy failures. Workflow reminders are advisory in many cases. For example,
+the plan-to-execution gate blocks matching source edits in Claude, while Codex
+receives a Stop-time advisory. Tool adapters share policy but do not provide
+identical enforcement. See the [operating model](docs/ai/shared/target-operating-model.md)
+for current coverage and exceptions.
 
----
+Domain scaffolding is another supported task:
 
-## AI use case: document QA (`src/docs/`)
+![Domain scaffolding through the new-domain skill](docs/assets/cast/new-domain.gif)
 
-The blueprint ships a worked RAG example — upload documents, ask questions,
-get structured answers with citations. It proves the building blocks
-(vectors, embeddings, LLM agent, worker, admin) compose end-to-end.
-
-```bash
-make quickstart   # terminal 1
-make demo-rag     # terminal 2 — seeds 3 docs, runs a query
-```
-
-```text
-POST /v1/docs/documents   # chunk → embed → upsert
-POST /v1/docs/query       # embed question → top-k retrieval → agent answer
-GET  /admin/docs          # browse + query playground
-```
-
-Under the hood, the RAG orchestration is a **reusable `_core` pattern**
-([ADR 040](docs/history/040-rag-as-reusable-pattern.md)), not a domain.
-`src/docs/` is one consumer; future AI domains (`support_bot`, `product_qa`)
-inject the same `RagPipeline` instead of duplicating chunking + retrieval
-code:
-
-```python
-# src/_core/domain/services/rag_pipeline.py
-class RagPipeline(Generic[TChunk]):
-    async def answer(self, question, top_k=5, filters=None) -> tuple[QueryAnswer, list[TChunk]]:
-        ...  # embed → vector_store.search → answer_agent.answer
-```
-
-Zero-config path uses a **stub embedder** (keyword bag-of-words) and **stub
-answer agent** (templated response from retrieved chunks), both in
-`src/_core/infrastructure/rag/`. Set `EMBEDDING_PROVIDER` + `LLM_PROVIDER`
-in `.env` to swap in real providers — the pipeline is the same.
-
----
+[Set up Claude Code or Codex](docs/ai-development.md) ·
+[Antigravity harness](.antigravity/rules/project-harness.md) ·
+[Shared rules](AGENTS.md) ·
+[Manual development path](docs/tutorial/first-domain.md)
 
 ## Architecture at a glance
 
-Every domain under `src/{domain}/` has four DDD layers. Arrows mean
-**"depends on"**. `Application` (use cases) is optional — the dotted
-line is the common path for simple CRUD (Router → Service directly).
+Every domain separates Interface, Domain, Infrastructure, and optional
+Application code. Runtime CRUD follows Router → Service → Repository;
+dependency arrows below describe imports, not request execution order.
 
 ```mermaid
 flowchart LR
@@ -257,94 +218,39 @@ flowchart LR
     Other["Another domain"] -. via Protocol-based DIP .-> D
 ```
 
-| Layer | Role | Base class |
-|---|---|---|
-| Interface | Router · Request/Response · Admin · Worker task | — |
-| Domain | Service · Protocol · DTO · Exceptions | `BaseService[CreateDTO, UpdateDTO, ReturnDTO]` |
-| Infrastructure | Repository · Model · DI container | `BaseRepository[ReturnDTO]` |
-| Application | UseCase — optional orchestrator | — |
+<a id="data-flow--write-post--put--delete"></a>
+<a id="storage-variants"></a>
 
-> Full set of diagrams (Layer · Write · Read) plus RDB / DynamoDB / S3
-> Vectors variants lives in
-> [`docs/ai/shared/architecture-diagrams.md`](docs/ai/shared/architecture-diagrams.md).
-> Non-Mermaid viewers:
-> [SVG exports](docs/assets/architecture/).
+Request schemas can pass directly to services when fields match. Model-to-DTO
+conversion belongs in repositories. Detailed write/read flows and storage
+variants are in the [architecture guide](docs/ai/shared/architecture-diagrams.md)
+([SVG versions](docs/assets/architecture/)).
 
-### Data flow — Write (`POST` / `PUT` / `DELETE`)
-
-```mermaid
-flowchart LR
-    C[Client] -->|"HTTP + JSON"| R[Router]
-    R -->|"Request schema"| S[Service]
-    S -->|"entity"| Re["Repository<br/>BaseRepository[DTO]"]
-    Re -->|"Model(**dto.model_dump())"| M[ORM Model]
-    M -->|"SQLAlchemy"| DB[(Database)]
-```
-
-- **Request → Service** directly when fields match (no intermediate DTO — [ADR 004](docs/history/004-dto-entity-responsibility.md)).
-- **Model ↔ DTO** conversion happens *only* inside the Repository.
-- Read flow is the mirror image; the Router strips sensitive fields on the way out.
-
-### Storage variants
-
-Same flow, different base classes:
-
-| Storage | Service base | Repository / Store base | List return |
-|---|---|---|---|
-| RDB (default) | `BaseService[Create, Update, DTO]` | `BaseRepository[DTO]` | `(list[DTO], PaginationInfo)` |
-| DynamoDB | `BaseDynamoService[…]` | `BaseDynamoRepository[DTO]` | `CursorPage[DTO]` |
-| S3 Vectors | domain-specific | `BaseS3VectorStore[DTO]` | `VectorSearchResult[DTO]` |
-
----
-
-## Interfaces
-
-One business logic, multiple surfaces:
-
-| Interface | Tech | Status | Purpose |
-|---|---|---|---|
-| HTTP API | FastAPI | Stable | REST endpoints |
-| Async worker | Taskiq + SQS / RabbitMQ / InMemory | Stable | Background jobs |
-| Admin UI | NiceGUI | Stable | Auto-generated admin CRUD |
-| MCP server | FastMCP | Planned ([#18](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/18)) | AI agent tool interface |
-
----
+<a id="how-it-compares"></a>
 
 ## Learn more
 
-| I want to… | Read |
+| Backend development | AI collaboration |
 |---|---|
-| Spin it up and poke around | [`docs/quickstart.md`](docs/quickstart.md) |
-| See everything work end-to-end (auth · RBAC · worker · RAG · OTEL) | [`docs/canonical-demo.md`](docs/canonical-demo.md) |
-| Build a real domain, end-to-end | [`docs/tutorial/first-domain.md`](docs/tutorial/first-domain.md) |
-| See small, pattern-focused example apps | [`examples/`](examples/) |
-| Understand the architecture in depth | [`docs/ai/shared/architecture-diagrams.md`](docs/ai/shared/architecture-diagrams.md) · [`AGENTS.md`](AGENTS.md) |
-| Set up Claude Code or Codex CLI | [`docs/ai-development.md`](docs/ai-development.md) |
-| Add a domain by hand (no AI tools) | [`docs/tutorial/first-domain.md`](docs/tutorial/first-domain.md) (Path B) |
-| Adopt into an existing FastAPI project | [`docs/adoption.md`](docs/adoption.md) |
-| Check Python / FastAPI / tool version support | [`docs/compatibility.md`](docs/compatibility.md) |
-| See detailed env vars, tech stack, project tree | [`docs/reference.md`](docs/reference.md) |
-| Understand why a decision was made | [ADR index](docs/history/README.md) (29 active · 30 archived) |
-| Follow what's next | [Roadmap](docs/reference.md#roadmap) · [issue tracker](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues) |
-
----
+| [Quickstart](docs/quickstart.md) · [Integration walkthrough](docs/canonical-demo.md) | [Tool setup](docs/ai-development.md) · [Antigravity](.antigravity/rules/project-harness.md) |
+| [First domain tutorial](docs/tutorial/first-domain.md) · [Examples](examples/) | [Shared rules](AGENTS.md) · [Workflow and exceptions](docs/ai/shared/target-operating-model.md) |
+| [Adoption paths](docs/adoption.md) · [Selection trade-offs](docs/comparison.md) | [Design decisions](docs/history/README.md) |
+| [Configuration](docs/reference.md) · [Compatibility](docs/compatibility.md) · [Frontend handoff](docs/frontend-handoff.md) | [Contribution and review workflow](CONTRIBUTING.md) |
 
 ## Roadmap
 
-- **MCP server interface** — expose domain services as agent tools via FastMCP ([#18](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/18))
-- **pgvector** — additional vector backend alongside S3 Vectors ([#11](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/11))
+- [MCP server interface](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/18).
+- [pgvector backend](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/11).
 
-See [full roadmap](docs/reference.md#roadmap) · [open issues](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues)
-
----
+See the [full roadmap](docs/reference.md#roadmap) and
+[issue tracker](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues).
 
 ## Contributing
 
-See [`CONTRIBUTING.md`](CONTRIBUTING.md) for dev setup, coding guidelines,
-and the PR workflow. Newcomers — check the
-[`good first issue`](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues?q=is%3Aopen+label%3A%22good+first+issue%22)
-label; the small apps tracked under [`examples/`](examples/) are a
-low-friction place to land your first PR.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for setup and the PR workflow.
+The [examples](examples/) and
+[good first issues](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues?q=is%3Aopen+label%3A%22good+first+issue%22)
+are entry points for new contributors.
 
 ## License
 

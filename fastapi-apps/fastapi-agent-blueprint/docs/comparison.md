@@ -1,76 +1,76 @@
-# How it compares
+# Choosing a backend foundation and collaboration workflow
 
-This page expands the README comparison with more detail, honest trade-offs,
-and the "why not X?" questions that come up on HN and Reddit.
+Use this guide to decide whether the blueprint fits your project. Evaluate the
+backend architecture and the repository-specific AI harness together: adopting
+both means learning the code structure and the process used to change it.
 
----
+<a id="how-it-compares"></a>
+<a id="feature-matrix"></a>
 
-## Feature matrix
+## What you gain, and what you take on
 
-| Feature | FastAPI Agent Blueprint | [tiangolo/full-stack](https://github.com/fastapi/full-stack-fastapi-template) | [s3rius/template](https://github.com/s3rius/FastAPI-template) | [teamhide/boilerplate](https://github.com/teamhide/fastapi-boilerplate) |
-|---|:-:|:-:|:-:|:-:|
-| Zero-boilerplate CRUD (8 methods) | **Yes** | No | No | No |
-| Auto domain discovery | **Yes** | No | No | No |
-| Architecture enforcement (pre-commit) | **Yes** | No | No | No |
-| AI workflow skills (Claude + Codex) | **15 + 15** | 0 | 0 | 0 |
-| Vector infrastructure (S3 Vectors) | **Yes** | No | No | No |
-| Multi-interface (API + Worker + Admin + MCP) | **3 + 1 planned** | 2 | 1 | 1 |
-| Architecture Decision Records | **29 active · 30 archived** | 0 | 0 | 0 |
-| Type-safe generics across layers | **Yes** | Partial | Partial | No |
-| IoC container DI | **Yes** | No | No | No |
-| JWT auth + RBAC | **Yes** | Yes | Partial | No |
-| Async worker integration | **Yes (Taskiq)** | No | No | Yes (Celery) |
-| Admin UI | **Yes (NiceGUI)** | Yes (SQLAdmin) | No | No |
-| OpenTelemetry | **Yes (opt-in)** | No | No | No |
-| AI Usage Ledger | **Yes** | No | No | No |
-| Pluggable DB backends | **4 (PG/MySQL/SQLite/DynamoDB)** | 1 (PG) | 2 (PG/SQLite) | 1 (PG) |
-| Vector store | **Yes (S3 Vectors + InMemory)** | No | No | No |
+| Need | What this blueprint offers | Adoption cost or boundary |
+|---|---|---|
+| Multiple business domains | Shared CRUD bases, domain discovery, and a consistent Router → Service → Repository path. | Learn the layer boundaries, DTO conventions, and dependency-injector wiring; a small API may not justify the structure. |
+| API, worker, and admin access to business logic | FastAPI, Taskiq, and NiceGUI surfaces around domain services. | Learn each interface's contracts and authentication requirements. The MCP server is still planned. |
+| A local evaluation before provisioning services | SQLite, InMemory infrastructure, and deterministic AI stubs. | Evaluation does not validate production capacity or model quality. Real deployments need infrastructure, credentials, and operational configuration. |
+| AI features without making them mandatory | Optional embedding, LLM, and RAG adapters and examples. | Select and configure provider extras, models, credentials, and storage appropriate to your service. |
+| Several contributors using AI coding tools | Shared rules and skills, a plan/execute workflow, checks, and review procedures across tool adapters. | Contributors must set up their tools and retain human review. Some workflow controls are reminders, not blocking checks. |
+| Continued architectural consistency | Import checks, documented contracts, review checklists, and guideline synchronization. | These controls require maintenance as your application changes; they do not prove every implementation is correct. |
 
----
+Start with the [backend demo](../README.md#quickstart) and the
+[API-change workflow](../README.md#ai-collaboration-harness). Try one domain
+change before deciding whether the conventions fit your team.
 
-## Why not Litestar or Robyn?
+<a id="when-not-to-use-this-blueprint"></a>
 
-**Litestar** is an excellent alternative with strong typing and a rich plugin system. Choose Litestar if:
-- You need first-class OpenAPI 3.1 (not 3.0)
-- You prefer the Litestar DI system over dependency-injector
+## When a different starting point may fit better
 
-Choose this blueprint if you want the FastAPI ecosystem (Pydantic v2, Starlette middleware, extensive community) with DDD structure on top.
+- **A small, single-purpose API:** a minimal FastAPI application can avoid
+  abstractions you do not yet need.
+- **A customer frontend included from day one:** inspect a full-stack starter
+  against your frontend, authentication, and deployment requirements. This
+  blueprint's admin UI serves operators, not your customer application.
+- **An established architecture you want to retain:** assess individual patterns
+  before copying shared infrastructure or adopting the full harness.
+- **A framework or raw-throughput decision:** benchmark your own workload and
+  compare deployment and ecosystem requirements. This repository is not a
+  comparative performance study.
+- **A standalone, framework-independent harness:** the rules and skills here
+  reference this repository's paths, layers, and commands. Extracting them needs
+  adaptation; a turnkey independent harness package is not provided.
 
-**Robyn** is a Rust-backed framework optimized for raw throughput. Choose Robyn if throughput at the edge is your primary constraint. This blueprint optimizes for developer velocity and architectural consistency, not raw requests/sec.
+<a id="why-not-litestar-or-robyn"></a>
+<a id="why-not-fastapifull-stack-fastapi-template"></a>
+<a id="why-not-cookiecutter-based-templates"></a>
 
----
+## Alternatives to explore
 
-## Why not `fastapi/full-stack-fastapi-template`?
+The links below are starting points, not feature rankings. Check the current
+documentation and code of each candidate for the capabilities you need.
 
-The official template is excellent for greenfield projects that need React frontend included. It does not include:
-- DDD modular layer separation
-- Zero-boilerplate CRUD generics
-- Pre-commit architecture enforcement
-- AI workflow skills
-- Multi-backend infrastructure (DynamoDB, S3 Vectors, etc.)
+| Decision | Official sources to inspect |
+|---|---|
+| Build a small FastAPI application yourself | [FastAPI tutorial](https://fastapi.tiangolo.com/tutorial/) |
+| Evaluate another template's structure and setup | [Full Stack FastAPI Template](https://github.com/fastapi/full-stack-fastapi-template), [s3rius/FastAPI-template](https://github.com/s3rius/FastAPI-template), [teamhide/fastapi-boilerplate](https://github.com/teamhide/fastapi-boilerplate) |
+| Compare Python web frameworks | [Litestar](https://docs.litestar.dev/), [Robyn](https://robyn.tech/) |
+| Generate a project from a configurable template | [Cookiecutter](https://cookiecutter.readthedocs.io/) |
 
-If you want a full-stack starter (frontend included), use `tiangolo/full-stack`. If you want a backend-focused DDD architecture with AI workflow acceleration, use this blueprint.
-
----
-
-## Why not cookiecutter-based templates?
-
-Cookiecutter templates generate a project once and then diverge. This blueprint is a **live template** — you can pull upstream improvements into your project via git. The pre-commit architecture enforcement and skill system also require the tooling files (AGENTS.md, `.claude/`, `.codex/`) to remain in the project, which a cookie-cutter approach would strip.
-
----
-
-## When NOT to use this blueprint
-
-- **Micro-service with one endpoint**: The DDD layer overhead is not worth it for a single-purpose service.
-- **You prefer FastAPI's native DI (Depends)**: This blueprint uses dependency-injector IoC container, which adds indirection. If you prefer Depends-everywhere, the cognitive overhead may not pay off.
-- **Frontend-included starter**: You need `tiangolo/full-stack` instead.
-- **Maximum throughput**: If you're benchmarking raw requests/sec, use Robyn or ASGI without the DDD layers.
-
----
+For every candidate, check: can the team understand one feature end-to-end,
+run it locally, verify changes, configure deployment, and maintain its chosen
+conventions? Feature counts alone do not answer those questions.
 
 ## Adoption paths
 
-This blueprint works for both greenfield and partial adoption:
+- **New project:** use the GitHub template, run the evaluation, then follow the
+  [first-domain tutorial](tutorial/first-domain.md).
+- **Existing project:** use the [adoption guide](adoption.md) to assess a gradual
+  introduction of patterns. Copying `_core` or the harness requires checking
+  dependencies and compatibility with your application's conventions.
+- **Manual or AI-assisted development:** both use the same backend structure.
+  The [tool guide](ai-development.md) adds AI collaboration to that foundation;
+  the [shared operating model](ai/shared/target-operating-model.md) explains
+  workflow responsibilities and exceptions.
 
-- **Greenfield**: Use the GitHub template button (`Use this template`) — you get the full structure.
-- **Partial import**: Copy `src/_core/` into your existing project and adopt one domain pattern at a time. See [`docs/adoption.md`](adoption.md) for the step-by-step guide.
+Treat future upstream changes as code to review against your own modifications,
+not as automatically safe template upgrades.

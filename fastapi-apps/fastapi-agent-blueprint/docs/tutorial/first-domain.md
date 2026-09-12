@@ -17,15 +17,14 @@ Whichever path you pick, the verification in [step 4](#step-4--verify-it-works) 
 ## Prerequisites
 
 - Python `>=3.12.9` and [`uv`](https://docs.astral.sh/uv/) installed
-- A clone of this repo with `make setup` already run (see [quickstart](../quickstart.md))
-- Expected time: **10 minutes**. No Docker, no PostgreSQL, no cloud credentials.
+- A fresh clone of this repo, with Git, `make`, and `curl` available
+- No Docker, PostgreSQL, or cloud credentials needed for the local walkthrough
 
 If you have not run the quickstart yet:
 
 ```bash
 git clone https://github.com/Mr-DooSun/fastapi-agent-blueprint.git
 cd fastapi-agent-blueprint
-make setup        # venv + deps via uv
 ```
 
 ---
@@ -33,11 +32,24 @@ make setup        # venv + deps via uv
 ## Step 1 — Start the blueprint in one terminal
 
 ```bash
-make quickstart   # SQLite + InMemory broker, FastAPI on :8001
+make quickstart   # installs dependencies; SQLite + InMemory broker on :8001
 ```
 
 Leave that running. Every command below runs in a *second* terminal
 from the repo root.
+
+`make quickstart` synchronizes the admin extra and can remove other extras.
+It does not install commit hooks. After confirming the demo boots, stop it with
+Ctrl+C. Install development dependencies and hooks, then restart directly:
+
+```bash
+make setup
+uv run python run_server_local.py --env quickstart
+```
+
+Leave that server running and use the second terminal for development. Direct
+restarts preserve the installed extras; another `make quickstart` would remove
+the AWS extra again.
 
 ---
 
@@ -372,7 +384,7 @@ Stop the running server (Ctrl+C in the first terminal), then restart it
 to re-create the SQLite schema with the new `order` table:
 
 ```bash
-rm -f ./quickstart.db && make quickstart
+uv run python run_server_local.py --env quickstart
 ```
 
 > The `order` table is auto-created at boot in `ENV=quickstart` mode

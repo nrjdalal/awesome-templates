@@ -1,17 +1,20 @@
 # Canonical Demo Walkthrough
 
-This walkthrough runs the complete platform in a single session: JWT auth,
-RBAC-gated admin, background worker, RAG query, and OTEL traces.
-All steps work against SQLite + InMemory broker — no external infra needed.
+Start with JWT auth, RBAC-gated admin, and a stub RAG query on SQLite + InMemory,
+without external infrastructure. Later sections explain the in-process task path
+and optional standalone workers and OTEL traces, which require extra dependencies
+and services.
 
 ---
 
 ## Prerequisites
 
+Python >=3.12.9, [uv](https://docs.astral.sh/uv/), Git, `make`, `curl`, and
+`python3` on your PATH. Start in a fresh evaluation checkout.
+
 ```bash
 git clone https://github.com/Mr-DooSun/fastapi-agent-blueprint.git
 cd fastapi-agent-blueprint
-make setup   # one-time: venv + deps via uv
 ```
 
 ---
@@ -23,6 +26,9 @@ make quickstart
 ```
 
 Expected: server on `http://127.0.0.1:8001`, SQLite schema auto-created.
+`make quickstart` installs its dependencies and keeps this terminal occupied.
+It syncs the admin extra and can remove other extras; reserve `make setup` for
+the development/test step below.
 
 ```text
 INFO  event="server_start" host="127.0.0.1" port=8001 env="quickstart"
@@ -32,13 +38,15 @@ INFO  event="server_start" host="127.0.0.1" port=8001 env="quickstart"
 
 ## Step 2 — CRUD + JWT auth
 
-In a second terminal:
+Keep the server running. In a second terminal, from the same repository directory:
 
 ```bash
 make demo
 ```
 
-This exercises the `auth` and `user` domains end-to-end — register, JWT token issuance, authenticated CRUD, token refresh, and logout:
+This exercises the `auth` and `user` domains end-to-end — customer registration,
+demo-admin seeding and admin-realm login, user CRUD, token refresh, and logout.
+The customer token alone cannot authorize user CRUD.
 
 ```text
 → Health check
@@ -47,7 +55,8 @@ This exercises the `auth` and `user` domains end-to-end — register, JWT token 
 → Register (creates user account + returns JWT token pair)
 { "success": true, "data": { "accessToken": "...", "refreshToken": "..." } }
 
-→ Create a second user (JWT-authenticated)
+→ Seed a demo admin → Admin-realm login
+→ Create a second user (admin JWT-authenticated)
 { "success": true, "data": { "id": 2, "username": "bob", ... } }
 
 → List users (page=1, pageSize=10)
@@ -63,11 +72,15 @@ This exercises the `auth` and `user` domains end-to-end — register, JWT token 
 
 ## Step 3 — RAG pipeline
 
+In the second terminal, with the server still running:
+
 ```bash
 make demo-rag
 ```
 
 Seeds 3 documents, runs a retrieval query, and shows structured citations:
+the default keyword embedder and templated answer agent are deterministic stubs,
+so this step does not evaluate a real model's answer quality.
 
 ```text
 → Upload 3 documents (chunk → embed → upsert)
@@ -108,37 +121,49 @@ full recipe):
 ```bash
 docker run -d --name rabbitmq -p 5672:5672 -p 15672:15672 rabbitmq:3-management
 # _env/quickstart.env → BROKER_TYPE=rabbitmq, RABBITMQ_URL=amqp://guest:guest@localhost:5672/
+uv sync --extra admin --extra rabbitmq
 uv run python run_server_local.py --env quickstart   # terminal 1
 uv run python run_worker_local.py --env quickstart    # terminal 2 — the standalone worker
 ```
 
 The `user` domain registers a `user.test` task as a reference example — see [`src/user/interface/worker/tasks/user_test_task.py`](../src/user/interface/worker/tasks/user_test_task.py). Replace it with domain-specific background work (email dispatch, async enrichment, scheduled jobs) following the same Taskiq pattern.
 
+Stop the prior server before restarting. Include all extras you need in each
+`uv sync` command. If returning to the no-broker demo, stop your worker and restore
+`BROKER_TYPE=inmemory` before restarting the server.
+
 ---
 
 ## Step 6 — OpenTelemetry traces (optional)
 
-If you have a local Jaeger or Tempo instance:
+With a local Jaeger or Tempo instance, stop the current server, then run:
 
 ```bash
+uv sync --extra admin --extra otel
 OTEL_ENABLED=true \
 OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317 \
-make quickstart
+uv run python run_server_local.py --env quickstart
 ```
 
 Traces are emitted per-request and per-worker-task. See
 [`docs/operations/observability-otel.md`](operations/observability-otel.md)
 for the full Jaeger/Tempo/Phoenix recipe.
+If you kept the RabbitMQ configuration from Step 5, also include `--extra rabbitmq`
+in the sync command. Do not use `make quickstart` here: it would remove the OTEL extra.
 
 ---
 
 ## Step 7 — Tests
 
 ```bash
-pytest tests/ -v
+make setup       # install development dependencies + admin/AWS extras and commit hooks
+make check-core  # fast local lint, format and core test checks
 ```
 
-Expected: all tests pass against SQLite in-memory. No external infra required.
+Run this after stopping the demo processes. These local checks do not require
+external infrastructure. Full integration checks have additional prerequisites;
+see [CONTRIBUTING.md](../CONTRIBUTING.md). `make setup` can remove optional extras
+from the preceding steps; reinstall the complete set if you need those services again.
 
 ```bash
 make test-pg    # optional: PostgreSQL variant
@@ -161,7 +186,7 @@ make test-dynamo  # optional: DynamoDB Local variant
 
 ## Next steps
 
-- [Build your own domain](tutorial/first-domain.md) — 10-minute guided walkthrough
+- [Build your own domain](tutorial/first-domain.md) — guided walkthrough
 - [AI-assisted scaffolding](ai-development.md) — `/new-domain` in Claude Code or Codex CLI
 - [Adoption guide](adoption.md) — partial import into an existing FastAPI project
 - [Frontend handoff](frontend-handoff.md) — OpenAPI contract, Orval codegen, JWT flow

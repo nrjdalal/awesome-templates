@@ -1,19 +1,25 @@
-# Quickstart — run the blueprint in 60 seconds
+# Quickstart — run the backend locally
 
 Zero external infrastructure. No Docker. No Postgres. No cloud credentials.
-Just Python + `uv` + one command.
+Start with the backend, then explore the [AI collaboration workflow](../README.md#ai-collaboration-harness).
 
 ## Prerequisites
 
 - Python `>=3.12.9`
 - [`uv`](https://docs.astral.sh/uv/) (package manager)
+- Git and `make`; the demos also require `curl` and `python3` on your PATH
 
 ## Run it
 
 ```bash
-make setup         # first time only — create venv + install deps
-make quickstart    # boots FastAPI on SQLite + InMemory broker
+git clone https://github.com/Mr-DooSun/fastapi-agent-blueprint.git
+cd fastapi-agent-blueprint
+make quickstart    # installs dependencies, then runs the server in this terminal
 ```
+
+Use a fresh checkout for evaluation. `quickstart` syncs the admin extra and can
+remove other installed extras. `make setup` is for development dependencies
+(including admin + AWS) and commit hooks; it is not a prerequisite for this demo.
 
 The server comes up on `http://127.0.0.1:8001`:
 
@@ -31,10 +37,11 @@ For sharing the API with frontend developers, see
 
 ## Exercise the API
 
-In a second terminal:
+Keep the server running. In a second terminal, from the same repository directory:
 
 ```bash
 make demo
+make demo-rag
 ```
 
 This exercises the `auth` and `user` domains: health check → register (customer
@@ -49,6 +56,11 @@ admin the way the NiceGUI setup wizard would; it refuses to run in `stg`/`prod`.
 
 Raw script: [`scripts/demo.sh`](../scripts/demo.sh).
 
+`make demo-rag` exercises upload → chunk → embed → retrieve → answer with
+citations. The default embedder uses keyword matching and the answer agent
+returns a templated response: these are deterministic stubs, not external model
+calls. Both scripts check response success and exit with failure on a failed request.
+
 ## What does `quickstart` actually configure?
 
 `make quickstart` loads [`_env/quickstart.env`](../_env/quickstart.env.example)
@@ -60,7 +72,7 @@ Raw script: [`scripts/demo.sh`](../scripts/demo.sh).
 | `DATABASE_ENGINE` | `sqlite` → `./quickstart.db` |
 | `BROKER_TYPE` | `inmemory` (no queue server needed) |
 | `STORAGE_TYPE` | _(unset — object storage disabled)_ |
-| `LLM_PROVIDER` / `EMBEDDING_PROVIDER` | _(unset — AI features disabled)_ |
+| `LLM_PROVIDER` / `EMBEDDING_PROVIDER` | _(unset — RAG uses deterministic stubs)_ |
 | `ADMIN_BOOTSTRAP_USERNAME` / `ADMIN_BOOTSTRAP_PASSWORD` | `admin` / `admin` |
 
 On startup the server auto-creates the SQLite schema from `Base.metadata`
@@ -74,15 +86,21 @@ the DB-backed auth domain after the bootstrap user is created or promoted.
 
 ## Next steps
 
-- **Real local development** — copy `_env/local.env.example` to
-  `_env/local.env`, edit values, then run `make dev` (spins up PostgreSQL
-  via Docker Compose).
+- **Real local development** — stop the quickstart server, run `make setup`
+  to install development dependencies and commit hooks, then follow the
+  [PostgreSQL setup](reference.md#local-development-with-postgresql).
 - **Add a domain** — see [AGENTS.md](../AGENTS.md) and
   [docs/ai-development.md](ai-development.md), or invoke the
   `/new-domain` skill if you use Claude Code / Codex.
-- **Enable AI features** — set `LLM_PROVIDER` / `EMBEDDING_PROVIDER` (and
-  the matching credentials) in your env file. The `classification` domain
-  demonstrates the PydanticAI Agent integration.
+- **Enable real model calls** — stop the server, install the required provider
+  extras (for example, `uv sync --extra admin --extra pydantic-ai` for the base
+  AI integration), and set `LLM_PROVIDER` + `LLM_MODEL`,
+  `EMBEDDING_PROVIDER` + `EMBEDDING_MODEL`, and matching credentials in
+  `_env/quickstart.env`. Restart with
+  `uv run python run_server_local.py --env quickstart` so `make quickstart`
+  does not remove the extra you just installed. See the
+  [extras reference](reference.md#optional-dependency-extras) for provider-specific
+  extras and include every extra you want to retain in the sync command.
 
 ## Troubleshooting
 
