@@ -30,7 +30,7 @@
     "semi": false
   },
   "dependencies": {
-    "next": "16.4.0-canary.33",
+    "next": "16.4.0-canary.34",
     "react": "19.3.0",
     "react-dom": "19.3.0"
   },
@@ -43,7 +43,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "16.4.0-canary.33",
+    "eslint-config-next": "16.4.0-canary.34",
     "lint-staged": "^17.5.1",
     "prettier": "^3.9.7",
     "prettier-plugin-tailwindcss": "^0.8.1",
