@@ -51,7 +51,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.3.5",
     "lint-staged": "^17.5.1",
-    "prettier": "^3.9.7",
+    "prettier": "^3.9.8",
     "prettier-plugin-tailwindcss": "^0.8.1",
     "simple-git-hooks": "^2.14.0",
     "sort-package-json": "^4.0.0",
