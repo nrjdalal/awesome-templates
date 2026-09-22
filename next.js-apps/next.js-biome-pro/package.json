@@ -42,7 +42,7 @@
     "better-auth": "^1.7.5",
     "class-variance-authority": "^0.7.1",
     "cmdk": "^1.1.1",
-    "cn": "^0.3.2",
+    "cn": "^0.4.0",
     "date-fns": "^4.4.0",
     "drizzle-orm": "^0.45.3",
     "embla-carousel-react": "^8.6.0",
