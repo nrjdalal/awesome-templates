@@ -41,7 +41,7 @@
     "lucide-react": "^1.49.0",
     "next": "16.3.7",
     "react": "19.2.8",
-    "react-day-picker": "^10.0.1",
+    "react-day-picker": "^10.0.2",
     "react-dom": "19.2.8",
     "react-resizable-panels": "^4.14.1",
     "recharts": "3.8.0",
