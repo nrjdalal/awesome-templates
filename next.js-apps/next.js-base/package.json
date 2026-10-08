@@ -79,7 +79,7 @@
     "react": "19.3.0",
     "react-day-picker": "^10.0.2",
     "react-dom": "19.3.0",
-    "react-resizable-panels": "^4.14.2",
+    "react-resizable-panels": "^4.14.3",
     "recharts": "3.8.0",
     "resend": "^6.32.1",
     "shadcn": "^4.21.4",
