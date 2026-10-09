@@ -34,7 +34,7 @@
     "package.json": "sort-package-json"
   },
   "dependencies": {
-    "@base-ui/react": "^1.8.0",
+    "@base-ui/react": "^1.9.0",
     "@remixicon/react": "^4.9.0",
     "@shadcn/react": "^0.3.1",
     "@tanstack/react-form": "^1.33.5",
@@ -47,7 +47,7 @@
     "drizzle-orm": "^0.45.4",
     "embla-carousel-react": "^8.6.0",
     "input-otp": "^1.5.0",
-    "lucide-react": "^1.53.0",
+    "lucide-react": "^1.54.0",
     "next": "16.4.0",
     "next-themes": "^0.4.6",
     "postgres": "^3.4.9",
