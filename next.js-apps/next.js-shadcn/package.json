@@ -64,7 +64,7 @@
     "prettier": "^3.9.10",
     "prettier-plugin-tailwindcss": "^0.8.1",
     "simple-git-hooks": "^2.14.0",
-    "sort-package-json": "^4.0.0",
+    "sort-package-json": "^4.1.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   },
