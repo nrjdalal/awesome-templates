@@ -17,7 +17,7 @@
     "@tanstack/react-start": "^1.132.0-alpha.25",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
-    "vite": "^8.3.4"
+    "vite": "^8.3.5"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.3",
