@@ -15,5 +15,6 @@
   "dependencies": {
     "@hono/aws-lambda": "^1.0.0",
     "hono": "^4.13.13"
-  }
+  },
+  "trustedDependencies": ["esbuild"]
 }

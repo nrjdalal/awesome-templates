@@ -11,5 +11,9 @@
   },
   "devDependencies": {
     "wrangler": "^4.110.0"
-  }
+  },
+  "trustedDependencies": [
+    "esbuild",
+    "workerd"
+  ]
 }

@@ -13,5 +13,6 @@
   },
   "devDependencies": {
     "@fastly/cli": "^15.4.0"
-  }
+  },
+  "trustedDependencies": ["esbuild"]
 }
