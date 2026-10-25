@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "@hono/lambda-edge": "^1.0.0",
-    "hono": "^4.13.13"
+    "hono": "^4.13.14"
   },
   "trustedDependencies": ["esbuild"]
 }
