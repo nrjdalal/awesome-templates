@@ -42,6 +42,7 @@ try:
         extract_file_path,
         is_python_source,
         read_latest_token,
+        resolve_session_roots,
     )
 
     _SHARED_OK = True
@@ -50,6 +51,7 @@ except Exception:  # noqa: BLE001 — HC-5.5 fail-open
     REMINDER_TEXT = ""
     MarkerLifecycle = None
     read_latest_token = None
+    resolve_session_roots = None
     _SHARED_OK = False
 
     def _within_24h(ts: str) -> bool:
@@ -92,7 +94,7 @@ def should_remind(payload: dict, state_dir: Path = STATE_DIR) -> bool:
 
 
 def main() -> int:
-    if not _SHARED_OK:
+    if not _SHARED_OK or resolve_session_roots is None:
         return 0
     try:
         raw = sys.stdin.read()
@@ -101,7 +103,11 @@ def main() -> int:
         payload = json.loads(raw)
         if not isinstance(payload, dict):
             return 0
-        if should_remind(payload):
+        # The session's own token markers, not this copy's checkout's (#425).
+        roots = resolve_session_roots(payload)
+        if roots.rejected:
+            return 0
+        if should_remind(payload, roots.state_dir(".claude", STATE_DIR)):
             # IC-19: always combine resolver result with canonical English
             # fallback so an empty locale lookup never emits a blank line.
             print(

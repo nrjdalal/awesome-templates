@@ -222,12 +222,17 @@ def changed_files_via_git(repo_root: Path = REPO_ROOT) -> list[str]:
     return []
 
 
-def pr_number_from_branch() -> int | None:
-    """Return current PR number via ``gh`` CLI, or ``None`` on any failure."""
+def pr_number_from_branch(cwd: Path | None = None) -> int | None:
+    """Return current PR number via ``gh`` CLI, or ``None`` on any failure.
+
+    ``gh`` reads the branch from its working directory, so ``cwd`` must be the
+    session's tree when that is not the process cwd (#425).
+    """
 
     try:
         result = subprocess.run(  # noqa: S603,S607 — fixed args
             ["gh", "pr", "view", "--json", "number"],
+            cwd=cwd,
             capture_output=True,
             text=True,
             check=False,

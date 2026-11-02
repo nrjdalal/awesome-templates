@@ -35,11 +35,15 @@ if str(_SHARED) not in sys.path:
     sys.path.insert(0, str(_SHARED))
 
 try:
-    from governor import append_verify_log  # noqa: E402 — sys.path adjusted above
+    from governor import (  # noqa: E402 — sys.path adjusted above
+        append_verify_log,
+        resolve_session_roots,
+    )
 
     _SHARED_OK = True
 except Exception:  # noqa: BLE001 — HC-5.5 fail-open
     _SHARED_OK = False
+    resolve_session_roots = None
 
     # Same signature as the real one, not `*args, **kwargs`: a fallback whose
     # shape differs from what it stands in for cannot be checked against its call
@@ -96,7 +100,7 @@ def extract_command(payload: dict) -> str | None:
 
 
 def main() -> int:
-    if not _SHARED_OK:
+    if not _SHARED_OK or resolve_session_roots is None:
         return 0
     try:
         payload = json.load(sys.stdin)
@@ -110,7 +114,14 @@ def main() -> int:
         return 0
 
     try:
-        append_verify_log(command, STATE_DIR, session_id(payload))
+        # The log belongs next to the session's other state — the Stop hook that
+        # prunes it resolves the same session root (#425).
+        roots = resolve_session_roots(payload)
+        if roots.rejected:
+            return 0
+        append_verify_log(
+            command, roots.state_dir(".claude", STATE_DIR), session_id(payload)
+        )
     except Exception:  # noqa: BLE001 — HC-3.3, never block a tool call
         return 0
     return 0

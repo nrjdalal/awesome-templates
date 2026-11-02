@@ -35,8 +35,10 @@ from src._core.infrastructure.persistence.rdb.database import Base, Database
 #     imported before any test module in `tests/`, so it is early enough.
 #
 # A call site that builds `env` from scratch inherits nothing and must still
-# pass the variable itself (or restore what it touches) — see
-# `tests/integration/test_stop_hook_e2e.py`. `tests/unit/agents_shared/
+# pass the variable itself, or keep the hook away from the state it would
+# write — see `tests/integration/test_stop_hook_e2e.py`, which hands the hook a
+# `cwd` the resolver rejects rather than restoring the ledger afterwards (a
+# restore is a blind write too). `tests/unit/agents_shared/
 # test_no_live_ledger_write.py` guards both ends.
 #
 # Not `setdefault`: an ambient `HARNESS_STATE_ROOT` pointing at the repository

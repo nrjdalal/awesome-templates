@@ -19,6 +19,7 @@ import contextlib
 import importlib.util
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -325,9 +326,12 @@ def test_stop_sync_reminder_wires_plan_execute_gate() -> None:
     assert "should_plan_execute_gate" in text
     assert "PLAN_EXECUTE_REMINDER" in text
     assert "def plan_execute_segment" in text
-    # Both gates share the once-per-session mark_fired claim.
-    assert (
-        "stage_gate_segment(changed, sid) or plan_execute_segment(changed, sid)" in text
+    # Both gates share the once-per-session mark_fired claim. Keyword arguments
+    # are allowed: since #425 both calls also receive the session's ledger path.
+    assert re.search(
+        r"stage_gate_segment\(\s*changed,\s*sid\b[^)]*\)\s*or\s*"
+        r"plan_execute_segment\(\s*changed,\s*sid\b",
+        text,
     )
 
 

@@ -194,3 +194,26 @@ Background: [#401](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/4
 The issue was filed claiming tests were resolving the wrong copy; they were not, and
 the correction is worth as much as the rule — **the value left in `sys.modules` at
 the end of a run is not the value an earlier test used.**
+
+### Session-root tests: copy the harness, and drop the override only in the child
+
+A hook does not always run from the tree it works on: Claude Code desktop runs a
+worktree session's hooks from the main checkout (`--project-config-root`), and the
+hooks that touch session state take the session's tree from the payload's `cwd` via
+`governor.resolve_session_roots` (#425). A test of that resolution has to reproduce
+both trees, and two details decide whether a failing run is safe:
+
+- **Copy the harness into `tmp_path`; never symlink it.** Every fallback root a hook
+  derives from `__file__` then lands inside `tmp_path`, so a regression — or the
+  pre-fix code, while the test is red — writes the temporary main checkout's ledger,
+  not the operator's. A symlinked `.agents/shared` resolves back into the real
+  checkout.
+- **Remove `HARNESS_STATE_ROOT` from the child's environment only.** It outranks the
+  session for state by design (#407), so a test that keeps it cannot see which root
+  a hook picked; a test that removes it from `os.environ` removes the isolation for
+  every later test in the process. Keep one test that sets it *and* passes a real
+  worktree `cwd`, to pin that the override still wins.
+
+`tests/unit/agents_shared/test_worktree_session_hooks.py` builds that layout (a
+temporary main repository with a linked worktree under `.claude/worktrees/`) and is
+the reference.

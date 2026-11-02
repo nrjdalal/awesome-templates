@@ -39,6 +39,7 @@ try:
     from governor import (  # noqa: E402 — sys.path adjusted above
         PLAN_EXECUTE_REMINDER,
         default_ledger_path,
+        resolve_session_roots,
         should_block_plan_execute_edit,
     )
 
@@ -46,6 +47,7 @@ try:
 except Exception:  # noqa: BLE001 — HC-5.5 fail-open (ADR054-G5)
     PLAN_EXECUTE_REMINDER = ""
     default_ledger_path = None
+    resolve_session_roots = None
     should_block_plan_execute_edit = None
     _SHARED_OK = False
 
@@ -75,6 +77,7 @@ def main() -> int:
     if (
         not _SHARED_OK
         or default_ledger_path is None
+        or resolve_session_roots is None
         or should_block_plan_execute_edit is None
     ):
         return _ALLOW
@@ -85,9 +88,16 @@ def main() -> int:
         payload = json.loads(raw)
         if not isinstance(payload, dict):
             return _ALLOW
-        ledger_path = default_ledger_path(STATE_ROOT)
+        # Judge the edit against the session's tree and ledger, not this copy's
+        # checkout — the two differ in a desktop worktree session (#425).
+        roots = resolve_session_roots(payload)
+        if roots.rejected:
+            return _ALLOW
         if not should_block_plan_execute_edit(
-            payload, STATE_DIR, ledger_path, REPO_ROOT
+            payload,
+            roots.state_dir(".claude", STATE_DIR),
+            default_ledger_path(roots.state_root or STATE_ROOT),
+            roots.repo_root or REPO_ROOT,
         ):
             return _ALLOW
         # IC-19: combine resolver result with the canonical English fallback so

@@ -9,7 +9,8 @@ simulating a minimal agent invocation without project-specific env vars.
 
 IMPORTANT: this test writes to the real .codex/state/ directory so it
 exercises the actual production lifecycle path.  A finally block removes any
-markers the hook failed to consume so CI stays clean.
+markers the hook failed to consume so CI stays clean.  It never touches the
+live work ledger — see the comment on the hook's payload below.
 """
 
 from __future__ import annotations
@@ -29,27 +30,8 @@ _STATE_DIR = REPO_ROOT / ".codex" / "state"
 # even if a real session runs concurrently.
 _E2E_INFIX = "e2etest"
 
-_LEDGER_PATH = REPO_ROOT / ".agents" / "state" / "current-work.json"
 
-
-def _read_live_ledger() -> str | None:
-    """Exact bytes of the live work ledger, or ``None`` when it is absent."""
-    try:
-        return _LEDGER_PATH.read_text(encoding="utf-8")
-    except OSError:
-        return None
-
-
-def _restore_live_ledger(snapshot: str | None) -> None:
-    """Put the live work ledger back the way this test found it (#407)."""
-    if snapshot is None:
-        _LEDGER_PATH.unlink(missing_ok=True)
-        return
-    if _read_live_ledger() != snapshot:
-        _LEDGER_PATH.write_text(snapshot, encoding="utf-8")
-
-
-def test_stop_hook_e2e_marker_cleanup() -> None:
+def test_stop_hook_e2e_marker_cleanup(tmp_path: Path) -> None:
     """stop-sync-reminder.py must consume all exception-token markers on Stop."""
     _STATE_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -60,10 +42,16 @@ def test_stop_hook_e2e_marker_cleanup() -> None:
     # of the session isolation that `tests/conftest.py` installs (#407) — and
     # that is deliberate, because the markers under test live in the *real*
     # `.codex/state/`. What is not deliberate is the rest of the Stop hook's
-    # work: it also calls `update_verification_from_git()`, which rewrites the
-    # operator's live `.agents/state/current-work.json`. Snapshot it and put it
-    # back, the same contract the marker cleanup below already honours.
-    ledger_before = _read_live_ledger()
+    # work: `update_verification_from_git()` on the operator's live
+    # `.agents/state/current-work.json`. So the payload names a `cwd` in another
+    # repository, which `resolve_session_roots` rejects (#425): the hook then
+    # leaves the ledger alone, while the marker sweep, which is harness-private,
+    # still runs here. This replaces a snapshot-and-restore of the ledger, which
+    # was a blind write itself — it could undo an update another session made to
+    # this tree's ledger meanwhile, or delete a ledger that session had just
+    # created (ADR052-G4).
+    elsewhere = tmp_path / "another-repository"
+    subprocess.run(["git", "init", "-q", str(elsewhere)], check=True)  # noqa: S603,S607
 
     try:
         # 3 fresh markers (within 24 h — removed by IC-11 Option A bulk sweep)
@@ -101,6 +89,7 @@ def test_stop_hook_e2e_marker_cleanup() -> None:
 
         proc = subprocess.run(
             [sys.executable, str(_HOOK)],
+            input=json.dumps({"cwd": str(elsewhere)}),
             cwd=str(REPO_ROOT),
             env=env,
             capture_output=True,
@@ -137,4 +126,3 @@ def test_stop_hook_e2e_marker_cleanup() -> None:
         for marker in written:
             if marker.exists():
                 marker.unlink(missing_ok=True)
-        _restore_live_ledger(ledger_before)

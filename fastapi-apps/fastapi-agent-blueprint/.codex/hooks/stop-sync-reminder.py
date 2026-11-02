@@ -45,8 +45,12 @@ import json
 import os
 import sys
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from _shared import REPO_ROOT, changed_files
+
+if TYPE_CHECKING:
+    from governor.paths import SessionRoots
 
 # Codex state dir — dedup markers (``stage-gate-*.json``) and the
 # exception-token markers the stage-gate policy reads. Mirrors
@@ -108,6 +112,32 @@ except Exception:  # noqa: BLE001 — HC-5.5 fail-open
     should_plan_execute_gate = None
     should_stage_gate = None
     _STAGE_GATE_OK = False
+
+
+# Session roots (#425) — separate try block: a resolver failure must leave every
+# other Stop responsibility intact (HC-5.5).
+try:
+    from governor.paths import resolve_session_roots  # noqa: E402
+except Exception:  # noqa: BLE001 — HC-5.5 fail-open
+    resolve_session_roots = None
+
+
+def _session_roots() -> SessionRoots | None:
+    """Session roots from the Stop payload's ``cwd`` (#425); ``None`` = no resolver.
+
+    This harness runs its hooks from the session's own checkout, so the private
+    paths here (its state dir, the changed-file set) already belong to the
+    session. The shared work ledger is resolved from the payload anyway, the way
+    every harness resolves it, so its location never depends on whose hook copy
+    ran.
+    """
+    if resolve_session_roots is None:
+        return None
+    payload: object = {}
+    with contextlib.suppress(Exception):
+        if not sys.stdin.isatty():
+            payload = json.loads(sys.stdin.read() or "{}")
+    return resolve_session_roots(payload)
 
 
 def _loc(key: str, fallback: str) -> str:
@@ -220,11 +250,14 @@ def plan_execute_segment(
     return _resolve_locale_string("PLAN_EXECUTE_REMINDER") or PLAN_EXECUTE_REMINDER
 
 
-def build_segments(changed: list[str] | None = None) -> list[str]:
+def build_segments(
+    changed: list[str] | None = None, roots: SessionRoots | None = None
+) -> list[str]:
     """Compose advisory segments. Pure: no I/O, no side effects.
 
     Caller is responsible for default ``changed_files()``-driven discovery
-    (``main`` does this) and for the marker / cleanup side effects.
+    (``main`` does this) and for the marker / cleanup side effects. ``roots``
+    locates the shared work ledger (#425); ``None`` keeps its default.
 
     Returns the segments list ready to be JSON-encoded as a Stop systemMessage.
     """
@@ -321,12 +354,14 @@ def build_segments(changed: list[str] | None = None) -> list[str]:
                 and is_governor_changing(changed, globs)
             )
 
-        segments.extend(
-            build_workflow_advisory_segments(
-                changed_files=changed,
-                governor_changing=governor_changing,
+        if roots is None or not roots.rejected:
+            segments.extend(
+                build_workflow_advisory_segments(
+                    changed_files=changed,
+                    governor_changing=governor_changing,
+                    state_root=roots.state_root if roots is not None else None,
+                )
             )
-        )
 
     return segments
 
@@ -338,17 +373,25 @@ def main() -> int:
     for advisory responsibilities, then executes marker consumption and stale
     verify-log cleanup side effects. Each side effect is wrapped in its own
     suppress block so a partial failure cannot mask the others or the segments
-    output. Stop hook does NOT read stdin (informational fail-open).
+    output. stdin is read only for the payload's ``cwd`` (#425); a missing or
+    unreadable payload keeps every default (informational fail-open).
     """
     # Work-ledger: refresh verification snapshot before composing native
-    # workflow advisories so first-stop output is not stale.
-    with contextlib.suppress(Exception):
-        from work_ledger import update_verification_from_git  # noqa: PLC0415
+    # workflow advisories so first-stop output is not stale. A cwd this harness
+    # cannot place leaves the ledger alone (#425).
+    roots = _session_roots()
+    rejected = roots is not None and roots.rejected
+    if not rejected:
+        with contextlib.suppress(Exception):
+            from work_ledger import update_verification_from_git  # noqa: PLC0415
 
-        update_verification_from_git()
+            update_verification_from_git(
+                repo_root=roots.repo_root if roots is not None else None,
+                state_root=roots.state_root if roots is not None else None,
+            )
 
     changed = changed_files()
-    segments = build_segments(changed)
+    segments = build_segments(changed, roots)
 
     # (6) Mid-task stage-gate advisory (ADR 050, #269) + plan→execute boundary
     # advisory (ADR 054) — advisory-only, deduped per session. The two gates key
@@ -362,7 +405,19 @@ def main() -> int:
         import verify_first  # noqa: PLC0415 — local import for fail-open
 
         sid = verify_first.session_id()
-        seg = stage_gate_segment(changed, sid) or plan_execute_segment(changed, sid)
+        # The ledger stage is read from the session tree's ledger (#425).
+        ledger_path = (
+            default_ledger_path(roots.state_root)
+            if roots is not None
+            and roots.state_root is not None
+            and default_ledger_path is not None
+            else None
+        )
+        seg = None
+        if not rejected:
+            seg = stage_gate_segment(
+                changed, sid, ledger_path=ledger_path
+            ) or plan_execute_segment(changed, sid, ledger_path=ledger_path)
         if (
             seg is not None
             and mark_fired is not None

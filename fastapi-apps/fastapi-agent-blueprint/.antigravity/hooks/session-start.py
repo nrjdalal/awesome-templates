@@ -3,7 +3,7 @@ from __future__ import annotations
 import contextlib
 import json
 
-from _shared import SHARED_PKG
+from _shared import SHARED_PKG, load_payload
 
 harness_lines = [
     "Antigravity repo harness active:",
@@ -21,9 +21,14 @@ with contextlib.suppress(Exception):
 
     if str(SHARED_PKG) not in sys.path:
         sys.path.insert(0, str(SHARED_PKG))
+    from governor import resolve_session_roots  # noqa: PLC0415
     from work_ledger import build_session_summary  # noqa: PLC0415
 
-    summary = build_session_summary()
+    # Summarise the ledger of the tree the payload's cwd names (#425).
+    roots = resolve_session_roots({} if sys.stdin.isatty() else load_payload())
+    summary = (
+        None if roots.rejected else build_session_summary(state_root=roots.state_root)
+    )
     if summary:
         parts.append(summary)
 

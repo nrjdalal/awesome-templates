@@ -115,12 +115,16 @@ def main() -> int:
             debug_log("codex user-prompt marker write failed", exc)
         print(json.dumps(result.payload, ensure_ascii=False), file=sys.stderr)
 
-    # Work-ledger: persist last_prompt for cross-session context continuity.
+    # Work-ledger: persist last_prompt for cross-session context continuity, in
+    # the ledger of the tree the payload's cwd names (#425).
     if prompt:
         with contextlib.suppress(Exception):  # HC-5.5 fail-open
+            from governor import resolve_session_roots  # noqa: PLC0415
             from work_ledger import update_last_prompt  # noqa: PLC0415
 
-            update_last_prompt(prompt)
+            roots = resolve_session_roots(payload_in)
+            if not roots.rejected:
+                update_last_prompt(prompt, state_root=roots.state_root)
 
     return 0
 

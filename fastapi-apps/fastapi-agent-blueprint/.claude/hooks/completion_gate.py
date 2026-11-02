@@ -1,7 +1,13 @@
 """Completion-gate helper (Phase 5 of #117 / #124) — thin shim.
 
 Called by ``.claude/hooks/stop-sync-reminder.sh``:
-    COMPLETION_OUT=$(sh "$PY_LAUNCHER" "${HOOK_DIR}/completion_gate.py" 2>/dev/null || true)
+    COMPLETION_OUT=$(sh "$PY_LAUNCHER" "${HOOK_DIR}/completion_gate.py" [SESSION_ROOT] ...)
+
+``SESSION_ROOT`` (optional argv) is the session's working tree, resolved by
+``governor.session_root_cli`` and re-checked here (#425). This copy can be running for
+another checkout's session — Claude Code desktop runs a worktree session's hooks
+from the main checkout — so the changed files, policy doc, PR lookup and state
+dir are taken from that tree. Without it, everything resolves as before.
 
 Phase 5 consolidates governor *policy* (reminder templates, glob parsing,
 match-log classification, marker lifecycle) into ``.agents/shared/governor``.
@@ -21,6 +27,10 @@ import contextlib
 import os
 import sys
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from governor.paths import SessionRoots
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 STATE_ROOT = Path(os.environ.get("HARNESS_STATE_ROOT", REPO_ROOT))
@@ -46,6 +56,7 @@ try:
         match_log_entry,
         parse_trigger_globs,
         pr_number_from_branch,
+        resolve_session_roots,
     )
     from governor import changed_files_via_git as _shared_changed_files  # noqa: E402
     from governor import (  # noqa: E402
@@ -66,6 +77,7 @@ except Exception:  # noqa: BLE001 — HC-5.5 fail-open
     GOVERNOR_REMINDER_WITH_PR = ""
     GOVERNOR_REMINDER_NO_PR = ""
     MarkerLifecycle = None
+    resolve_session_roots = None
     # The sibling names above all carry the sentinel; this one did not, so on the
     # failure path it was simply unbound and its call site below relied on
     # `contextlib.suppress` catching the NameError. Same sentinel, explicit guard.
@@ -95,7 +107,7 @@ except Exception:  # noqa: BLE001 — HC-5.5 fail-open
     def match_log_entry(changed: list[str], current_pr: int | None) -> str:
         return "missing"
 
-    def pr_number_from_branch() -> int | None:
+    def pr_number_from_branch(cwd: Path | None = None) -> int | None:
         return None
 
 
@@ -141,12 +153,12 @@ def _verify_session_id() -> str | None:
         return None
 
 
-def _changed_files() -> list[str]:
+def _changed_files(repo_root: Path | None = None) -> list[str]:
     """Module-level wrapper so tests can monkeypatch ``_changed_files``."""
 
     if _shared_changed_files is None:
         return []
-    return _shared_changed_files(REPO_ROOT)
+    return _shared_changed_files(repo_root or REPO_ROOT)
 
 
 def _read_latest_token(state_dir: Path) -> str | None:
@@ -165,22 +177,37 @@ def consume_phase2_markers(state_dir: Path = STATE_DIR) -> None:
     _shared_consume_phase2_markers(state_dir)
 
 
-def governor_changing_segment() -> str | None:
+def governor_changing_segment(roots: SessionRoots | None = None) -> str | None:
     """Pillar 7 reminder, manually orchestrated so module attrs stay
-    monkeypatchable for the existing test suite."""
+    monkeypatchable for the existing test suite.
+
+    ``roots`` re-roots every input onto the session's tree (#425). Without it
+    each helper is called exactly as before, so the zero-argument doubles the
+    suite patches in keep working.
+    """
 
     if not _SHARED_OK:
         return None
     try:
-        changed = _changed_files()
+        session = roots.repo_root if roots is not None else None
+        changed = _changed_files() if session is None else _changed_files(session)
         if not changed:
             return None
         if is_log_only_backfill(changed):
             return None
-        token = _read_latest_token(STATE_DIR)
+        state_dir = (
+            STATE_DIR if roots is None else roots.state_dir(".claude", STATE_DIR)
+        )
+        token = _read_latest_token(state_dir)
         if token in EXPLORATION_TOKENS:
             return None
-        globs = parse_trigger_globs()
+        globs = (
+            parse_trigger_globs()
+            if session is None
+            else parse_trigger_globs(
+                session / "docs" / "ai" / "shared" / "governor-paths.md"
+            )
+        )
         if not globs or not is_governor_changing(changed, globs):
             return None
         # ADR 047 D4 — `/sync-guidelines` cosmetic subset carve-out.
@@ -189,9 +216,18 @@ def governor_changing_segment() -> str | None:
             and _shared_is_sync_cosmetic_only is not None
         ):
             subset = _shared_governor_subset(changed, globs)
-            if _shared_is_sync_cosmetic_only(subset):
+            cosmetic = (
+                _shared_is_sync_cosmetic_only(subset)
+                if session is None
+                else _shared_is_sync_cosmetic_only(subset, repo_root=session)
+            )
+            if cosmetic:
                 return None
-        current_pr = pr_number_from_branch()
+        current_pr = (
+            pr_number_from_branch()
+            if session is None
+            else pr_number_from_branch(session)
+        )
         status = match_log_entry(changed, current_pr)
         if status in ("match", "unknown"):
             return None
@@ -212,15 +248,25 @@ def governor_changing_segment() -> str | None:
         return None
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
     if not _SHARED_OK:
         return 0
     try:
+        roots = (
+            resolve_session_roots({"cwd": argv[0]})
+            if argv and resolve_session_roots is not None
+            else None
+        )
+        if roots is not None and roots.rejected:
+            return 0
+        state_dir = (
+            STATE_DIR if roots is None else roots.state_dir(".claude", STATE_DIR)
+        )
         reminder: str | None = None
         with contextlib.suppress(Exception):
-            reminder = governor_changing_segment()
+            reminder = governor_changing_segment(roots)
         with contextlib.suppress(Exception):
-            consume_phase2_markers()
+            consume_phase2_markers(state_dir)
         with contextlib.suppress(Exception):
             # Prune other sessions' verify logs (#334). The Stop hook is the
             # only place that runs once per session, which is why the sibling
@@ -228,7 +274,7 @@ def main() -> int:
             # and when the session cannot be identified, nothing at all.
             _session = _verify_session_id()
             if _session and cleanup_stale_verify_logs is not None:
-                cleanup_stale_verify_logs(STATE_DIR, _session)
+                cleanup_stale_verify_logs(state_dir, _session)
         if reminder:
             print(reminder)
     except Exception:  # noqa: BLE001 — HC-5.5 fail-open
@@ -237,4 +283,4 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    raise SystemExit(main(sys.argv[1:]))

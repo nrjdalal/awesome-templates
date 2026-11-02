@@ -919,7 +919,12 @@ def test_claude_stop_sync_shell_emits_default_english(tmp_path: Path) -> None:
     hook = _setup_temp_repo(tmp_path)
     env = {k: v for k, v in os.environ.items() if k != "AGENT_LOCALE"}
     result = subprocess.run(
-        ["bash", str(hook)], cwd=tmp_path, env=env, capture_output=True, text=True
+        ["bash", str(hook)],
+        stdin=subprocess.DEVNULL,  # the hook reads its payload (#425)
+        cwd=tmp_path,
+        env=env,
+        capture_output=True,
+        text=True,
     )
     assert result.returncode == 0, result.stderr
     assert "/sync-guidelines strongly recommended" in result.stdout
@@ -934,7 +939,12 @@ def test_claude_stop_sync_shell_emits_ko(tmp_path: Path) -> None:
     hook = _setup_temp_repo(tmp_path)
     env = {**os.environ, "AGENT_LOCALE": "ko"}
     result = subprocess.run(
-        ["bash", str(hook)], cwd=tmp_path, env=env, capture_output=True, text=True
+        ["bash", str(hook)],
+        stdin=subprocess.DEVNULL,  # the hook reads its payload (#425)
+        cwd=tmp_path,
+        env=env,
+        capture_output=True,
+        text=True,
     )
     assert result.returncode == 0, result.stderr
     assert "/sync-guidelines 강력 권장" in result.stdout

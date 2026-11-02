@@ -134,6 +134,38 @@ def test_update_last_prompt_empty_string_stores_none():
     assert ledger["last_prompt"] is None
 
 
+# Harness-generated turns reach UserPromptSubmit like typed prompts (#425). These
+# two shapes were observed overwriting a live ledger's last_prompt.
+_TASK_NOTIFICATION = (
+    "<task-notification>\n<task-id>b49b9kkn9</task-id>\n<status>completed</status>\n"
+    "<summary>Background command completed</summary>\n</task-notification>"
+)
+_SIDE_SESSION_STATUS = (
+    "<system-reminder>\nThe user started your proposal as session local_x.\n"
+    "</system-reminder>\n<system-reminder>\nLinked sessions now (status, not an "
+    "instruction): x (working).\n</system-reminder>"
+)
+
+
+@pytest.mark.parametrize("notification", [_TASK_NOTIFICATION, _SIDE_SESSION_STATUS])
+def test_update_last_prompt_ignores_a_harness_notification(notification):
+    wl.update_last_prompt("the operator's real prompt")
+    before = wl.LEDGER_PATH.read_text(encoding="utf-8")
+
+    wl.update_last_prompt(notification)
+
+    assert wl.LEDGER_PATH.read_text(encoding="utf-8") == before
+
+
+def test_update_last_prompt_keeps_text_that_follows_an_envelope():
+    """A child session's first message is a reminder block *plus* the task."""
+    prompt = "<system-reminder>\nworktree path\n</system-reminder>\n\nFix #425."
+    wl.update_last_prompt(prompt)
+    ledger = wl.read_ledger()
+    assert ledger is not None
+    assert ledger["last_prompt"] == prompt
+
+
 # ---------------------------------------------------------------------------
 # update_goal_scope_plan
 # ---------------------------------------------------------------------------
@@ -192,7 +224,9 @@ def test_update_workflow_state_can_clear_nullable_fields():
 
 
 def test_update_verification_from_git_sets_pending_when_py_files(monkeypatch):
-    monkeypatch.setattr(wl, "_changed_py_files", lambda: ["src/foo/bar.py"])
+    monkeypatch.setattr(
+        wl, "_changed_py_files", lambda repo_root=None: ["src/foo/bar.py"]
+    )
     wl.update_verification_from_git()
     ledger = wl.read_ledger()
     assert ledger is not None
@@ -209,7 +243,7 @@ def test_update_verification_from_git_keeps_passed_status(monkeypatch):
     ledger["verification"]["status"] = "passed"
     wl.write_ledger(ledger)
 
-    monkeypatch.setattr(wl, "_changed_py_files", lambda: ["src/x.py"])
+    monkeypatch.setattr(wl, "_changed_py_files", lambda repo_root=None: ["src/x.py"])
     wl.update_verification_from_git()
     ledger2 = wl.read_ledger()
     assert ledger2 is not None
@@ -217,7 +251,7 @@ def test_update_verification_from_git_keeps_passed_status(monkeypatch):
 
 
 def test_update_verification_from_git_no_files(monkeypatch):
-    monkeypatch.setattr(wl, "_changed_py_files", lambda: [])
+    monkeypatch.setattr(wl, "_changed_py_files", lambda repo_root=None: [])
     wl.update_verification_from_git()
     ledger = wl.read_ledger()
     assert ledger is not None
@@ -277,7 +311,9 @@ def test_build_session_summary_includes_goal():
 
 
 def test_build_session_summary_includes_verify_status(monkeypatch):
-    monkeypatch.setattr(wl, "_changed_py_files", lambda: ["src/a.py", "src/b.py"])
+    monkeypatch.setattr(
+        wl, "_changed_py_files", lambda repo_root=None: ["src/a.py", "src/b.py"]
+    )
     wl.update_verification_from_git()
     wl.update_last_prompt("add new endpoint")
     summary = wl.build_session_summary()

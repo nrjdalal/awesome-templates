@@ -219,6 +219,8 @@ def test_claude_session_start_expands_native_workflow_summary(tmp_path) -> None:
 
     result = subprocess.run(  # noqa: S603
         ["bash", str(CLAUDE_SESSION_START)],
+        # The hook reads its payload (#425); an inherited stdin could block it.
+        stdin=subprocess.DEVNULL,
         cwd=REPO_ROOT,
         env={**__import__("os").environ, "HARNESS_STATE_ROOT": str(tmp_path)},
         capture_output=True,
@@ -237,7 +239,8 @@ def test_claude_session_start_expands_native_workflow_summary(tmp_path) -> None:
 def test_codex_stop_hook_refreshes_work_ledger_before_building_segments() -> None:
     source = CODEX_STOP_HOOK.read_text(encoding="utf-8")
 
-    update_pos = source.index("update_verification_from_git()")
+    # The call site, not the import: since #425 it passes the session roots.
+    update_pos = source.index("update_verification_from_git(")
     # #269 passes the pre-computed changed set: `build_segments(changed)`.
     build_pos = source.index("segments = build_segments(")
 

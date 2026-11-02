@@ -38,7 +38,12 @@ from .markers import (
     read_latest_token,
     write_marker,
 )
-from .paths import GOVERNOR_PATHS_MD, REPO_ROOT
+from .paths import (
+    GOVERNOR_PATHS_MD,
+    REPO_ROOT,
+    SessionRoots,
+    resolve_session_roots,
+)
 from .safety import (
     PROMPT_RULES,
     Blocked,
@@ -103,6 +108,7 @@ __all__ = [
     "REPO_ROOT",
     "STAGE_GATE_REMINDER",
     "SafeParseResult",
+    "SessionRoots",
     "TOKEN_REGEX",
     "_within_24h",
     "changed_files_via_git",
@@ -126,6 +132,7 @@ __all__ = [
     "read_latest_token",
     "read_ledger_stage",
     "render_reminder",
+    "resolve_session_roots",
     "safe_parse_exception_token",
     "should_block_plan_execute_edit",
     "should_plan_execute_gate",

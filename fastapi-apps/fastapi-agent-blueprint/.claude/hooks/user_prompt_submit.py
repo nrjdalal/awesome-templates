@@ -45,6 +45,7 @@ try:
     from governor import (  # noqa: E402 — sys.path adjusted above
         TOKEN_REGEX,
         parse_exception_token,
+        resolve_session_roots,
     )
     from governor import write_marker as _shared_write_marker  # noqa: E402
 
@@ -52,6 +53,7 @@ try:
 except Exception as exc:  # noqa: BLE001 — HC-5.5 fail-open, must not raise SystemExit
     debug_log("claude user-prompt shared import failed", exc)
     TOKEN_REGEX = None
+    resolve_session_roots = None
     _shared_write_marker = None
     _SHARED_OK = False
 
@@ -59,38 +61,43 @@ except Exception as exc:  # noqa: BLE001 — HC-5.5 fail-open, must not raise Sy
         return {"matched": False, "token": None, "rationale_required": False}
 
 
-def write_marker(payload: dict) -> Path | None:
-    """Backward-compat wrapper — uses module-level STATE_DIR (monkeypatchable)."""
+def write_marker(payload: dict, state_dir: Path | None = None) -> Path | None:
+    """Backward-compat wrapper — defaults to module-level STATE_DIR (monkeypatchable)."""
 
     if not _SHARED_OK or _shared_write_marker is None:
         return None
-    return _shared_write_marker(payload, STATE_DIR)
+    return _shared_write_marker(payload, state_dir or STATE_DIR)
 
 
-def read_prompt() -> str:
+def read_payload() -> dict:
     raw = sys.stdin.read()
     if not raw.strip():
-        return ""
+        return {}
     try:
         payload = json.loads(raw)
     except json.JSONDecodeError:
-        return ""
-    if isinstance(payload, dict):
-        return str(payload.get("prompt", "") or "")
-    return ""
+        return {}
+    return payload if isinstance(payload, dict) else {}
 
 
 def main() -> int:
-    if not _SHARED_OK:
+    if not _SHARED_OK or resolve_session_roots is None:
         return 0
-    # Read stdin once; reuse for both token parsing and ledger update.
-    prompt = read_prompt()
+    # Read stdin once; reuse for token parsing, the session roots and the ledger.
+    payload = read_payload()
+    prompt = str(payload.get("prompt", "") or "")
+    # This copy may be running for another checkout's session (#425); a cwd it
+    # cannot place gets no marker and no ledger write rather than this checkout's.
+    roots = resolve_session_roots(payload)
     try:
-        payload = parse_exception_token(prompt)
-        write_marker(payload)
-        print(json.dumps(payload, ensure_ascii=False), file=sys.stderr)
+        decision = parse_exception_token(prompt)
+        if not roots.rejected:
+            write_marker(decision, roots.state_dir(".claude", STATE_DIR))
+        print(json.dumps(decision, ensure_ascii=False), file=sys.stderr)
     except Exception as exc:  # noqa: BLE001 — HC-5.5 fail-open
         debug_log("claude user-prompt token parse failed", exc)
+        return 0
+    if roots.rejected:
         return 0
 
     # Work-ledger: persist last_prompt for cross-session context continuity.
@@ -99,7 +106,7 @@ def main() -> int:
         try:
             from work_ledger import update_last_prompt  # noqa: PLC0415
 
-            update_last_prompt(prompt)
+            update_last_prompt(prompt, state_root=roots.state_root)
         except Exception as exc:  # noqa: BLE001 — HC-5.5 fail-open
             debug_log("claude user-prompt ledger update failed", exc)
 

@@ -35,6 +35,7 @@ try:
         default_ledger_path,
         extract_session_id,
         mark_fired,
+        resolve_session_roots,
         should_stage_gate,
     )
 
@@ -44,6 +45,7 @@ except Exception:  # noqa: BLE001 — HC-5.5 fail-open
     default_ledger_path = None
     extract_session_id = None
     mark_fired = None
+    resolve_session_roots = None
     should_stage_gate = None
     _SHARED_OK = False
 
@@ -68,6 +70,7 @@ def main() -> int:
     if (
         not _SHARED_OK
         or default_ledger_path is None
+        or resolve_session_roots is None
         or should_stage_gate is None
         or mark_fired is None
         or extract_session_id is None
@@ -80,12 +83,20 @@ def main() -> int:
         payload = json.loads(raw)
         if not isinstance(payload, dict):
             return 0
-        ledger_path = default_ledger_path(STATE_ROOT)
-        if not should_stage_gate(payload, STATE_DIR, ledger_path, REPO_ROOT):
+        # Judge the edit against the session's tree and ledger, not this copy's
+        # checkout — the two differ in a desktop worktree session (#425).
+        roots = resolve_session_roots(payload)
+        if roots.rejected:
+            return 0
+        state_dir = roots.state_dir(".claude", STATE_DIR)
+        ledger_path = default_ledger_path(roots.state_root or STATE_ROOT)
+        if not should_stage_gate(
+            payload, state_dir, ledger_path, roots.repo_root or REPO_ROOT
+        ):
             return 0
         # R1.3: exclusive-create claim — only the winning writer emits, so
         # concurrent sibling hook runs produce at most one reminder.
-        if mark_fired(STATE_DIR, extract_session_id(payload)) is None:
+        if mark_fired(state_dir, extract_session_id(payload)) is None:
             return 0
         # IC-19: combine resolver result with the canonical English fallback
         # so an empty locale lookup never emits a blank advisory.

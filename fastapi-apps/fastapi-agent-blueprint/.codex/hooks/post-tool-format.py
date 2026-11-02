@@ -91,9 +91,13 @@ def _record_verify_class(command: str, payload: dict) -> None:
     if str(shared) not in sys.path:
         sys.path.insert(0, str(shared))
     with contextlib.suppress(Exception):
+        from governor import resolve_session_roots  # noqa: PLC0415
         from work_ledger import mark_verified  # noqa: PLC0415
 
-        mark_verified(command, passed=exit_code == 0)
+        # The shared ledger is the session tree's, wherever this copy runs (#425).
+        roots = resolve_session_roots(payload)
+        if not roots.rejected:
+            mark_verified(command, passed=exit_code == 0, state_root=roots.state_root)
 
 
 def main() -> int:

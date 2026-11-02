@@ -4,8 +4,12 @@ import contextlib
 import json
 import sys
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from _shared import REPO_ROOT, STATE_DIR, STATE_ROOT, changed_files
+
+if TYPE_CHECKING:
+    from governor.paths import SessionRoots
 
 _SHARED = REPO_ROOT / ".agents" / "shared"
 if str(_SHARED) not in sys.path:
@@ -52,6 +56,32 @@ except Exception:  # noqa: BLE001
     should_plan_execute_gate = None
     should_stage_gate = None
     _STAGE_GATE_OK = False
+
+
+# Session roots (#425) — separate try block: a resolver failure must leave every
+# other Stop responsibility intact (HC-5.5).
+try:
+    from governor.paths import resolve_session_roots  # noqa: E402
+except Exception:  # noqa: BLE001 — HC-5.5 fail-open
+    resolve_session_roots = None
+
+
+def _session_roots() -> SessionRoots | None:
+    """Session roots from the Stop payload's ``cwd`` (#425); ``None`` = no resolver.
+
+    This harness runs its hooks from the session's own checkout, so the private
+    paths here (its state dir, the changed-file set) already belong to the
+    session. The shared work ledger is resolved from the payload anyway, the way
+    every harness resolves it, so its location never depends on whose hook copy
+    ran.
+    """
+    if resolve_session_roots is None:
+        return None
+    payload: object = {}
+    with contextlib.suppress(Exception):
+        if not sys.stdin.isatty():
+            payload = json.loads(sys.stdin.read() or "{}")
+    return resolve_session_roots(payload)
 
 
 def _loc(key: str, fallback: str) -> str:
@@ -128,7 +158,9 @@ def plan_execute_segment(
     return _resolve_locale_string("PLAN_EXECUTE_REMINDER") or PLAN_EXECUTE_REMINDER
 
 
-def build_segments(changed: list[str] | None = None) -> list[str]:
+def build_segments(
+    changed: list[str] | None = None, roots: SessionRoots | None = None
+) -> list[str]:
     if changed is None:
         changed = changed_files()
     advisory_level, advisory_files = (
@@ -203,23 +235,32 @@ def build_segments(changed: list[str] | None = None) -> list[str]:
                 and not is_log_only_backfill(changed)
                 and is_governor_changing(changed, globs)
             )
-        segments.extend(
-            build_workflow_advisory_segments(
-                changed_files=changed,
-                governor_changing=governor_changing,
+        if roots is None or not roots.rejected:
+            segments.extend(
+                build_workflow_advisory_segments(
+                    changed_files=changed,
+                    governor_changing=governor_changing,
+                    state_root=roots.state_root if roots is not None else None,
+                )
             )
-        )
     return segments
 
 
 def main() -> int:
-    with contextlib.suppress(Exception):
-        from work_ledger import update_verification_from_git  # noqa: PLC0415
+    # A cwd this harness cannot place leaves the shared ledger alone (#425).
+    roots = _session_roots()
+    rejected = roots is not None and roots.rejected
+    if not rejected:
+        with contextlib.suppress(Exception):
+            from work_ledger import update_verification_from_git  # noqa: PLC0415
 
-        update_verification_from_git()
+            update_verification_from_git(
+                repo_root=roots.repo_root if roots is not None else None,
+                state_root=roots.state_root if roots is not None else None,
+            )
 
     changed = changed_files()
-    segments = build_segments(changed)
+    segments = build_segments(changed, roots)
 
     with contextlib.suppress(Exception):
         import verify_first  # noqa: PLC0415
@@ -227,7 +268,19 @@ def main() -> int:
         sid = verify_first.session_id()
         # Stage-gate (mid-task, ADR 050) OR plan->execute boundary (ADR 054)
         # fire at most once per session via the shared exclusive-create marker.
-        segment = stage_gate_segment(changed, sid) or plan_execute_segment(changed, sid)
+        # The ledger stage is read from the session tree's ledger (#425).
+        ledger_path = (
+            default_ledger_path(roots.state_root)
+            if roots is not None
+            and roots.state_root is not None
+            and default_ledger_path is not None
+            else None
+        )
+        segment = None
+        if not rejected:
+            segment = stage_gate_segment(
+                changed, sid, ledger_path=ledger_path
+            ) or plan_execute_segment(changed, sid, ledger_path=ledger_path)
         if (
             segment is not None
             and mark_fired is not None

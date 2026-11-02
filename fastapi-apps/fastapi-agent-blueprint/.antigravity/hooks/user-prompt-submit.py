@@ -72,10 +72,14 @@ def main() -> int:
                 _shared_write_marker(result.payload, STATE_DIR)
         print(json.dumps(result.payload, ensure_ascii=False), file=sys.stderr)
 
+    # The ledger of the tree the payload's cwd names (#425).
     with contextlib.suppress(Exception):
+        from governor import resolve_session_roots  # noqa: PLC0415
         from work_ledger import update_last_prompt  # noqa: PLC0415
 
-        update_last_prompt(prompt)
+        roots = resolve_session_roots(payload)
+        if not roots.rejected:
+            update_last_prompt(prompt, state_root=roots.state_root)
     return 0
 
 

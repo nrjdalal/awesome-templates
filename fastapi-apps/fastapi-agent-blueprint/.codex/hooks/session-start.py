@@ -21,12 +21,20 @@ harness_lines = [
     "- Codex memories are personal/session optimization, not the team's canonical rules.",
 ]
 
-# Work-ledger context injection (fail-open per HC-5.5).
+# Work-ledger context injection (fail-open per HC-5.5), from the ledger of the
+# tree the payload's cwd names (#425).
 work_summary: str | None = None
 with contextlib.suppress(Exception):
+    from governor import resolve_session_roots  # noqa: PLC0415
     from work_ledger import build_session_summary  # noqa: PLC0415
 
-    work_summary = build_session_summary()
+    payload: object = {}
+    if not sys.stdin.isatty():
+        with contextlib.suppress(ValueError):
+            payload = json.loads(sys.stdin.read() or "{}")
+    roots = resolve_session_roots(payload)
+    if not roots.rejected:
+        work_summary = build_session_summary(state_root=roots.state_root)
 
 parts = ["\n".join(harness_lines)]
 if work_summary:

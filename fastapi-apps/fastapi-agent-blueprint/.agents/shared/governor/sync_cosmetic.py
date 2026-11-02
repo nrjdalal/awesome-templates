@@ -24,10 +24,12 @@ Design (codex design review R5):
 
 from __future__ import annotations
 
+import functools
 import re
 import shutil
 import subprocess
 from collections.abc import Callable
+from pathlib import Path
 
 from .paths import REPO_ROOT
 
@@ -54,22 +56,25 @@ _TABLE_HEADER_OR_SEP_RE = re.compile(r"^\|[-\s|:]+\|$|^\|\s*[A-Za-z][^|]*\|")
 DiffSource = Callable[[str], str]
 
 
-def _git_diff_for_path(path: str) -> str:
+def _git_diff_for_path(path: str, repo_root: Path = REPO_ROOT) -> str:
     """Default diff source — runs ``git diff origin/main..HEAD -- <path>``.
 
     Falls back to ``git diff -- <path>`` if the comparison ref is unavailable
     (e.g. fresh branch with no remote, detached HEAD, no origin remote). Empty
     string is returned on any subprocess failure so callers can treat
     diff-source failure as "do not exempt" rather than crashing.
+
+    ``repo_root`` must be the tree the changed files came from: an empty diff
+    counts as cosmetic, so diffing another checkout exempts real edits (#425).
     """
 
     git = shutil.which("git")
     if git is None:
         return ""
     for command in (
-        [git, "-C", str(REPO_ROOT), "diff", "origin/main..HEAD", "--", path],
-        [git, "-C", str(REPO_ROOT), "diff", "--cached", "--", path],
-        [git, "-C", str(REPO_ROOT), "diff", "--", path],
+        [git, "-C", str(repo_root), "diff", "origin/main..HEAD", "--", path],
+        [git, "-C", str(repo_root), "diff", "--cached", "--", path],
+        [git, "-C", str(repo_root), "diff", "--", path],
     ):
         try:
             result = subprocess.run(  # noqa: S603 — git resolved via shutil.which, args fixed
@@ -129,6 +134,8 @@ def _is_cosmetic_diff(path: str, diff_text: str) -> bool:
 def is_sync_cosmetic_only(
     governor_subset: list[str],
     diff_source: DiffSource | None = None,
+    *,
+    repo_root: Path | None = None,
 ) -> bool:
     """Return True iff every path in ``governor_subset`` is sync-cosmetic only.
 
@@ -138,12 +145,19 @@ def is_sync_cosmetic_only(
 
     ``diff_source`` may be injected for testing; defaults to running
     ``git diff origin/main..HEAD -- <path>`` per file and falling through to
-    cached / working-tree diff when needed.
+    cached / working-tree diff when needed. ``repo_root`` points that default
+    at the session's tree when it is not this checkout (#425).
     """
 
     if not governor_subset:
         return False
-    source: DiffSource = diff_source if diff_source is not None else _git_diff_for_path
+    source: DiffSource = (
+        diff_source
+        if diff_source is not None
+        else functools.partial(_git_diff_for_path, repo_root=repo_root)
+        if repo_root is not None
+        else _git_diff_for_path
+    )
     for path in governor_subset:
         if path not in SYNC_COSMETIC_FILES:
             return False
