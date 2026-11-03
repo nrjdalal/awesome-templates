@@ -30,17 +30,6 @@ Use `docs/ai/shared/` for the deeper workflow references that are too detailed f
 
 ## Claude Code
 
-### Plugin Setup (Required)
-
-Install the pyright-lsp plugin for code intelligence (symbol navigation, references, diagnostics):
-
-```bash
-uv sync                              # installs pyright binary as dev dependency
-claude plugin install pyright-lsp    # installs Claude Code plugin
-```
-
-> `enabledPlugins` in `.claude/settings.json` will prompt installation automatically on first run.
-
 ### MCP Server Setup (`.mcp.json`)
 
 **context7** -- Up-to-date library documentation

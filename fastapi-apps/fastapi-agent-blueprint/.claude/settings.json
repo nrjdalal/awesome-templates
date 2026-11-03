@@ -1,17 +1,11 @@
 {
-  "env": {
-    "ENABLE_LSP_TOOL": "1"
-  },
-  "enabledPlugins": {
-    "pyright-lsp@claude-plugins-official": true
-  },
   "hooks": {
     "SessionStart": [
       {
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/check-required-plugins.sh"
+            "command": "bash .claude/hooks/check-session-setup.sh"
           },
           {
             "type": "command",

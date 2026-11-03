@@ -78,11 +78,9 @@ When running `/sync-guidelines` or `$sync-guidelines`, do not stop at automatic 
 
 ```bash
 uv sync --group dev
-claude plugin install pyright-lsp
 ```
 
 Verification:
-- Confirm `.claude/settings.json` enables `pyright-lsp`
 - Confirm `.mcp.json` contains `context7`
 - Run Claude in the repo and verify hooks/plugins load normally
 

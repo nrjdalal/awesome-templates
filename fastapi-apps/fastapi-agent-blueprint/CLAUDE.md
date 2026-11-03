@@ -66,17 +66,13 @@ Default Flow is **subordinate** to (a) active sandbox / approval policy, (b) `.c
 > Shared workflow references live in `docs/ai/shared/`.
 > Detailed shell commands are in `.claude/rules/commands.md` (auto-loaded); Makefile shortcuts are in `AGENTS.md`.
 > context7 is a project-required MCP server for Claude (configured via `.mcp.json`).
-> pyright-lsp plugin provides native LSP code intelligence.
 
 ### Code Exploration / Reading (by priority)
-1. **pyright-lsp** (symbol navigation): goToDefinition, findReferences, documentSymbol, getDiagnostics
-   - Most token-efficient for symbol definition, reference tracking, file structure
-   - Required plugin — registered via `enabledPlugins` in settings.json
-2. **Grep/Glob** (pattern search): string patterns, config files, non-code files
-3. **Read** (full content): when full file content is needed
+1. **Grep/Glob** (pattern search): symbol names, string patterns, config files, non-code files
+2. **Read** (full content): when full file content is needed
 
 ### Impact Analysis
-- For refactoring/signature changes: pyright-lsp `findReferences`
+- For refactoring/signature changes: Grep for the symbol, its aliases and dynamic registrations (`getattr`, Selector maps, `__all__`), then run `uv run pyright` and the relevant tests. pyright catches a statically typed caller the search missed, but only inside `[tool.pyright] include`, and not a dynamic call — inspect those by hand
 - For simple string search: Grep
 
 ### Editing

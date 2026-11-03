@@ -101,8 +101,8 @@ The shared constitution and the tool-level entry points. These files transitivel
 
 ### `.claude/settings.json`
 
-- **Current role**: Four Claude hook chains (SessionStart / PreToolUse Edit|Write|Bash / PostToolUse Edit|Write / Stop) + plugin enablement (`pyright-lsp`).
-- **Why it exists**: Established by #63 (Serena → pyright-lsp) and #66 cross-tool harness alignment.
+- **Current role**: Five Claude hook events (SessionStart / UserPromptSubmit / PreToolUse / PostToolUse / Stop), with matchers defined in `.claude/settings.json`. No plugin enablement since pyright-lsp was removed (2026-11).
+- **Why it exists**: Established by #63 (Serena → pyright-lsp, since removed) and #66 cross-tool harness alignment.
 - **Replacement feasibility**: None.
 - **Final location**: unchanged.
 - **Migration risk**: Medium starting Phase 3. New hooks attach to existing matchers; payload backward-compatibility must hold.
@@ -590,7 +590,7 @@ Thirty-one hook scripts (9 Claude shell + 6 Claude Python implementations + 8 Co
 
 | Asset | Bucket | Risk | Impact |
 |---|---|---|---|
-| `.claude/hooks/check-required-plugins.sh` | Keep | Low | Low |
+| `.claude/hooks/check-session-setup.sh` | Keep | Low | Low |
 | `.claude/hooks/session-start-context.sh` | Keep | Low | Low |
 | `.claude/hooks/pre-tool-security.sh` | Keep | Low | Medium |
 | `.claude/hooks/post-tool-format.sh` | Keep | Low | Medium |
@@ -624,10 +624,10 @@ Thirty-one hook scripts (9 Claude shell + 6 Claude Python implementations + 8 Co
 | `.antigravity/hooks/completion_gate.py` | Overlay | Medium | Low |
 | `.antigravity/hooks/stop-sync-reminder.py` | Overlay | Medium | Medium |
 
-### `.claude/hooks/check-required-plugins.sh`
+### `.claude/hooks/check-session-setup.sh`
 
-- **Current role**: SessionStart guard that ensures `pyright-lsp` is enabled.
-- **Why it exists**: #63 plugin migration; missing plugins silently break LSP-aware skills.
+- **Current role**: SessionStart notice when `CONTEXT7_API_KEY` is unset (anonymous context7 requests have lower rate limits).
+- **Why it exists**: Formerly `check-required-plugins.sh` (#63), which also required `pyright-lsp`. That plugin was removed in 2026-11: no skill used it, its diagnostics were wrong in worktree sessions (no `.venv`), and the reference search it offered is covered by Grep plus the blocking `uv run pyright` gate, which fails a statically typed caller a search missed within its configured scope.
 - **Bucket**: Keep.
 - **Notes**: No Default Flow interaction.
 

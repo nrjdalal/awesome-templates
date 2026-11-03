@@ -30,17 +30,6 @@
 
 ## Claude Code
 
-### 플러그인 설정 (필수)
-
-코드 인텔리전스(심볼 탐색, 참조 추적, 진단)를 위해 pyright-lsp 플러그인을 설치하세요:
-
-```bash
-uv sync                              # pyright 바이너리 설치 (dev 의존성)
-claude plugin install pyright-lsp    # Claude Code 플러그인 설치
-```
-
-> `.claude/settings.json`의 `enabledPlugins`가 첫 실행 시 자동으로 설치를 안내합니다.
-
 ### MCP 서버 설정 (`.mcp.json`)
 
 **context7** -- 라이브러리 최신 문서 조회

@@ -7,17 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.2] - 2026-11-03
+
 ### Added
 
-- **Markdown link checker.** `tools/check_doc_links.py` resolves every relative link in every
-  git-tracked `*.md` file against the git index, and every `#anchor` into a Markdown file against
-  its headings (GitHub slug rules, ATX and setext, plus explicit HTML `id=` / `name=` anchors).
+- **Markdown link checker.** `tools/check_doc_links.py` scans every git-tracked `*.md` file and
+  resolves the relative links it recognises — inline links and images, reference definitions, and
+  HTML `href` / `src` — against the git index, and their `#anchor` fragments into Markdown files
+  against the target's headings (GitHub slug rules, ATX and setext, plus explicit HTML `id=` /
+  `name=` anchors). Shortcut reference usages and fragments on non-Markdown targets are out of
+  scope by design.
   It runs as the blocking, full-repository `doc-links` pre-commit hook, so a heading renamed in
   one file is caught against the pointers in files the commit never touched — which is how two
   anchors orphaned by the #79 README restructure went unnoticed for four months. Thirteen broken
   links in six files were fixed on the way in. **For forks:** the hook blocks; `SKIP=doc-links` or
   `--no-verify` are the escape hatches, and external URLs are deliberately not checked
-  ([#408](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/408))
+  ([#408](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/408)). `project-dna.md` §7
+  now lists every local pre-commit hook and which of them block — it had named three of eight,
+  with the oldest omission dating to #131
+  ([#412](https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/412))
 
 ### Changed
 
@@ -40,6 +48,73 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   skills. A documented Small-Bug Lane carries the common one-line bug with an explicit delta table
   rather than an exception token. **For forks:** the skill is advisory documentation — no hook, CI
   gate, or runtime behaviour changed ([#405](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/405))
+
+- **The `pyright-lsp` plugin is no longer part of the Claude harness.** Most sessions run in git
+  worktrees without a `.venv`, where its diagnostics were wrong — imports failed to resolve and the
+  `# pyright: ignore` comments CI needs showed as unnecessary — and a cold-start reference search
+  returned 1 of 17 references, so trusting it for impact analysis under-reported. Impact analysis
+  is now Grep plus the blocking `uv run pyright` gate, whose limits CLAUDE.md states: it covers only
+  `[tool.pyright] include` and cannot see dynamic calls. `.claude/settings.json` drops
+  `enabledPlugins` and `ENABLE_LSP_TOOL`, and the SessionStart script is renamed
+  `check-session-setup.sh` and keeps only the `CONTEXT7_API_KEY` notice. **For forks:** a locally
+  installed `pyright-lsp` plugin keeps working; it is simply no longer required or enabled by the
+  project ([#430](https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/430))
+
+### Fixed
+
+- **Harness hooks act on the session's worktree, not on the checkout that holds the hook file.**
+  Claude Code desktop starts a worktree session against the main checkout's project config and runs
+  relative hook commands from there, so every worktree session executed the main checkout's hook
+  copies — and those took every root from `Path(__file__)`. The work ledger and `.claude/state`
+  were the main checkout's, the ADR 054 / ADR 050 checks classified a worktree edit against the
+  main tree, and the Stop hook's Governor Footer reminder never saw worktree work at all.
+  `governor.resolve_session_roots` now takes the payload `cwd` to its git top level and accepts it
+  only for a working tree of the same repository; a `cwd` it cannot place is rejected and
+  session-scoped work is skipped, and no `cwd` keeps the old defaults. Codex and Antigravity already
+  run hooks from the session's checkout and are re-rooted only on the shared ledger. Deliberately
+  not done: running the worktree's own hook copy, which would execute a branch's hook code — such
+  as an external PR checked out for review — automatically. Separately, a prompt made only of
+  `<task-notification>` / `<system-reminder>` blocks no longer overwrites the ledger's
+  `last_prompt` — both were observed doing so — while a reminder followed by real text is still
+  recorded. **For forks:** the desktop runs the
+  main checkout's copy, so this takes effect only after pulling it there
+  ([#425](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/425))
+
+- **Work-ledger writes are atomic and its updates serialised.** Every update helper rewrote the
+  whole ledger with a truncating `write_text` and no lock, so two writers lost each other's
+  updates, and a reader that caught the truncated file got `None` and wrote a *default* ledger
+  back. `write_ledger` now swaps a temp file in with `os.replace`, and every update holds a `flock`
+  on `current-work.json.lock`; an update that cannot take the lock is dropped, and only where
+  nobody can lock at all (no `fcntl`, a filesystem without `flock`) does it run unlocked
+  (ADR052-G4) ([#429](https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/429))
+
+- **Running the test suite no longer overwrites the live work ledger.** Hook state followed
+  `HARNESS_STATE_ROOT` with the repository as the default, so isolation was opt-in per call site;
+  five test files had not opted in, one of them outside `tests/unit/agents_shared/` and one
+  executing the hook in-process where no subprocess `env=` could reach it. `tests/conftest.py` now
+  sets the variable to a session temp directory at module scope — before collection imports the
+  ledger module — and a behavioural guard spawns a hook the naive way and asserts the live ledger
+  is byte-identical afterwards. The existing AST guard could not see this class: the leak had no
+  string literal, lived outside fixtures and happened in a child process
+  ([#407](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/407))
+
+### Docs
+
+- **Both READMEs present the backend and the AI collaboration harness as equal pillars**, with
+  separate navigation, concrete examples and adoption costs. The comparison guide replaces
+  competitor scorecards with selection trade-offs, and the onboarding guides separate evaluation
+  from development setup and keep the optional extras when restarting a server for real providers,
+  RabbitMQ or OTEL. The old demo command chained a foreground server with requests that could never
+  run alongside it; it is now two terminals. Existing README anchors in both languages are
+  preserved ([#421](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/421))
+
+- **ADR 006 records the right "before".** It was written seven months after the change and
+  described a `src/apps/` + `src/domains/` layout that existed for under three hours; for the six
+  months before, the code was layer-first. A dated Post-decision Update names the commit that
+  actually moved it, the microservice-readiness motivation that has since lapsed, what holds the
+  domain-first layout now, and its known cost — layers are invisible at the top level, so layer
+  rules are enforced by tooling. The original text and decision are unchanged
+  ([#424](https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/424))
 
 ## [0.11.1] - 2026-08-13
 
@@ -1049,7 +1124,8 @@ Quality Gate review contract, `/plan-feature` Approach Options stage,
 - ADR documentation (001-013)
 - CONTRIBUTING guide and issue templates
 
-[Unreleased]: https://github.com/Mr-DooSun/fastapi-agent-blueprint/compare/v0.11.1...HEAD
+[Unreleased]: https://github.com/Mr-DooSun/fastapi-agent-blueprint/compare/v0.11.2...HEAD
+[0.11.2]: https://github.com/Mr-DooSun/fastapi-agent-blueprint/compare/v0.11.1...v0.11.2
 [0.11.1]: https://github.com/Mr-DooSun/fastapi-agent-blueprint/compare/v0.11.0...v0.11.1
 [0.11.0]: https://github.com/Mr-DooSun/fastapi-agent-blueprint/compare/v0.10.1...v0.11.0
 [0.10.1]: https://github.com/Mr-DooSun/fastapi-agent-blueprint/compare/v0.10.0...v0.10.1

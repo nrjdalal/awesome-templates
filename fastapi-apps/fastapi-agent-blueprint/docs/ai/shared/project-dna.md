@@ -686,7 +686,7 @@ names only some of the hooks fails nothing when it goes stale.
 Every hook `.claude/settings.json` registers — a list that names only some of them
 fails nothing when it goes stale (the #408 lesson for the pre-commit block above):
 
-- SessionStart (check-required-plugins): verifies the pyright-lsp plugin is installed and the `CONTEXT7_API_KEY` env var is set.
+- SessionStart (check-session-setup): notes when the `CONTEXT7_API_KEY` env var is unset (context7 still works, at lower rate limits).
 - SessionStart (session-start-context): injects the work-ledger summary of the session's tree.
 - UserPromptSubmit (user-prompt-submit): turns a leading exception token into a marker and stores the prompt as the ledger's `last_prompt` — except a prompt made only of harness `<task-notification>` / `<system-reminder>` blocks.
 - PreToolUse Edit|Write|Bash (pre-tool-security): SQL injection, hardcoded secrets, Domain→Infra import, sensitive data logging check.
