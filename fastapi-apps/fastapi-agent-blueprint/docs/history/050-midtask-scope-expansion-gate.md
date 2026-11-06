@@ -13,7 +13,7 @@ The Default Coding Flow (ADR 045) mandates `framing → plan` before `implement`
 This ADR closes the gap with three coordinated changes:
 
 1. **Canonical rule** — a "Mid-Task Scope Expansion" subsection in `target-operating-model.md` §2 (synced to AGENTS.md § Default Coding Flow): a capability gap discovered during execution is *new implementation-class work*; the agent stops, reports the gap, and routes to `/plan-feature` / `$plan-feature`.
-2. **Advisory stage-gate hook** — a `PostToolUse Edit|Write` reminder (mirroring the verify-first Phase-3 contract, HC-3.3) that fires when a `.py` file under `src/` or `examples/` is edited while the work ledger's `workflow.stage` is inactive, no plan-waiver token marker (`[trivial]`/`[hotfix]`, see D6) is present — `[exploration]` does not suppress the gate — and the reminder has not already fired this session.
+2. **Advisory stage-gate hook** — a `PostToolUse Edit|Write` reminder (using the read-only marker and fail-open contract, HC-3.3) that fires when a `.py` file under `src/` or `examples/` is edited while the work ledger's `workflow.stage` is inactive, no plan-waiver token marker (`[trivial]`/`[hotfix]`, see D6) is present — `[exploration]` does not suppress the gate — and the reminder has not already fired this session.
 3. **Direction & Non-goals** — a subsection in `project-dna.md` §0 giving planning and review steps a repo-level direction reference, so "is this aligned?" has a citable answer instead of living in issues and maintainer memory.
 
 ## Background
@@ -23,7 +23,7 @@ Observed failure mode (maintainer report, 2026-07-03): during auto-mode executio
 The building blocks already exist:
 
 - `.agents/state/current-work.json` records `workflow.stage` (`idle|planned|executing|reviewing|complete|blocked`), written by `/plan-feature` and `/execute-plan`.
-- The Phase-5 governor package (`.agents/shared/governor`) provides marker lifecycle (IC-11/IC-12), token vocabulary, fail-open shim conventions (HC-5.5, Plan §D3), and a proven advisory channel (verify-first).
+- The Phase-5 governor package (`.agents/shared/governor`) provides marker lifecycle (IC-11/IC-12), token vocabulary, fail-open shim conventions (HC-5.5, Plan §D3), and native model-visible advisory channels. The former verify-first consumer is retired by [ADR 061](061-retire-runtime-verify-and-content-heuristics.md).
 - `/execute-plan`'s enforcement policy is explicitly **advisory-first**: reminders do not block; only high-confidence conditions with false-positive tests may later be promoted to hard gates.
 
 ## Decision
@@ -40,7 +40,7 @@ The gate fires only when `workflow.stage` is one of `GATED_STAGES = {idle, compl
 
 The approved plan initially named `PreToolUse`. Implementation refines this to `PostToolUse` with identical semantics: per the hooks reference, `PreToolUse` has no non-blocking model-visible channel (exit 2 blocks; a permission-decision reason targets the user). The edit itself is not worth blocking — the goal is to interrupt the *next* decision, not the current write.
 
-Delivery channel: exit 0 + stdout JSON `{"hookSpecificOutput": {"hookEventName": "PostToolUse", "additionalContext": <reminder>}}`. This is the documented model-visible non-blocking channel; plain stderr/stdout text on exit 0 reaches only the user-facing transcript, **not** the model (verified empirically during this change and against the hooks reference). Drift candidate recorded: the Phase-3 verify-first shim still emits stderr-on-exit-0 and is therefore likely invisible to the model — remediation tracked separately (same channel fix, own issue).
+Delivery channel: exit 0 + stdout JSON `{"hookSpecificOutput": {"hookEventName": "PostToolUse", "additionalContext": <reminder>}}`. This is the documented model-visible non-blocking channel; plain stderr/stdout text on exit 0 reaches only the user-facing transcript, **not** the model (verified empirically during this change and against the hooks reference). At decision time, a separate drift candidate recorded the Phase-3 verify-first shim’s stderr-on-exit-0 delivery. That consumer was later retired by [ADR 061](061-retire-runtime-verify-and-content-heuristics.md); the stage advisory retains the native JSON channel.
 
 ### D4 — Implementation surface = `.py` under `src/` or `examples/`
 
@@ -56,9 +56,9 @@ Only **plan-waiver tokens** suppress the gate (cross-review R1.1 narrowed this f
 
 ### D7 — Codex parity: documented deferral
 
-Codex has no `PostToolUse`. At the time of this ADR the parity adapter (Stop-time advisory evaluating changed implementation files against the ledger stage) was specified in `migration-strategy.md` and deferred to a follow-up issue rather than widening this PR; Codex retained the canonical rule (prompt-time routing) in the interim.
+Codex has no file-edit `PostToolUse` matcher (its configured matcher covers Bash only). At the time of this ADR the parity adapter (Stop-time advisory evaluating changed implementation files against the ledger stage) was specified in the [archived migration plan](archive/harness-context/migration-strategy.md) and deferred to a follow-up issue rather than widening this PR; Codex retained the canonical rule (prompt-time routing) in the interim.
 
-**Update (#269):** shipped. The Stop-time adapter now lives in `.codex/hooks/stop-sync-reminder.py` (`stage_gate_segment`, advisory #6): it bridges the changed-file set to the shared single-file `should_stage_gate` and reuses this policy unchanged (adapter-only). See `migration-strategy.md` § Post-v1 — Mid-Task Stage-Gate Adapters.
+**Update (#269):** shipped. The Stop-time adapter now lives in `.codex/hooks/stop-sync-reminder.py` (`stage_gate_segment`): it bridges the changed-file set to the shared single-file `should_stage_gate` and reuses this policy unchanged (adapter-only). See [target-operating-model.md §2](../ai/shared/target-operating-model.md#mid-task-scope-expansion-adr-050) for the current adapter contract; the original rollout notes are in the [migration archive](archive/harness-context/migration-strategy.md).
 
 ### D8 — Direction & Non-goals lives in `project-dna.md` §0
 

@@ -5,7 +5,6 @@ import time
 from pathlib import Path
 
 from _shared import REPO_ROOT, STATE_DIR, changed_files
-from verify_first import session_id
 
 GOVERNOR_PATHS_MD = REPO_ROOT / "docs" / "ai" / "shared" / "governor-paths.md"
 
@@ -76,19 +75,6 @@ def consume_phase2_markers(state_dir: Path = STATE_DIR) -> None:
     if not _SHARED_OK or _shared_consume_phase2_markers is None:
         return
     _shared_consume_phase2_markers(state_dir)
-
-
-def cleanup_stale_verify_logs(state_dir: Path = STATE_DIR) -> None:
-    if not state_dir.exists():
-        return
-    current_name = f"verify-log-{session_id()}.json"
-    cutoff = time.time() - 86400
-    for path in state_dir.glob("verify-log-*.json"):
-        if path.name == current_name:
-            continue
-        with contextlib.suppress(Exception):
-            if path.stat().st_mtime < cutoff:
-                path.unlink()
 
 
 def governor_changing_segment() -> str | None:

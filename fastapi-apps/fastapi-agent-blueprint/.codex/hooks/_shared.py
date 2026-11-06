@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -85,3 +87,12 @@ def extract_python_paths(command: str) -> list[Path]:
         if candidate.exists() and candidate.is_file():
             paths.append(candidate)
     return list(dict.fromkeys(paths))
+
+
+_PROCESS_START_NS = time.monotonic_ns()
+
+
+def session_id() -> str:
+    """Per-tool identity for stage-gate deduplication, independent of logging."""
+    explicit = os.environ.get("CODEX_THREAD_ID") or os.environ.get("CODEX_SESSION_ID")
+    return explicit or f"{os.getppid()}-{os.getpid()}-{_PROCESS_START_NS:016x}"

@@ -206,12 +206,6 @@ def build_segments(
         )
 
     with contextlib.suppress(Exception):
-        import verify_first  # noqa: PLC0415
-
-        if verify_first.should_remind():
-            segments.append(verify_first.localized_reminder_text())
-
-    with contextlib.suppress(Exception):
         import completion_gate  # noqa: PLC0415
 
         segment = completion_gate.governor_changing_segment()
@@ -263,9 +257,9 @@ def main() -> int:
     segments = build_segments(changed, roots)
 
     with contextlib.suppress(Exception):
-        import verify_first  # noqa: PLC0415
+        from _shared import session_id  # noqa: PLC0415
 
-        sid = verify_first.session_id()
+        sid = session_id()
         # Stage-gate (mid-task, ADR 050) OR plan->execute boundary (ADR 054)
         # fire at most once per session via the shared exclusive-create marker.
         # The ledger stage is read from the session tree's ledger (#425).
@@ -293,12 +287,10 @@ def main() -> int:
 
         with contextlib.suppress(Exception):
             completion_gate.consume_phase2_markers(completion_gate.STATE_DIR)
-        with contextlib.suppress(Exception):
-            completion_gate.cleanup_stale_verify_logs(completion_gate.STATE_DIR)
 
     # Gemini CLI / Antigravity parse a hook's stdout as JSON on exit 0 and
     # reject plain text. Surface the merged AfterAgent advisory bundle (sync /
-    # verify-first / completion-gate / workflow / stage-gate) via the JSON
+    # completion-gate / workflow / stage-gate) via the JSON
     # `systemMessage` field so it is shown alongside the response.
     if segments:
         print(json.dumps({"systemMessage": "\n\n".join(segments)}))

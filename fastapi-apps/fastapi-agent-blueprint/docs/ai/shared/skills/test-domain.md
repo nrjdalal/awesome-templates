@@ -1,17 +1,7 @@
 # Domain Test Generation/Execution — Detailed Procedure
 
 ## Default Flow Position
-
-This skill is the canonical owner of the **`verify`** step in the [Default Coding Flow](../../../../AGENTS.md#default-coding-flow).
-
-- `run` mode is the standard verification action after any `implement` step.
-- `generate` mode prepares the test surface and is itself an `implement`-style operation; the resulting tests must then be exercised via `run`.
-
-After verification, route to:
-- `self-review` — `/review-architecture {name}` if the change introduced layer interactions
-- `completion gate` — `/review-pr` and (if drift) `/sync-guidelines`
-
-Recursion guard: n/a (this skill is the verify step, not a planning step).
+See [target-operating-model §1](../target-operating-model.md) — `test-domain` routing.
 
 ## Mode Selection
 

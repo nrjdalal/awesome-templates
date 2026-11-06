@@ -81,6 +81,15 @@ repos:
         entry: "\\.to_entity\\(|\\.from_entity\\(|from src\\._core\\.domain\\.entities"
         files: "\\.py$"
 
+      # ADR 061: deterministic sensitive logging check for production Python.
+      # Test corpora deliberately contain leak examples; this lexical gate is
+      # not a data-flow proof and does not replace security review.
+      - id: sensitive-logging
+        name: "Sensitive logging: no credential fields in production logs"
+        language: pygrep
+        entry: '(?i)(?:logger\.|logging\.|print\s*\().*(?:password|secret|token|api_key|private_key)'
+        files: '^(src|examples)/.*\.py$'
+
       # Tier 1 Language Policy (AGENTS.md § Language Policy):
       # shared governance/harness/contributor-facing files must not contain
       # Korean prose. Bilingual escape tokens and locale data files
@@ -154,7 +163,7 @@ repos:
       # BLOCKING, unlike the advisory migration-safety hook above. The line this
       # crosses is `project-dna.md` §0 ("the harness nudges; humans and CI
       # decide"), so the reasoning is recorded here rather than assumed. That
-      # non-goal governs the *governor* layer — stage gates and verify-first
+      # non-goal governs the *governor* layer — stage gates and workflow
       # reminders, which judge intent and are wrong often enough that blocking
       # would cost more than it saves. The discriminator this repo actually
       # applies is determinism, not subject matter: language-policy,
@@ -186,6 +195,26 @@ repos:
         entry: python3 tools/check_doc_links.py
         pass_filenames: false
         always_run: true
+
+      # Context byte budgets (#416, ADR 059): deterministic size facts are
+      # blocking under project-dna §0, unlike intent-based governor advisories.
+      # Caps: auto-load 40960 B, each rule 16384 B, sync line 200 B,
+      # recent-status row 300 B, AGENTS.md 30720 B. Raise only with review.
+      - id: context-budget
+        name: "Context budget: cap tracked auto-loaded harness bytes"
+        language: system
+        entry: python3 tools/check_context_budget.py
+        pass_filenames: false
+        always_run: true
+
+      # Deterministic generated inventory check (ADR 062).
+      - id: harness-inventory
+        name: "Harness inventory: generated output matches reviewed map"
+        language: system
+        entry: python3 tools/generate_harness_inventory.py --check
+        pass_filenames: false
+        always_run: true
+
 
       # Guard G closure enforcement (post-ADR 047):
       # The canonical Guard G enforcement target moved from the per-PR

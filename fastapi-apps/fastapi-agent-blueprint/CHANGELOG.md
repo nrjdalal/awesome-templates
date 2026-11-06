@@ -7,6 +7,65 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-11-07
+
+### Upgrading
+
+No `src/` runtime logic changed; the FastAPI version string is the only
+`src/` edit. What a fork picks up is harness and tooling:
+
+- **Three new blocking pre-commit hooks.** `context-budget` caps tracked harness
+  context (unconditional auto-load, each rules file, sync headers, recent status
+  rows, `AGENTS.md`); `sensitive-logging` rejects credential-named fields in
+  `src/` and `examples/` log calls; `harness-inventory` fails when
+  `tools/generate_harness_inventory.py` output is stale. Run
+  `pre-commit run --all-files` after merging and fix or regenerate what they
+  report. `SKIP=context-budget` is a local escape hatch only.
+- **Pre-edit SQL/secret/domain-import heuristics and verify-first reminders are
+  gone** (ADR 061). If a fork relied on those pre-edit rejections, keep
+  gitleaks, the architecture checks and `/security-review` in its flow.
+
+### Added
+
+- Scoped ADR decision evidence now carries applicable clauses, current-source
+  proof and explicit uncertainty through planning, ticket execution, review and
+  sync (ADR 064). ADR 065 records native discovery and shared-procedure authority;
+  ADR 059/063 clarify the batch decisions without rewriting historical slots.
+
+- Generated harness inventory with reviewed bucket map and a blocking freshness
+  check; detailed per-asset rationale is frozen once (#414 B3, ADR 062).
+
+- Native execution ticket briefs, fresh serial sessions and compact review packets
+  with a deterministic path/size risk floor. On-demand cited `/trace` and `/why`
+  extend the native index to 17 skill pairs; ADR 060 records the contract (#427).
+
+- Blocking `context-budget` hook and `tools/check_context_budget.py` prevent
+  tracked harness context from regrowing after the #414 cleanup (ADR 059).
+  Budgets cover unconditional auto-load, each rules file, sync headers, recent
+  status rows and AGENTS.md. **For forks:** `SKIP=context-budget` is an explicit
+  local escape hatch; increasing repository budgets requires independent review.
+
+### Changed
+
+- Sync belongs in the feature PR; standalone work is for release/post-merge audits.
+  Ticket review uses one verified P0/P1 cross-vendor round, preserving full audits.
+  Measurement records are empty until observations exist; no effect is claimed.
+
+- Condensed AGENTS.md with a larger Codex fallback allowance and tail-marker
+  healthchecks. Archived five source-specific sync histories and six released
+  status rows once, replaced duplicate notification prose with authority links,
+  and centralized all 45 skill-routing sections in the operating-model table.
+  Existing phases, recursion guards and architecture constraints remain intact.
+  Claude wrappers reuse visible auto-loaded rules; native skill discovery keeps
+  the two user-invoked-only skills explicit (#413, #415, #417–#420, #426).
+
+- Harness verification summaries describe previous local cache; completed clean tasks no longer reappear as resumed sessions, while idle prompt/verification continuity remains.
+
+### Removed
+
+- Per-edit verify-first reminders and verify-log files across Claude, Codex and Antigravity (ADR 061). Existing actual command outcomes and stage/token safety remain.
+- Runtime SQL/secret/domain-import heuristics; their pre-edit rejection guarantee is intentionally retired. Sensitive logging moves to the blocking production-source `sensitive-logging` commit hook; gitleaks, architecture gates and security review retain their independent scopes.
+
 ## [0.11.2] - 2026-11-03
 
 ### Added
@@ -1124,7 +1183,8 @@ Quality Gate review contract, `/plan-feature` Approach Options stage,
 - ADR documentation (001-013)
 - CONTRIBUTING guide and issue templates
 
-[Unreleased]: https://github.com/Mr-DooSun/fastapi-agent-blueprint/compare/v0.11.2...HEAD
+[Unreleased]: https://github.com/Mr-DooSun/fastapi-agent-blueprint/compare/v0.12.0...HEAD
+[0.12.0]: https://github.com/Mr-DooSun/fastapi-agent-blueprint/compare/v0.11.2...v0.12.0
 [0.11.2]: https://github.com/Mr-DooSun/fastapi-agent-blueprint/compare/v0.11.1...v0.11.2
 [0.11.1]: https://github.com/Mr-DooSun/fastapi-agent-blueprint/compare/v0.11.0...v0.11.1
 [0.11.0]: https://github.com/Mr-DooSun/fastapi-agent-blueprint/compare/v0.10.1...v0.11.0

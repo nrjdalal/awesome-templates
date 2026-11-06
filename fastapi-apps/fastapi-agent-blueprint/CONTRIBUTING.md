@@ -74,6 +74,12 @@ Do not duplicate shared architecture rules into tool-specific docs. Update `AGEN
 Shared workflow references that both tools consume live under [docs/ai/shared](docs/ai/shared).
 When running `/sync-guidelines` or `$sync-guidelines`, do not stop at automatic doc edits. The final result must explicitly include `project-dna`, `AUTO-FIX`, `REVIEW`, and `Remaining`.
 
+The blocking `context-budget` pre-commit hook checks tracked harness bytes. Run
+`uv run python tools/check_context_budget.py` after synchronization; failures name
+the source line and the destination for detail. Sync dates record content changes,
+so leave unchanged files alone. Budget increases require governor-changing review
+([ADR 059](docs/history/059-harness-context-byte-budgets.md)).
+
 ## Claude Minimum Setup
 
 ```bash
@@ -94,14 +100,14 @@ Verification:
 ```bash
 codex mcp list
 codex mcp get context7
-codex debug prompt-input -c 'project_doc_max_bytes=400' "healthcheck" | rg "Shared Collaboration Rules|AGENTS\\.md"
+codex debug prompt-input -c 'project_doc_max_bytes=32768' "healthcheck" | rg -o '## Drift Management'
 codex execpolicy check --rules .codex/rules/fastapi-agent-blueprint.rules git push origin main
 ```
 
 Verification targets:
 - `context7` appears in `codex mcp list`
 - `codex mcp get context7` resolves the configured server
-- `codex debug prompt-input` includes `AGENTS.md` content when the project is trusted
+- `codex debug prompt-input` includes the final `## Drift Management` section when the project is trusted. The default 32 KiB cap truncates silently; a head-marker assertion cannot detect it. The probe explicitly tests 32 KiB; repository config provides a 64 KiB fallback
 - `codex execpolicy check` returns a non-`allow` decision for protected commands
 
 Operational notes:
@@ -119,8 +125,8 @@ CODEX_HOME="$TMP_CODEX_HOME" codex mcp list
 CODEX_HOME="$TMP_CODEX_HOME" codex mcp get context7
 CODEX_HOME="$TMP_CODEX_HOME" codex debug prompt-input \
   -c "projects.\"$PWD\".trust_level=\"trusted\"" \
-  -c 'project_doc_max_bytes=400' \
-  "healthcheck" | rg "Shared Collaboration Rules|AGENTS\\.md"
+  -c 'project_doc_max_bytes=32768' \
+  "healthcheck" | rg -o '## Drift Management'
 ```
 
 `CODEX_HOME` alone is not enough. Without the temporary `config.toml` trust entry, Codex will ignore the repo's `.codex/config.toml`.
@@ -275,3 +281,19 @@ Review expectations:
 ## Code of Conduct
 
 Please read our [Code of Conduct](CODE_OF_CONDUCT.md) before contributing.
+
+### Runtime hook retirement and production logging
+
+ADR 061 retires per-edit verify reminders and command-log files; verification
+and independent review remain required. `pre-commit run sensitive-logging
+--all-files` blocks same-line credential names in production logger/logging/print
+statements. Tests are excluded because leak corpora are intentional; passing
+this lexical guard is not proof against multiline or indirect secret exposure.
+
+The lexical logging gate also flags legitimate event names such as
+`invalid_token`; it scans whole production files, not only the edited lines.
+After checking the flagged code exposes no secret, use `SKIP=sensitive-logging`
+for a deliberate per-run bypass, record the rationale, and run the remaining
+checks. A skip is not a passed logging check. The pattern also misses logger
+aliases (`log.info`), `structlog.get_logger().info`, multiline calls and indirect
+flows; security review remains required for those surfaces.

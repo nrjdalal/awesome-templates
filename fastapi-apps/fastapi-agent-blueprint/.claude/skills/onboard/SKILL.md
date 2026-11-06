@@ -11,20 +11,11 @@ description: |
 # Interactive Onboarding for New Team Members
 
 ## Default Flow Position
-- **Outside** the normal Default Coding Flow — session-start orientation only
-- Subsequent coding work after `/onboard` is treated as a fresh Default Flow run
-- `[exploration]` / `[탐색]` token is appropriate for combining onboard with read-only investigation
-- Recursion guard: do not invoke `/onboard` recursively, do not invoke `/plan-feature` from inside
+See [target-operating-model §1](../../../docs/ai/shared/target-operating-model.md) — `onboard` routing.
+Recursion guard: Do not invoke this skill recursively or invoke plan-feature from inside it.
 
-## Pre-check: Collect Project State
-
-Execute the following to understand the current project state (do not output to the user):
-
-1. Read `.claude/rules/project-overview.md` -- tech stack and app structure
-2. Read `.claude/rules/project-status.md` -- confirm work in progress
-3. Read `.claude/rules/architecture-conventions.md` -- current DO/DON'T rules
-4. Glob `src/*/` to identify current domain list (excluding `_core`, `_apps`)
-5. `git log --oneline -5` to check recent activity
+## Procedure Authority
+Read and follow the [full procedure](../../../docs/ai/shared/skills/onboard.md) before acting; it owns requirements, gates and outputs.
 
 ## Procedure Overview
 1. Welcome — assess experience level and preferred format (Phase 0)
@@ -35,11 +26,5 @@ Execute the following to understand the current project state (do not output to 
 6. Development Workflow — Skills and CLI commands (Phase 5)
 7. Personalized Next Steps (Phase 6)
 
-Read `docs/ai/shared/skills/onboard.md` for the full onboarding flow, including
-Q&A/Explore mode rules, topic maps, and experience-level adjustments.
-
-## Claude-Specific: Phase 2 and Phase 5 Sources
-- Phase 2 tech stack: read from `.claude/rules/project-overview.md`
-- Phase 5 Skills list: read from `CLAUDE.md` Skills section
-- Phase 5 CLI commands: read from `.claude/rules/commands.md`
-- Phase 6 wrap-up: include `CLAUDE.md` as a key reference material
+## Tool Sources
+Use the native skill index plus user-invoked-only `/sync-guidelines`, `/migrate-domain`, `/trace`, and `/why` entries in `CLAUDE.md`. Architecture and overview rules are scoped; use their visible context only when their paths apply, and consult the relevant rule if needed and not already visible. Consult `docs/ai/shared/commands.md` for CLI guidance on demand. Include `CLAUDE.md` among Phase 6 references; the shared procedure defines topics and outputs.

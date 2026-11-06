@@ -5,9 +5,8 @@ Covers (per plan §4.6):
 - is_governor_changing: AGENTS.md → True; src/ → False; log-only → False (exclusion)
 - match_log_entry: match / mismatch / missing / unknown cases
 - pr_number_from_branch: gh success / failure / no-PR — all fail-open
-- 4 sample runs from migration-strategy.md §Phase 4 acceptance criteria
+- 4 sample runs from docs/history/archive/harness-context/migration-strategy.md §Phase 4 acceptance criteria
 - IC-11 lifecycle: consume_phase2_markers deletes files; 24h filter ignores stale
-- cleanup_stale_verify_logs: other-session stale logs deleted; current session preserved
 - IC-2 string-equality: Claude / Codex GOVERNOR_REMINDER_* constants identical
 - Fail-open smokes: governor-paths.md absent, gh absent, state_dir absent
 """
@@ -127,7 +126,9 @@ def test_shared_doc_is_governor_changing(codex_gate) -> None:
 def test_claude_hook_is_governor_changing(codex_gate) -> None:
     globs = codex_gate.parse_trigger_globs()
     assert (
-        codex_gate.is_governor_changing([".claude/hooks/verify_first.py"], globs)
+        codex_gate.is_governor_changing(
+            [".claude/hooks/post_tool_stage_gate.py"], globs
+        )
         is True
     )
 
@@ -253,7 +254,7 @@ def test_pr_number_fail_open_returns_none_or_int(codex_gate) -> None:
 
 
 # ---------------------------------------------------------------------------
-# 4 sample runs (migration-strategy.md §Phase 4 acceptance criteria)
+# 4 sample runs (docs/history/archive/harness-context/migration-strategy.md §Phase 4 acceptance criteria)
 # ---------------------------------------------------------------------------
 def test_sample_run_1_agents_md_no_entry_reminds(codex_gate, monkeypatch) -> None:
     """(1) AGENTS.md edited, no log entry → reminder fires."""
@@ -342,39 +343,8 @@ def test_24h_stale_marker_ignored_by_reader(codex_gate, tmp_path) -> None:
 
 
 # ---------------------------------------------------------------------------
-# cleanup_stale_verify_logs
+# Verify-log cleanup retired by ADR 061
 # ---------------------------------------------------------------------------
-def test_cleanup_stale_verify_logs_removes_old_other_session(
-    codex_gate, tmp_path, monkeypatch
-) -> None:
-    monkeypatch.setenv("CODEX_THREAD_ID", "current-session")
-    monkeypatch.delenv("CODEX_SESSION_ID", raising=False)
-    old_log = tmp_path / "verify-log-other-session.json"
-    old_log.write_text("{}\n", encoding="utf-8")
-    # Set mtime to 25h ago
-    stale_mtime = time.time() - 90000
-    import os
-
-    os.utime(old_log, (stale_mtime, stale_mtime))
-    codex_gate.cleanup_stale_verify_logs(tmp_path)
-    assert not old_log.exists()
-
-
-def test_cleanup_stale_verify_logs_preserves_current_session(
-    codex_gate, tmp_path, monkeypatch
-) -> None:
-    monkeypatch.setenv("CODEX_THREAD_ID", "current-session")
-    monkeypatch.delenv("CODEX_SESSION_ID", raising=False)
-    # The current session log must never be deleted.
-    # session_id is imported into codex_gate's namespace from verify_first.
-    current_log = tmp_path / f"verify-log-{codex_gate.session_id()}.json"
-    current_log.write_text("{}\n", encoding="utf-8")
-    stale_mtime = time.time() - 90000
-    import os
-
-    os.utime(current_log, (stale_mtime, stale_mtime))
-    codex_gate.cleanup_stale_verify_logs(tmp_path)
-    assert current_log.exists()
 
 
 # ---------------------------------------------------------------------------

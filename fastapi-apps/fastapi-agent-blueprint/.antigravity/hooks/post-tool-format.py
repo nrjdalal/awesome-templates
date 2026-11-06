@@ -175,16 +175,16 @@ def _extract_exit_code(payload: dict) -> int | None:
 
 
 def _record_verify_class(command: str, payload: dict) -> None:
-    from verify_first import append_verify_log  # noqa: PLC0415
+    shared = Path(__file__).resolve().parents[2] / ".agents" / "shared"
+    if str(shared) not in sys.path:
+        sys.path.insert(0, str(shared))
+    from work_ledger import is_verification_command  # noqa: PLC0415
 
-    if append_verify_log(command) is None:
+    if not is_verification_command(command):
         return
     exit_code = _extract_exit_code(payload)
     if exit_code is None:
         return
-    shared = Path(__file__).resolve().parents[2] / ".agents" / "shared"
-    if str(shared) not in sys.path:
-        sys.path.insert(0, str(shared))
     with contextlib.suppress(Exception):
         from governor import resolve_session_roots  # noqa: PLC0415
         from work_ledger import mark_verified  # noqa: PLC0415

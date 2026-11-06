@@ -1,41 +1,7 @@
-"""Stop hook (Codex side) — sync-reminder + Phase 3 verify-first + Phase 4
-completion-gate, with AGENT_LOCALE rendering (issue #133).
+"""Stop adapter: sync/completion/workflow/stage reminders and marker lifecycle.
 
-Single Stop event output (IC-2): all advisories are collected into a list
-of segments and emitted as one ``{"systemMessage": "<segments joined by
-\\n\\n>"}`` JSON line. Empty list = no output.
-
-Phase 3 (#122 / R0.1) reinforcement: the verify-first import is performed
-inside ``contextlib.suppress(Exception)`` so an ImportError or any
-module-level failure never crashes the existing sync-reminder behaviour
-(HC-3.6 fail-open).
-
-Issue #133 refactor: top-level execution split into ``build_segments``
-(pure — text only) and ``main`` (orchestrator — runs side effects). This
-preserves all five existing Stop-hook responsibilities:
-
-  1. sync-reminder text (foundation / structure)
-  2. verify-first segment append
-  3. completion-gate segment append
-  4. Phase 2 marker consumption (IC-11 Option A side effect)
-  5. stale verify-log cleanup (Codex-only side effect)
-
-``build_segments`` is callable from tests (in-process, no subprocess) and
-covers responsibilities 1–3. ``main`` calls ``build_segments`` then
-executes 4 and 5 inside their own suppress blocks.
-
-Issue #269 adds responsibility 6 — the mid-task stage-gate advisory (ADR
-050): a Stop-time port of the Claude ``PostToolUse`` shim
-(``.claude/hooks/post_tool_stage_gate.py``). ``stage_gate_segment`` is the
-pure decision (callable in-process from tests, reusing ``governor.stage_gate``
-unchanged); ``main`` evaluates it *before* Phase 2 marker consumption because
-the shared ``should_stage_gate`` reads the exception-token markers that step 4
-deletes, then claims the once-per-session marker via the shared ``mark_fired``
-before appending.
-
-IC-19 (always-fallback) — every locale resolver call must be combined
-with the canonical English fallback. The ``_loc(key, fallback)`` helper
-centralises this so each call site reads naturally.
+ADR 061 retires verify-first reminders and command-log cleanup. Active stage
+checks precede marker consumption, and every adapter remains fail-open.
 """
 
 from __future__ import annotations
@@ -54,7 +20,7 @@ if TYPE_CHECKING:
 
 # Codex state dir — dedup markers (``stage-gate-*.json``) and the
 # exception-token markers the stage-gate policy reads. Mirrors
-# ``verify_first`` / ``completion_gate``; ``HARNESS_STATE_ROOT`` lets tests
+# ``completion_gate``; ``HARNESS_STATE_ROOT`` lets tests
 # redirect it.
 STATE_ROOT = Path(os.environ.get("HARNESS_STATE_ROOT", REPO_ROOT))
 STATE_DIR = STATE_ROOT / ".codex" / "state"
@@ -319,13 +285,6 @@ def build_segments(
             )
         )
 
-    # (2) Phase 3 verify-first segment — fail-open
-    with contextlib.suppress(Exception):
-        import verify_first  # noqa: PLC0415 — local import for fail-open per R0.1
-
-        if verify_first.should_remind():
-            segments.append(verify_first.localized_reminder_text())
-
     # (3) Phase 4 completion-gate segment — fail-open
     with contextlib.suppress(Exception):
         import completion_gate  # noqa: PLC0415
@@ -370,9 +329,8 @@ def main() -> int:
     """Stop hook orchestrator.
 
     Refreshes the work-ledger verification snapshot, calls ``build_segments``
-    for advisory responsibilities, then executes marker consumption and stale
-    verify-log cleanup side effects. Each side effect is wrapped in its own
-    suppress block so a partial failure cannot mask the others or the segments
+    for advisory responsibilities, then consumes active token markers. Each side
+    effect is wrapped in its own suppress block so a partial failure cannot mask the others or the segments
     output. stdin is read only for the payload's ``cwd`` (#425); a missing or
     unreadable payload keeps every default (informational fail-open).
     """
@@ -402,9 +360,9 @@ def main() -> int:
     # that ``consume_phase2_markers`` deletes. The exclusive-create ``mark_fired``
     # claim gates the append so concurrent Stop hooks emit at most once (R1.3).
     with contextlib.suppress(Exception):
-        import verify_first  # noqa: PLC0415 — local import for fail-open
+        from _shared import session_id  # noqa: PLC0415
 
-        sid = verify_first.session_id()
+        sid = session_id()
         # The ledger stage is read from the session tree's ledger (#425).
         ledger_path = (
             default_ledger_path(roots.state_root)
@@ -425,14 +383,12 @@ def main() -> int:
         ):
             segments.append(seg)
 
-    # (4) Phase 2 marker consumption + (5) stale verify-log cleanup.
+    # Phase 2 marker consumption remains unconditional (IC-11).
     with contextlib.suppress(Exception):
         import completion_gate  # noqa: PLC0415
 
         with contextlib.suppress(Exception):
             completion_gate.consume_phase2_markers(completion_gate.STATE_DIR)
-        with contextlib.suppress(Exception):
-            completion_gate.cleanup_stale_verify_logs(completion_gate.STATE_DIR)
 
     if segments:
         print(json.dumps({"systemMessage": "\n\n".join(segments)}))

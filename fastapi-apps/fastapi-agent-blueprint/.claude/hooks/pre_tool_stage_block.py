@@ -2,7 +2,7 @@
 
 Thin shim over ``governor.stage_gate.should_block_plan_execute_edit``. Blocks
 the edit (exit 2 + stderr — the model-visible ``PreToolUse`` channel that
-``pre_tool_security.py`` also uses) when an implementation-source edit is
+the native PreToolUse channel uses) when an implementation-source edit is
 attempted while the work ledger ``workflow.stage`` is ``planned`` and no
 plan-waiver token is active: i.e. a plan exists but ``/execute-plan`` has not
 been invoked.

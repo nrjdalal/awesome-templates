@@ -11,7 +11,7 @@ hooks. These tests defend that boundary:
    declare governor-paths.md globs inline; they must call
    ``parse_trigger_globs`` from the shared module.
 3. Inline reminder redeclaration ban — hook scripts MUST NOT carry the
-   canonical reminder lines anymore; they must import ``REMINDER_TEXT``
+   canonical reminder lines anymore; they must import ``STAGE_GATE_REMINDER``
    / ``GOVERNOR_REMINDER_*`` from the shared module. (Originally Korean;
    translated to English in PR #131 under AGENTS.md § Language Policy.
    The ban itself is language-agnostic.)
@@ -40,7 +40,6 @@ EXPECTED_ALL = {
     "MarkerLifecycle",
     "PROMPT_RULES",
     "ParsedToken",
-    "REMINDER_TEXT",
     "REPO_ROOT",
     "SafeParseResult",
     "TOKEN_REGEX",
@@ -49,11 +48,9 @@ EXPECTED_ALL = {
     "check_safety",
     "consume_phase2_markers",
     "evaluate_gate",
-    "extract_file_path",
     "governor_changing_segment",
     "is_governor_changing",
     "is_log_only_backfill",
-    "is_python_source",
     "match_log_entry",
     "parse_exception_token",
     "parse_trigger_globs",
@@ -61,7 +58,6 @@ EXPECTED_ALL = {
     "read_latest_token",
     "render_reminder",
     "safe_parse_exception_token",
-    "should_remind_claude",
     "write_marker",
 }
 
@@ -90,15 +86,12 @@ def test_governor_all_names_are_actually_exported() -> None:
 # ---------------------------------------------------------------------------
 HOOK_FILES = [
     REPO_ROOT / ".claude" / "hooks" / "user_prompt_submit.py",
-    REPO_ROOT / ".claude" / "hooks" / "verify_first.py",
     REPO_ROOT / ".claude" / "hooks" / "completion_gate.py",
     REPO_ROOT / ".claude" / "hooks" / "post_tool_stage_gate.py",
     REPO_ROOT / ".codex" / "hooks" / "user-prompt-submit.py",
-    REPO_ROOT / ".codex" / "hooks" / "verify_first.py",
     REPO_ROOT / ".codex" / "hooks" / "completion_gate.py",
     REPO_ROOT / ".antigravity" / "hooks" / "user-prompt-submit.py",
     REPO_ROOT / ".antigravity" / "hooks" / "pre-tool-security.py",
-    REPO_ROOT / ".antigravity" / "hooks" / "verify_first.py",
     REPO_ROOT / ".antigravity" / "hooks" / "completion_gate.py",
     REPO_ROOT / ".antigravity" / "hooks" / "stop-sync-reminder.py",
 ]
@@ -138,7 +131,6 @@ def test_hooks_do_not_redeclare_governor_paths_globs() -> None:
 CANONICAL_REMINDER_LINES = [
     "No governor-review-log entry matches PR #{pr}.",
     "PR number unknown — open the PR first, then add the governor-review-log/ entry.",
-    "[verify-first] Verify step appears to be missing for the changed .py files.",
     "[stage-gate] Implementation edit with no active plan in the work ledger.",
 ]
 
@@ -168,10 +160,6 @@ EXPECTED_SHARED_IMPORTS = {
         "parse_exception_token",
         "write_marker",
     ],
-    REPO_ROOT / ".claude" / "hooks" / "verify_first.py": [
-        "REMINDER_TEXT",
-        "EXPLORATION_TOKENS",
-    ],
     REPO_ROOT / ".claude" / "hooks" / "completion_gate.py": [
         "GOVERNOR_REMINDER_WITH_PR",
         "GOVERNOR_REMINDER_NO_PR",
@@ -186,10 +174,6 @@ EXPECTED_SHARED_IMPORTS = {
         "safe_parse_exception_token",
         "PROMPT_RULES",
     ],
-    REPO_ROOT / ".codex" / "hooks" / "verify_first.py": [
-        "REMINDER_TEXT",
-        "EXPLORATION_TOKENS",
-    ],
     REPO_ROOT / ".codex" / "hooks" / "completion_gate.py": [
         "GOVERNOR_REMINDER_WITH_PR",
         "GOVERNOR_REMINDER_NO_PR",
@@ -202,10 +186,6 @@ EXPECTED_SHARED_IMPORTS = {
     REPO_ROOT / ".antigravity" / "hooks" / "pre-tool-security.py": [
         "check_code_safety",
         "check_bash_command",
-    ],
-    REPO_ROOT / ".antigravity" / "hooks" / "verify_first.py": [
-        "REMINDER_TEXT",
-        "EXPLORATION_TOKENS",
     ],
     REPO_ROOT / ".antigravity" / "hooks" / "completion_gate.py": [
         "GOVERNOR_REMINDER_WITH_PR",

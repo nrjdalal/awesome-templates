@@ -154,7 +154,7 @@ The harness helps contributors work within the same backend conventions:
 | Capability | What it provides |
 |---|---|
 | Shared rules | `AGENTS.md` and shared references define architecture, contracts, security constraints, and the development workflow. |
-| Task-specific skills | Guides for domains, APIs, worker tasks, admin pages, migrations, testing, review, and documentation sync. |
+| Task-specific skills | Guides for domains, APIs, worker tasks, admin pages, migrations, testing, review, and documentation sync; on-demand `/trace` and `/why` provide cited execution paths and decision provenance. |
 | Workflow boundaries | Planning and execution are separate steps. Scope changes, missing verification, and completion checks have explicit handling. |
 | Checks and review | Commit/CI checks inspect deterministic rules; reviews assess behavior, architectural fit, and documentation drift. |
 

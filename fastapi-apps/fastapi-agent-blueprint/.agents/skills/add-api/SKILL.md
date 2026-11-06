@@ -8,14 +8,12 @@ metadata:
 # Add API
 
 ## Default Flow Position
-- Step: `implement` (`approach options` upstream is conditional — required for non-trivial response shape, cross-domain access, or new validation patterns)
-- Routes after: verify (`/test-domain {name} run`) → self-review (`/review-architecture {name}` only if layer interactions changed)
-- Recursion guard: do not invoke `/plan-feature` from inside this skill
+See [target-operating-model §1](../../../docs/ai/shared/target-operating-model.md) — `add-api` routing.
 
-## Procedure
-1. Read `AGENTS.md` and `docs/ai/shared/skills/add-api.md` for the full procedure.
-2. Read `docs/ai/shared/project-dna.md` for conversion patterns and router conventions.
-3. Inspect the target domain's Router, Service, Repository, and optional UseCase.
-4. Work bottom-up: Repository → Service → UseCase(conditional) → Schema → Router.
-5. Reuse BaseService or BaseRepository behavior instead of adding redundant code.
-6. Add tests for the new behavior and report how to verify it in Swagger or via tests.
+## Procedure Authority
+Read `AGENTS.md`. Read and follow the [full procedure](../../../docs/ai/shared/skills/add-api.md) before acting; it owns requirements, gates and outputs.
+
+## Procedure Overview
+1. Analysis — identify domain, method, path; check existing code; determine needed changes
+2. Implementation (bottom-up) — Repository → Service → UseCase(conditional) → Schema → Router
+3. Post-completion verification — pre-commit, tests, Swagger check

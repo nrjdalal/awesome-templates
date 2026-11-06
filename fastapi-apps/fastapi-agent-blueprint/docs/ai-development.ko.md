@@ -75,7 +75,7 @@ Codex의 레포 workflow layer는 다음으로 나뉩니다:
 권장 검증 흐름:
 1. Codex에서 이 프로젝트를 trusted 상태로 만든다.
 2. `codex mcp list`, `codex mcp get context7`를 실행한다.
-3. `codex debug prompt-input -c 'project_doc_max_bytes=400' "healthcheck" | rg "Shared Collaboration Rules|AGENTS\\.md"`로 `AGENTS.md`가 실제 prompt input에 포함되는지 확인한다.
+3. `codex debug prompt-input -c 'project_doc_max_bytes=32768' "healthcheck" | rg -o '## Drift Management'`로 `AGENTS.md`의 마지막 절까지 실제 prompt input에 포함되는지 확인한다. 기본 32 KiB 한도를 넘기면 경고 없이 잘리므로 첫 줄 대신 마지막 `Drift Management` 절을 검사한다. 검사는 32 KiB를 명시해 경량화 상태까지 확인하며 저장소 설정은 여유분으로 64 KiB를 사용한다.
 4. 최신 외부 정보가 정말 필요할 때만 `codex -p research` 또는 `codex --search`를 사용한다.
 5. Codex memories는 개인/세션 최적화용으로만 보고, 팀 규칙 저장소로 쓰지 않는다.
 

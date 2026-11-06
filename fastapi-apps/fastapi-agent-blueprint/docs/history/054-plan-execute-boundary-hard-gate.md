@@ -36,9 +36,9 @@ A `PreToolUse Edit|Write` hook blocks the edit (exit 2) when `should_block_plan_
 
 `PLAN_EXECUTE_GATED_STAGES` is a distinct frozenset, not an addition to `GATED_STAGES`. The two never overlap: a stage is either "no plan" (ADR 050) or "planned, not executing" (this ADR) or neither. This preserves ADR050-G2's allowlist discipline — unknown stages stay silent in both gates.
 
-### D3 — Channel: `PreToolUse` exit 2 + stderr (mirrors `pre_tool_security.py`)
+### D3 — Channel: `PreToolUse` exit 2 + stderr (native blocking channel)
 
-ADR 050 D3 chose `PostToolUse` *because it wanted a non-blocking, model-visible channel* — and `PreToolUse` has none (exit 2 blocks; a permission-decision reason targets the user). Here the goal is the opposite: **block the edit**. `PreToolUse` exit 2 is therefore the correct mechanism, and its stderr is fed back to the model (the same channel `pre_tool_security.py` relies on to surface `[BLOCKED]` messages). The wrapper propagates the Python exit code (it does **not** force `exit 0`, unlike `stage-gate.sh`).
+ADR 050 D3 chose `PostToolUse` *because it wanted a non-blocking, model-visible channel* — and `PreToolUse` has none (exit 2 blocks; a permission-decision reason targets the user). Here the goal is the opposite: **block the edit**. `PreToolUse` exit 2 is therefore the correct mechanism, and its stderr is fed back to the model (the same native blocking channel used by the content checker before its retirement under ADR 061). The wrapper propagates the Python exit code (it does **not** force `exit 0`, unlike `stage-gate.sh`).
 
 ### D4 — No Claude `PostToolUse` advisory for `planned` (would be dead code)
 
@@ -54,11 +54,11 @@ The block yields when a **plan-waiver token** (`[trivial]`/`[hotfix]` and Korean
 
 ### D7 — Surface unchanged: `.py` under `src/`/`examples/`, `Edit|Write` only
 
-The block reuses `is_implementation_source` verbatim — no widening, so ADR050-G3 is not re-entered. Like the ADR 050 advisory, it inspects `tool_input.file_path` (`Edit`/`Write`) and does **not** parse `Bash` redirect/`tee`/heredoc writes. A `Bash`-based write to `src/*.py` while `planned` is a known bypass, at parity with the advisory; closing it (reusing `pre_tool_security._extract_bash_write`) is a documented follow-up, not this ADR's surface.
+The block reuses `is_implementation_source` verbatim — no widening, so ADR050-G3 is not re-entered. Like the ADR 050 advisory, it inspects `tool_input.file_path` (`Edit`/`Write`) and does **not** parse `Bash` redirect/`tee`/heredoc writes. A `Bash`-based write to `src/*.py` while `planned` is a known bypass, at parity with the advisory; closing it requires separately designed shell-write detection and remains a documented follow-up, not this ADR's surface. ADR 061 retired the earlier `pre_tool_security` helper, without changing this boundary.
 
 ### D8 — Codex parity: Stop-time advisory, not a block
 
-Codex has no `PreToolUse` and cannot hard-block. It gets `plan_execute_segment` in `.codex/hooks/stop-sync-reminder.py`, a Stop-time advisory reusing the shared `should_plan_execute_gate` (with once-per-session dedup, the Codex advisory budget) — the exact shape of the #269 `stage_gate_segment`. The resulting asymmetry is intentional and recorded: **Claude blocks at edit time; Codex advises at Stop time.** Codex's enforcement model is Stop-time review, so an advisory there is the faithful analogue of a Claude edit-time block.
+Codex has only Bash `PreToolUse` matching and cannot intercept native file edits. It gets `plan_execute_segment` in `.codex/hooks/stop-sync-reminder.py`, a Stop-time advisory reusing the shared `should_plan_execute_gate` (with once-per-session dedup, the Codex advisory budget) — the exact shape of the #269 `stage_gate_segment`. The resulting asymmetry is intentional and recorded: **Claude blocks at edit time; Codex advises at Stop time.** Codex's enforcement model is Stop-time review, so an advisory there is the faithful analogue of a Claude edit-time block.
 
 ### D9 — Best-effort by fail-open
 
@@ -87,3 +87,12 @@ The block hook performs no network access, writes nothing (pure read of ledger +
 - **ADR054-G4** — Claude blocks; Codex advises (no `PreToolUse`). Introducing a blocking Codex path, or downgrading the Claude block to advisory, re-enters this ADR.
 - **ADR054-G5** — The gate is best-effort by fail-open (D9). Making it fail-closed is a governor change.
 - **ADR054-G6** — Surface is `.py` under `src/`/`examples/` via `Edit|Write` only (D7). Widening to `Bash` writes or other paths re-enters this ADR (and ADR050-G3).
+
+## Amendment — ADR 060 (2026-11-06)
+
+[ADR 060](060-ticket-session-boundaries-and-review-packets.md) adopts native ticket
+briefs and fresh serial execution sessions. Issue/approved packet, PR and CI are
+durable evidence; the ledger is a local resume cache hydrated from the ticket.
+The explicit execute-plan boundary, existing stage gate, fail-open behavior and
+schema compatibility remain unchanged. This amends the handoff/authority model,
+not the historical implementation or runtime hooks.

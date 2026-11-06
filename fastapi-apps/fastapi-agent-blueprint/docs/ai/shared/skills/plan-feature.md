@@ -1,17 +1,8 @@
 # Feature Implementation Planning — Detailed Procedure
 
 ## Default Flow Position
-
-This skill is the canonical owner of three Default Coding Flow steps:
-- **`framing`** — Phase 0 (Requirements Interview)
-- **`approach options`** — Phase 1 (Approach Options, ported from #115/#116)
-- **`plan`** — Phases 2~4 (Architecture / Security / Tasks)
-
-After this skill completes, control returns to the user; the user invokes the appropriate `implement` skill (`/new-domain`, `/add-api`, `/add-cross-domain`, etc.) and proceeds through `verify` and `self-review`.
-
-Recursion guard: do **not** invoke `/plan-feature` recursively from within itself. Implementation skills (`/new-domain`, `/add-api`, etc.) must **not** invoke `/plan-feature` either — `framing`/`approach`/`plan` happen *before* the implement skill is reached.
-
-When the user uses an exception token on prompt entry, `/plan-feature` is short-circuited per the [`target-operating-model.md` §3](../target-operating-model.md) escape rules.
+See [target-operating-model §1](../target-operating-model.md) — `plan-feature` routing.
+Recursion guard: Do not invoke this skill recursively; implementation skills must not re-enter planning (ADR 050 scope expansion is separate).
 
 ## Phase 0: Requirements Interview
 
@@ -34,6 +25,11 @@ After receiving user responses, organize the following:
 
 Before diving into architecture details, propose 2-3 candidate approaches
 for implementing the requirements gathered in Phase 0.
+
+Before comparing options, use [scoped ADR evidence](../adr-evidence.md) to select
+applicable current clauses and verify their material premises. Carry the decision
+basis in Selected Approach / Architecture Impact, including conflicts or unknowns.
+An ADR number alone is not evidence or an implementation authorization.
 
 **Requirements**:
 - Minimum 2, maximum 3 candidate approaches.
@@ -157,6 +153,16 @@ Organize the results of Phases 0-4 above in the following format and present to 
 - Run /test-domain {domain} generate -> run
 - Run full pre-commit
 ```
+
+## Ticket handoff
+
+Apply [ticket-workflow](../ticket-workflow.md#work-units-and-handoff): publish the
+approved packet as an epic with native ticket sub-issues (or a standalone ticket),
+each using the ticket brief template. Include file sets, dependencies, Parallel
+Group and L1-L3 supervision; try to falsify cited premises before approval. Do not
+invoke plan-feature recursively: decompose sub-features inside the same packet.
+Planning stops; execute-plan starts a fresh session from the ticket issue. If native
+issue writes are unavailable, report publication pending and provide complete bodies.
 
 ## Execution Packet
 

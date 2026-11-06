@@ -29,7 +29,7 @@ Read CLAUDE.md and verify Claude-only guidance still matches the harness:
 
 - [ ] `.mcp.json` role is described as Claude-only MCP configuration
 - [ ] `.claude/settings.json` hooks still match the hook files and the CLAUDE.md tool guidance
-- [ ] Slash skill list matches the actual `.claude/skills/` directory
+- [ ] Native discovery matches `.claude/skills/`; `sync-guidelines`, `migrate-domain`, `trace` and `why` remain user-only (`disable-model-invocation: true`) exceptions. Codex explicitly disables implicit invocation for `trace`/`why`; the two legacy sync/migrate skills retain their existing Codex invocation policy
 
 ## 1B. `.claude/rules/absolute-prohibitions.md` ↔ AGENTS.md Sync Check
 
@@ -39,19 +39,18 @@ Read CLAUDE.md and verify Claude-only guidance still matches the harness:
 
 ## 1C. `harness-asset-matrix.md` ↔ Filesystem Sync Check (ADR 045)
 
-- [ ] Enumerate actual filesystem assets in scope:
-  - Tier 0: `AGENTS.md`, `CLAUDE.md`, `.codex/config.toml`, `.codex/hooks.json`, `.claude/settings.json`, `.claude/settings.local.json`, `.gemini/settings.json`, `.antigravity/plugin.json`, `.antigravity/gemini-extension.json`, `.antigravity/mcp_config.json`, `.antigravity/permissions.json`, `.mcp.json`, `.github/pull_request_template.md`, plus the ADR(s) the matrix carries as constitutional asset rows per the ADR inclusion rule below (currently `docs/history/045-hybrid-harness-target-architecture.md` only)
-  - Tier 1: every `docs/ai/shared/*.md` (parent folder only, not `skills/`), plus the non-`docs/ai/shared/` governor assets the matrix carries in Tier 1 — the `.agents/shared/governor/` package (one row), `tools/check_governor_footer.py`, and the frozen `docs/history/archive/governor-review-log/` directory (one row)
-  - Tier 2: every skill triple — `docs/ai/shared/skills/{name}.md`, `.claude/skills/{name}/SKILL.md`, `.agents/skills/{name}/SKILL.md`
-  - Tier 3: every file under `.claude/hooks/`, `.codex/hooks/`, and `.antigravity/hooks/` (excluding `__pycache__/**` and `*.pyc` caches — same exclusion as the matrix Verification block's `find`)
-  - Tier 4: every file under `.claude/rules/`, `.codex/rules/`, and `.antigravity/rules/`
-- [ ] **ADR inclusion rule.** The matrix is a *harness-asset* inventory, so it rows an ADR only when the ADR is itself a load-bearing harness asset — currently only `docs/history/045-*.md`, the constitutional navigator for the hybrid-harness initiative. Do **not** enumerate `docs/history/**` and require one matrix row per ADR: domain / runtime ADRs (e.g. 004, 011, 042) and pure-decision governor ADRs (e.g. 047, 048, 050, 052–055) are indexed by [`docs/history/README.md`](../../history/README.md), not rowed here. ADR coverage is therefore verified in two directions instead of a filesystem-wide per-ADR row requirement:
-  - Each matrix row whose Asset path matches `docs/history/NNN-*.md` still exists on disk and appears exactly once (matrix-internal consistency).
-  - `docs/history/README.md` indexes every top-level `docs/history/NNN-*.md` file (the ADR completeness backstop that replaces a matrix-side per-ADR check).
-- [ ] Verify each enumerated asset has exactly one row in `docs/ai/shared/harness-asset-matrix.md` (a Tier 2 skill triple maps to a single row covering all three wrapper layers). Historical `Drop` rows for files already removed from disk (e.g. `tools/check_g_closure.py`) are retained in the matrix by design and are exempt from this filesystem→row direction; validate them via the `Drop` bullet below.
-- [ ] Verify the Bucket Distribution Summary count equals the row count (subtracting `.gitignore`d entries from the share-percentage denominator)
-- [ ] Verify each row's `Bucket` is one of `Keep` / `Replace` / `Overlay` / `Drop` and matches the bucket definitions at the top of the matrix
-- [ ] For any asset classified `Drop`: verify with `rg <asset> .claude/ .codex/` that no harness component still references it
+- [ ] Run `python3 tools/generate_harness_inventory.py --check`. Discovery uses the
+  former matrix Verification scope (inventory Tier 0-4, not governor Tier A/B/C).
+  The check enforces complete skill triples, exact reviewed bucket coverage, absent
+  retirements, and generated==committed output. Consult the
+  [navigator](harness-asset-matrix.md#verification) for update/rollback steps.
+- [ ] Review changed path-to-bucket judgments in `harness-buckets.json`; generation
+  cannot decide whether an asset is load-bearing. New assets need an explicit choice.
+- [ ] For a new Drop transition, verify zero live callers across Claude, Codex,
+  Antigravity and Gemini; record replacement coverage or removal rationale. Historical
+  Drop entries remain traceable without repeating the old investigation every sync.
+- [ ] Keep ADR completeness separate: the history index covers all active ADRs;
+  inventory Tier 0 contains only the constitutional ADR 045, as before.
 
 ## 1D. Governor Footer + ADR Consequences Sync Check (ADR 047 D2 / D3)
 
@@ -59,7 +58,16 @@ The canonical definition of "governor-changing PR" is in [`governor-paths.md`](g
 
 After ADR 047 / ADR 048, independent review provenance lives in the PR description's `## Governor Footer` block (CI-linted) and durable governance constraints live in ADR Consequences slots (`ADR{NNN}-G{N}`). The pre-ADR-047 `governor-review-log/` archive is closed; this check no longer enumerates that directory for new PRs.
 
-- [ ] Enumerate merged PRs touching the Tier A / B / C globs since the last sync run:
+Run this merged-PR history audit at release. During a feature PR, check its own
+Footer and changed ADR slots; integrate sync in that PR. Standalone sync remains
+available for post-merge drift. For affected architectural choices, inspect their
+[scoped Decision Basis](adr-evidence.md): a current clause/code disagreement is
+`REVIEW`, not an automatic rewrite of the decision to match code. When a decision
+is explicitly amended or superseded, follow the affected live carriers, packet
+premises and checklists; preserve historical rationale and write-once slots under
+ADR 047. No whole-archive scan is required for an unrelated change.
+
+- [ ] At release, enumerate merged PRs touching the Tier A / B / C globs since the last release audit:
   ```bash
   gh pr list --state merged --search "merged:>=$(cat .last-sync-date 2>/dev/null || echo 2026-05-03)" --json number,title,files,body
   ```
@@ -100,6 +108,7 @@ Read each skill's SKILL.md and compare against reference code:
 Read each `.claude/rules/` file and compare against current code:
 
 ### architecture_conventions
+- [ ] Optional-infra behaviour (toggles, env vars, dispatch semantics) is described once in `AGENTS.md` § Optional Infrastructure Toggles plus its `docs/operations/` runbook; `.claude/rules/*` carry a one-line pointer only.
 - [ ] Data flow: covers both RDB and DynamoDB variants?
 - [ ] BaseService / BaseDynamoService generic signatures match the actual code?
 - [ ] Object Roles: includes DTO, Schema, Model, DynamoModel, and Admin Page?
@@ -109,33 +118,38 @@ Read each `.claude/rules/` file and compare against current code:
 - [ ] Recent Major Changes includes every notable PR / feature merged since the documented "Last synced" date?
 - [ ] Architecture Violation Status matches the live grep results?
 - [ ] Not Yet Implemented matches project-dna.md §8 "Not implemented"?
+- [ ] Recent Major Changes data rows are <= 300 UTF-8 bytes each (including pipes, all cells, and links); use one sentence per row, with narrative in `CHANGELOG.md [Unreleased]` and the PR body. Never write a per-PR archive entry; historical migration is one-off, and archive creation remains release-triggered.
 - [ ] Recent Major Changes table row count ≤ 15? (current: run `grep -c "^|" .claude/rules/project-status.md`); if > 15, flag for archival at next version release following the PR-B.1 pattern
 
 ### project_overview
+- [ ] Optional-infra behaviour (toggles, env vars, dispatch semantics) is described once in `AGENTS.md` § Optional Infrastructure Toggles plus its `docs/operations/` runbook; `.claude/rules/*` carry a one-line pointer only.
 - [ ] Infrastructure Options matches the subdirectories under `src/_core/infrastructure/`?
 - [ ] App Entrypoints matches the subdirectories under `src/_apps/`?
 - [ ] Environment Config matches the Settings validators in `src/_core/config.py`?
 
-### commands (`.claude/rules/commands.md`)
+### Consulted commands (`docs/ai/shared/commands.md`)
+- [ ] Optional-infra behaviour (toggles, env vars, dispatch semantics) is described once in `AGENTS.md` § Optional Infrastructure Toggles plus its `docs/operations/` runbook; `.claude/rules/*` carry a one-line pointer only.
 - [ ] Run commands still target the current entrypoint files?
 - [ ] Architecture-verification greps still target current violation patterns (not legacy ones)?
 - [ ] Test commands still cover each infra variant (RDB, DynamoDB, Broker)?
 
 ### All rules files
-- [ ] "Last synced" date of every rules file is within the last two weeks?
+- [ ] Sync dates equal the last substantive content change; never refresh an unchanged file merely for age. Keep each rules header and the `project-dna.md` date line in `> Last synced: YYYY-MM-DD via <reference>` form; no narrative or `Prior:` chains. Historical chains are preserved in the one-off `sync-log.md` archive.
 
 ## 4. project-dna.md ↔ Code Consistency Check
 
 Compare each section of `docs/ai/shared/project-dna.md` against actual code:
 
+- [ ] Spot-check identifiers, defaults and behavioural claims in policy prose against their defining code, including newly rewritten paragraphs. Resolving a source link does not prove that prose matches the source (for example, admin read auditing uses `log_reads=False`).
+
 - [ ] **Layer structure**: Verify the directory structure in project-dna.md §1 matches the actual `src/user/` structure
   - Compare against Glob `src/user/**/*.py` results
-- [ ] **Base class paths**: Verify all import paths in §2 match actual file locations
+- [ ] **Base class paths**: Verify source-owner links in §2 resolve to the defining modules
   - Confirm each path can import the class from the corresponding module
-- [ ] **Generic types**: Verify signatures in §3 match current Base class definitions
+- [ ] **Generic types**: Verify §3 type-parameter policy against its linked Base class definitions
   - Check `BaseRepositoryProtocol`, `BaseRepository`, `SuccessResponse` class definitions
-- [ ] **CRUD methods**: Verify the `BaseRepositoryProtocol` method list in §4 is up to date
-  - Compare method lists against actual code
+- [ ] **CRUD methods**: Verify §4 links the live `BaseRepositoryProtocol` and pairs caller-facing aggregate reads with the Service
+  - Read the linked protocol and Service; avoid rebuilding a duplicate method catalog
 - [ ] **DI patterns**: Verify Singleton/Factory mappings in §5 match current `UserContainer` code
 - [ ] **Conversion Patterns**: Verify `model_validate`/`model_dump` usage in §6 matches current implementation
 - [ ] **Security tools**: Verify the tool list in §7 matches `pyproject.toml` and `.pre-commit-config.yaml`
@@ -256,3 +270,7 @@ Use these scenario checks when validating the redesigned workflow:
 - Detailed steps per phase (inspection targets, conditions, branching logic)
 - Output format examples, checklists, file lists, grep patterns
 - Cross-references to other `docs/ai/shared/` documents
+
+Context-budget gate: run `uv run python tools/check_context_budget.py` after sync.
+The blocking hook enforces byte limits previously checked by eye. Sync dates equal
+the last content change; do not touch a file whose content did not change.

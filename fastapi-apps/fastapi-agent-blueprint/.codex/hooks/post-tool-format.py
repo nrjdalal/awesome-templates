@@ -1,18 +1,7 @@
-"""PostToolUse Bash hook (Codex side).
+"""Format touched Python and record supported actual verification outcomes.
 
-Two responsibilities, both fail-open per HC-3.6:
-1. Format `.py` files touched by a Bash command via `ruff format` + `ruff check --fix`.
-2. Phase 3 (#122): record verify-class commands (`pytest`, `make test`, etc.)
-   to the current-session verify-log so the Stop hook can determine whether
-   verify happened in this session.
-
-R0.4 reinforcement: the entire body is wrapped in a top-level fail-open so
-malformed stdin / missing dependencies / unexpected exceptions never crash
-the hook.
-
-R1.2 reinforcement: `tool_input` may be null even when the payload is valid
-JSON — use `(payload.get("tool_input") or {})` instead of `.get("tool_input", {})`
-so that None does not propagate to `.get("command")`. Outer broad except added.
+ADR 061 removes per-command log files; malformed inputs and missing results
+remain fail-open and never manufacture a successful verification record.
 """
 
 from __future__ import annotations
@@ -78,18 +67,18 @@ def _extract_exit_code(payload: dict) -> int | None:
 
 
 def _record_verify_class(command: str, payload: dict) -> None:
-    from verify_first import append_verify_log  # local import — fail-open
+    shared = Path(__file__).resolve().parents[2] / ".agents" / "shared"
+    if str(shared) not in sys.path:
+        sys.path.insert(0, str(shared))
+    from work_ledger import is_verification_command  # noqa: PLC0415
 
-    if append_verify_log(command) is None:
+    if not is_verification_command(command):
         return
 
     exit_code = _extract_exit_code(payload)
     if exit_code is None:
         return
 
-    shared = Path(__file__).resolve().parents[2] / ".agents" / "shared"
-    if str(shared) not in sys.path:
-        sys.path.insert(0, str(shared))
     with contextlib.suppress(Exception):
         from governor import resolve_session_roots  # noqa: PLC0415
         from work_ledger import mark_verified  # noqa: PLC0415
@@ -109,7 +98,7 @@ def main() -> int:
         if not isinstance(command, str) or not command:
             return 0
 
-        # Both branches fail-open per HC-3.6: formatting / verify-log writer errors
+        # Both branches fail-open per HC-3.6: formatting / outcome recorder errors
         # must never crash the hook.
         with contextlib.suppress(Exception):
             _format_python_paths(command)

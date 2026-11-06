@@ -159,7 +159,7 @@ ADR 054 already walked.
 - Enforcement surface: `docs/operations/rdb-migrations.md` (playbook),
   `tools/check_migration_safety.py` (+ `tests/unit/tools/`), `.pre-commit-config.yaml`
   (advisory hook), `docs/ai/shared/skills/migrate-domain.md` + its Claude and
-  Codex (`.agents/skills/migrate-domain/`) wrappers, `.claude/rules/commands.md`,
+  Codex (`.agents/skills/migrate-domain/`) wrappers, `docs/ai/shared/commands.md`,
   `.claude/rules/project-status.md`. No `src/` runtime change.
 - The checker is **not** rowed in `docs/ai/shared/harness-asset-matrix.md`: that
   matrix inventories governor-provenance assets, and general `tools/` checkers

@@ -13,7 +13,7 @@ into this single package. Hook scripts under ``.claude/hooks/``,
 Public API is declared via ``__all__`` and grows as Phase 5 commits land:
     commit 1 — paths, time_window
     commit 2 — tokens, markers (lifecycle), safety
-    commit 3 — verify
+    ADR 061 — verify-first and command-log exports retired
     commit 4 — completion_gate (GateResult)
 """
 
@@ -74,22 +74,8 @@ from .tokens import (
     TOKEN_REGEX,
     parse_exception_token,
 )
-from .verify import (
-    REMINDER_TEXT,
-    VERIFY_PATTERNS,
-    append_verify_log,
-    cleanup_stale_verify_logs,
-    extract_file_path,
-    is_python_source,
-    should_remind_claude,
-    verify_log_path,
-)
 
 __all__ = [
-    "VERIFY_PATTERNS",
-    "append_verify_log",
-    "cleanup_stale_verify_logs",
-    "verify_log_path",
     "Blocked",
     "EXPLORATION_TOKENS",
     "GATED_STAGES",
@@ -104,7 +90,6 @@ __all__ = [
     "PLAN_WAIVER_TOKENS",
     "PROMPT_RULES",
     "ParsedToken",
-    "REMINDER_TEXT",
     "REPO_ROOT",
     "STAGE_GATE_REMINDER",
     "SafeParseResult",
@@ -116,14 +101,12 @@ __all__ = [
     "consume_phase2_markers",
     "default_ledger_path",
     "evaluate_gate",
-    "extract_file_path",
     "extract_session_id",
     "governor_changing_segment",
     "has_fired_this_session",
     "is_governor_changing",
     "is_implementation_source",
     "is_log_only_backfill",
-    "is_python_source",
     "mark_fired",
     "match_log_entry",
     "parse_exception_token",
@@ -136,7 +119,6 @@ __all__ = [
     "safe_parse_exception_token",
     "should_block_plan_execute_edit",
     "should_plan_execute_gate",
-    "should_remind_claude",
     "should_stage_gate",
     "write_marker",
 ]

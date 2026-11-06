@@ -1,0 +1,42 @@
+name: Execution Ticket
+description: One reviewable outcome projected from an approved Execution Packet
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: intent
+    attributes:
+      label: Intent and non-goals
+      description: What should change, and what is explicitly outside this ticket? Keep the brief to one screen; implementation decisions belong in the parent packet.
+    validations:
+      required: true
+  - type: textarea
+    id: done
+    attributes:
+      label: Done when
+      description: Observable acceptance criteria, exact verification commands, and known unverified limits.
+    validations:
+      required: true
+  - type: textarea
+    id: premises
+    attributes:
+      label: Premises and evidence
+      description: Each premise with its code/test/issue/runtime source and applicable ADR clause. For affected architecture, link the packet's scoped Decision Basis using docs/ai/shared/adr-evidence.md and explain the current clause's constraint on this ticket. An ADR ID alone proves no runtime claim. The worker first tries to falsify these claims.
+    validations:
+      required: true
+  - type: textarea
+    id: packet
+    attributes:
+      label: Approved packet and dependencies
+      description: Parent epic/Execution Packet URL, approval evidence, predecessor tickets, file set, Parallel Group, review gates. One ticket means one PR, worktree, and fresh execution session.
+    validations:
+      required: true
+  - type: dropdown
+    id: supervision
+    attributes:
+      label: Supervision
+      options:
+        - L1 - existing pattern
+        - L2 - confirmed design choices
+        - L3 - explicit security/contract/data decisions
+    validations:
+      required: true

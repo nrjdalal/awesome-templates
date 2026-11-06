@@ -9,12 +9,14 @@ description: |
 
 # Architecture Compliance Audit
 
-Target: $ARGUMENTS (domain name or "all")
+Input: $ARGUMENTS
 
 ## Default Flow Position
-- Step: **`self-review`** (architecture commitments)
-- Routes after: completion gate (`/sync-guidelines` if drift; otherwise `/review-pr`)
-- Recursion guard: do not invoke `/review-architecture` recursively, do not invoke `/plan-feature` from inside
+See [target-operating-model §1](../../../docs/ai/shared/target-operating-model.md) — `review-architecture` routing.
+Recursion guard: Do not invoke this skill recursively or invoke plan-feature from inside it.
+
+## Procedure Authority
+Read and follow the [full procedure](../../../docs/ai/shared/skills/review-architecture.md) before acting; it owns requirements, gates and outputs.
 
 ## Procedure Overview
 1. Resolve the audit target and load the shared rule sources (Phase 0)
@@ -22,9 +24,5 @@ Target: $ARGUMENTS (domain name or "all")
 3. Determine `Drift Candidates` and whether `Sync Required` is `true` or `false` (Phase 2)
 4. Report using the protocol output contract — `Findings` (open) + `Coverage` (OK/SKIP) + `Verdict: N/A (audit-only scope)` (Phase 3)
 
-Read `docs/ai/shared/skills/review-architecture.md` for detailed steps, and
-[`docs/ai/shared/review-protocol.md`](../../../docs/ai/shared/review-protocol.md) for the shared
-output contract (this skill applies the `ARCH` dimension in depth).
-Also refer to `docs/ai/shared/architecture-review-checklist.md` for the full checklist.
-For cross-tool review prompts, use the shared procedure's
-`Cross-Tool Review Prompt Template` section; do not duplicate the template here.
+## Tool Sources
+Shared `AGENTS.md`, `project-dna.md`, the shared checklist and live code are authoritative. When checking Claude projection drift, inspect both `.claude/rules/architecture-conventions.md` and `.claude/rules/project-overview.md` even if their scoped paths did not load them. For unrelated domain work, consult only relevant projections when needed; do not assume scoped rules are already present.

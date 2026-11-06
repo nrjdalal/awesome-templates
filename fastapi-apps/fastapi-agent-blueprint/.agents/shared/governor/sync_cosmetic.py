@@ -1,7 +1,7 @@
 """ADR 047 D4 — `/sync-guidelines` cosmetic edit detection for the completion gate.
 
 The original ADR 045 governor classified any change under ``.claude/rules/**`` as
-governor-changing. After ADR 047, three specific files routinely receive
+governor-changing. After ADR 047, two specific files routinely receive
 timestamp-only or table-row-only edits as the closing ``/sync-guidelines`` step
 on otherwise-non-governor PRs (the "self-loop" pulled feature PRs into
 governor-changing classification purely because of their closure step). This
@@ -39,7 +39,6 @@ SYNC_COSMETIC_FILES: frozenset[str] = frozenset(
     {
         ".claude/rules/project-status.md",
         ".claude/rules/project-overview.md",
-        ".claude/rules/commands.md",
     }
 )
 
@@ -127,7 +126,7 @@ def _is_cosmetic_diff(path: str, diff_text: str) -> bool:
             or _TABLE_HEADER_OR_SEP_RE.match(line)
             for line in changed
         )
-    # project-overview.md, commands.md — `Last synced:` line only.
+    # project-overview.md — `Last synced:` line only.
     return all(_LAST_SYNCED_LINE_RE.match(line) for line in changed)
 
 

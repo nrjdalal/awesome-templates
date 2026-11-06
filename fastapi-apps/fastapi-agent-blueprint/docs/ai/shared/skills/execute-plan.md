@@ -1,22 +1,11 @@
 # Execute Plan — Detailed Procedure
 
 ## Default Flow Position
-
-This skill owns the native execution handoff after `/plan-feature` or
-`$plan-feature` produces an approved Execution Packet.
-
-- **Consumes**: Execution Packet with Goal, Scope, Success Criteria, Selected
-  Approach, Architecture Impact, Task List, Verification Gates, and Review Gates.
-- **Participates in**: `implement`, `verify`, `self-review`, and `completion gate`.
-- **Routes to**: implementation skills such as `/new-domain`, `/add-api`,
-  `/add-cross-domain`, `/add-worker-task`, `/migrate-domain`, and the matching
-  Codex `$skill` names.
-
-Do not use this skill for trivial single-file edits, one-step single-skill
-work, or read-only exploration. Those continue through the normal Default
-Coding Flow and exception-token rules.
+See [target-operating-model §1](../target-operating-model.md) — `execute-plan` routing.
 
 ## Required Inputs
+
+Use this skill for complex, architecture-changing, governor-changing, or multi-task work after an approved Execution Packet. Do not use it for trivial single-file edits, one-step single-skill work, or read-only exploration; those follow the normal Default Coding Flow and exception-token rules.
 
 Before execution starts, confirm the Execution Packet contains:
 
@@ -32,8 +21,26 @@ Before execution starts, confirm the Execution Packet contains:
 - **Review Gates** — self-review, architecture/security review, sync-guidelines,
   and governor-changing review mode when applicable.
 
+Within Selected Approach / Architecture Impact, carry the approved
+[ADR decision basis](../adr-evidence.md), or the scoped reason none applies.
+Recheck its material code/configuration premises in the fresh session. If an older
+packet lacks this context, retrieve it from the approved decision and current
+sources; report an unknown or contradiction rather than inventing intent, treating
+it as missing approval, or silently choosing a new design. Existing scope and
+ADR 050/054 boundaries remain authoritative.
+
 If any field is missing, stop and return to `plan-feature`; do not infer the
 missing contract during execution.
+
+## Ticket input and fresh session
+
+Accept a ticket issue reference; load its approved parent Execution Packet and the
+[ticket workflow](../ticket-workflow.md). Run in a fresh session for that ticket,
+retaining existing explicit authorization. Verify premises and predecessor/PR/CI
+state first. Hydrate the existing ledger goal/scope/plan and planned task fields
+from the issue before entering executing; a missing local ledger is not a missing
+approval. A stale or contradictory ledger cannot supply intent. Keep ADR 054's
+explicit execute-plan boundary and the existing stage vocabulary/schema.
 
 ## Execution Procedure
 
@@ -64,16 +71,17 @@ missing contract during execution.
 5. **Run Verification Gates exactly**. Verification failure returns to the
    current task; do not mark the task complete until the failing gate passes or
    is explicitly deferred with rationale.
-6. **Run Review Gates** before completion. Governor-changing work defaults to
-   cross-tool review by the other harness — Codex-implemented work is reviewed
+6. **Run Review Gates** before completion. Implementation tickets default to one precision-filter
+   cross-tool review by the other harness per `review-protocol.md` §7; mandatory
+   governor review and full requested audits remain required. Codex-implemented work is reviewed
    by Claude, Claude-implemented work is reviewed by Codex:
    ```bash
    # Codex-implemented change set → Claude reviews:
    claude -p --permission-mode plan "<review prompt>"
    # Claude-implemented change set → Codex reviews:
-   codex exec --sandbox read-only "<review prompt>"
+   codex exec --model gpt-6.1-sol --sandbox read-only "<review prompt>"
    ```
-   Start from the default model and effort; escalate to a stronger model or
+   Use the ticket review model above with default effort; escalate to a stronger model or
    higher effort only when warranted (AGENTS.md § Independent Review Trigger;
    `target-operating-model.md` §5 Model And Effort Cost Policy).
    If the reviewing tool's authentication or tooling fails, use
@@ -87,7 +95,11 @@ missing contract during execution.
        updated_by="skill:execute-plan",
    )
    ```
-7. **Close workflow state** only after Verification Gates and Review Gates are
+7. **Integrate sync into the feature PR** before final review; standalone sync
+   is reserved for release audits or post-merge drift. Generate the review packet
+   (`uv run python tools/review_packet.py --base origin/main`) and report actual gate
+   outputs and unverified limits. Follow the ticket measurement protocol.
+8. **Close workflow state** only after Verification Gates and Review Gates are
    satisfied:
    ```python
    update_workflow_state(

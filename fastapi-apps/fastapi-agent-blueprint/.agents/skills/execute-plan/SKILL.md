@@ -8,24 +8,16 @@ metadata:
 # Execute Plan
 
 ## Default Flow Position
-- Steps: **`implement`** + **`verify`** + **`self-review`** + **`completion gate`**
-- Consumes: approved **Execution Packet** from `$plan-feature`
-- Scope: complex, architecture-changing, governor-changing, or multi-task work
+See [target-operating-model §1](../../../docs/ai/shared/target-operating-model.md) — `execute-plan` routing.
+
+## Procedure Authority
+Read `AGENTS.md`. Read and follow the [full procedure](../../../docs/ai/shared/skills/execute-plan.md) before acting; it owns requirements, gates and outputs.
 
 ## Procedure Overview
-1. Read `AGENTS.md` and `docs/ai/shared/skills/execute-plan.md`.
-2. Confirm the Execution Packet contains Goal, Scope, Success Criteria,
-   Selected Approach, Architecture Impact, Task List, Verification Gates, and
-   Review Gates.
-3. Record workflow state with `update_workflow_state(...)`.
-4. Execute each task in dependency order, invoking the mapped implementation
-   skill when available.
-5. Run each task's Verification Gates before marking it complete.
-6. Run Review Gates. Governor-changing work defaults to cross-tool review by
-   the other harness (Codex-implemented work → Claude review), with
-   `self-structured` or `human:<handle>` fallback when the reviewing tool is
-   unavailable.
-7. Update the ledger to `stage="complete"` only after verification and review
-   are satisfied.
-
-Read `docs/ai/shared/skills/execute-plan.md` for the full procedure.
+1. Read the approved Execution Packet and shared procedure.
+2. Validate all required packet fields.
+3. Record executing with update_workflow_state.
+4. Execute dependent tasks through their mapped skills.
+5. Pass each Verification Gate before task completion.
+6. Run Review Gates and record actual review/fallback evidence.
+7. Record complete only after verification and review pass.

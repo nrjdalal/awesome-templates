@@ -1,6 +1,6 @@
 # 047. Governor-Review Provenance Consolidation — ADR Consequences + PR Footer
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-05-01
 - Related issue: [#157](https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/157)
 - Related PRs: PR A (this PR — bridge + footer pilot + IC classification), PR B (footer CI linter), PR C (durable IC promotion), PR D (`/sync-guidelines` self-loop fix), PR E (active source-of-truth switch), PR F (cleanup)
@@ -93,6 +93,10 @@ PR D adds an explicit Exclusion to `governor-paths.md` covering the three `.clau
 ```
 
 The carve-out covers only the `Last synced:` timestamp line on `project-overview.md` and `commands.md` — semantic edits (new sections, regenerated content) still trigger governor-changing. The `governor-review-log/README.md` Index table is **not** in this carve-out: after PR E it stops growing (closed historical archive), so future Index edits are themselves governance changes worth reviewing. The `/sync-guidelines` skill emits a structured Tier-classification line on closure, so reviewers can verify the exemption applies. `tests/unit/agents_shared/test_completion_gate.py` adds a regression test for each path covered by the carve-out.
+
+### Post-decision amendment — Consulted commands (#414 B1, ADR 063)
+
+[ADR 063](063-on-demand-harness-documentation.md) moves the command reference to `docs/ai/shared/commands.md`. The historical three-file D4 list above records the original decision; current exclusions in [governor-paths.md](../ai/shared/governor-paths.md) and `sync_cosmetic.py` cover only project-status / project-overview. Neither the obsolete command path nor the consulted shared command reference is exempt. Existing ADR047-G slot bodies remain unchanged.
 
 ### D5 — Phased multi-PR migration with dual-write guarantee
 
@@ -323,3 +327,26 @@ two rounds: (1) plan-stage on the implementation plan, three R-points
 all closed `Fixed`; (2) implementation-stage on the actual diff, R-points
 recorded in the footer. No new `governor-review-log/` entry is
 written — that artefact format was retired by D2.
+
+
+## Metadata Correction — 2026-11-06
+
+The Proposed header did not reflect current adoption. This recording-date
+correction uses the [merged PR 158 bridge](https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/158)
+(merged 2026-05-02) for provenance and the current canonical
+[AGENTS review contract](../../AGENTS.md#self-review-step--independent-review-trigger-pillar-2)
+plus [Footer CI workflow](../../.github/workflows/governor-footer-lint.yml) for
+present adoption. The bridge merge alone is not a claim that every rollout phase
+was accepted at that instant. This corrects status metadata, not the original
+recording date, frozen rollout history, G-slot bodies or classification aliases.
+
+
+## Post-decision Amendment — Semantic Skill Parity (ADR 065)
+
+[ADR 065 Consequences](065-native-skill-discovery-and-procedure-authority.md#consequences),
+particularly ADR065-G1, is the current refinement of ADR047-G4's information-density
+contract: preserve all three participants and their phase/routing/guard semantics
+through mandatory shared-procedure authority rather than copied full bodies.
+Follow that current decision when interpreting IC-4. The original G4 body and IC-4
+alias row remain historical and unchanged; this amendment supplies the forward
+pointer rather than silently replacing their text.

@@ -39,7 +39,7 @@ reviewing against?" — they replace the old file-location categories (`domain/`
 | `GOV` | Governance / process | Tier-1 language policy, governor-path drift, edits to shared rule sources, review-process rules. | [`AGENTS.md`](../../../AGENTS.md) + [`governor-paths.md`](governor-paths.md) |
 
 - `ARCH`, `SEC`, and `GOV` are **rule-grounded**: they exist only to apply a shared rule source
-  (a checklist, `AGENTS.md`, or `governor-paths.md`) — no tool-local rule invention.
+  (a checklist, `AGENTS.md`, `governor-paths.md`, or an applicable current ADR clause) — no tool-local rule invention.
 - `CORR` / `REG` / `STAB` / `CONTRACT` are **evidence-grounded**: they are opened only against
   concrete evidence (§2), never against taste or a hunch.
 - A single physical issue gets one finding under its most specific dimension. Do not split one
@@ -54,17 +54,23 @@ Every finding line MUST carry `basis: <type>` and cite the concrete anchor:
 
 | `basis` | Valid for | Must cite |
 |---------|-----------|-----------|
-| `rule-source` | `ARCH`, `SEC`, `GOV` | the checklist / `AGENTS.md` / `governor-paths.md` rule + section (e.g. `architecture-review-checklist §1`) |
+| `rule-source` | `ARCH`, `SEC`, `GOV` | the checklist / `AGENTS.md` / `governor-paths.md` rule + section, or an applicable current ADR Decision/Consequence clause with status, scope and concrete implementation/contract evidence |
 | `diff-evidence` | `CORR`, `REG`, `STAB`, `CONTRACT` | the changed `file:line` and what the code does |
 | `contract-evidence` | `CONTRACT`, `REG` | the schema / OpenAPI / payload / migration that conflicts |
 | `test-evidence` | `CORR`, `REG` | a failing test (name + expected vs actual). An **absent** test is a finding only when tied to a changed contract, a concrete regression risk, or a checklist rule (e.g. `architecture-review-checklist §5`) — never "untested, therefore a finding" |
 | `runtime-evidence` | `CORR`, `STAB` | the command run + observed output (e.g. a failing probe) |
 
+ADR applicability follows [the decision-evidence guide](adr-evidence.md). Read the
+actual clause and successors; an archived rationale, Accepted label or bare number
+is not a rule-source finding. Preserve the clause's stated enforcement strength
+and AGENTS precedence. Code/test/runtime evidence is still required for behavior
+claims; ADR compliance alone is not an Effect Answer or behavior PASS.
+
 Rules:
 - If a concern cannot be tied to one of the bases above, it is **not a finding**. Record it as a
   `Question` in `Next Actions` (to be resolved), not as a finding. This is what stops
   speculative "looks unstable" / taste-refactor findings.
-- `ARCH` / `SEC` findings without a citable shared-rule section are invalid — downgrade to a
+- `ARCH` / `SEC` findings without a citable applicable shared-rule or current ADR clause are invalid — downgrade to a
   `Drift Candidate` if the rule itself is missing/stale.
 - Severity (§3) is independent of basis: a `diff-evidence` `CORR` finding can be `BLOCKING`.
 
@@ -86,6 +92,8 @@ Every review result emits these sections, in order. `review-pr`, `review-archite
   Grounded in the diff/code read, never a restatement of procedure. For a process-only question,
   write `Effect Answer: N/A — process question`.
 - **`Sources Loaded`** — the exact shared rule sources + checklists actually used.
+  For relevant ADRs, include the read status/clause, why it applies and the current
+  evidence; keep the same output section and use a scoped no-ADR reason when appropriate.
 - **`Findings`** — **OPEN issues only.** Each line:
   `[OPEN][<SEVERITY>][<DIM-ID>] <file:line | summary-target> — basis: <type> (<citation>)`
   then `Impact:` and `Recommended fix:` on following lines. For line-anchored code findings,
@@ -239,6 +247,36 @@ This protocol does not restate or re-label them. Two review-facing anchors:
   tool) and a **Self-Structured Review Checklist** (single-tool fallback) specialized to its
   scope; both produce R-points closed with the Guard G vocabulary and reference this protocol
   for dimensions, basis, and output shape.
+
+### Ticket precision-filter mode (ADR 060)
+
+Implementation tickets default to one fresh-context cross-vendor read-only review
+round, followed by verification of known-finding closure. Use
+`codex exec --model gpt-6.1-sol --sandbox read-only "<review prompt>"` for a
+Claude-implemented ticket; `codex exec --help` documents the `--model` knob.
+For Codex implementation use the available Claude reviewer; do not claim vendor
+independence for a same-vendor child. If unavailable, retain the existing
+self-structured/human fallback and record the reason in the PR and Governor Footer.
+No model availability, quota, or superiority is inferred from the command alone.
+
+The precision filter reports only verified P0/P1 defects: P0 is a release-stopping
+failure affecting all applicable use, P1 is a concrete high-impact correctness,
+security, contract, or governance failure requiring attention before merge.
+Retain the protocol's severity vocabulary (`BLOCKING`/`HIGH`) and add priority
+P0/P1; the vocabularies are not mechanically interchangeable. Each finding needs
+an affected execution path, cited evidence or failing probe, impact, and actionable
+fix. Verify each candidate against current code/contract before forwarding it;
+discard unsupported or merely stylistic suggestions. Preserve the Effect Answer,
+coverage, unverified limits, Guard G closure and footer evidence contracts. Say
+"no verified P0/P1 findings" rather than declaring the entire system defect-free.
+
+This filter controls the additional ticket pre-review, not explicit full PR,
+security or architecture audits, deterministic failures, or previously known
+lower-priority findings. Those retain normal scope/severity and closure rules.
+One round limits fresh discovery; targeted closure verification is permitted.
+If unresolved severe findings need another discovery round, split the ticket or
+record a justified escalation rather than silently accumulating rounds. Preserve
+ADR 048's existing maximum guidance and honest total round count.
 
 ## §8 Skill Scope Boundaries
 

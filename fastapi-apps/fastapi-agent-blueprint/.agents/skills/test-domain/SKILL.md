@@ -8,14 +8,13 @@ metadata:
 # Test Domain
 
 ## Default Flow Position
-- Step: **`verify`** (canonical owner). `run` mode is the standard post-`implement` action; `generate` mode itself is an `implement`-style operation and must be followed by `run` to exercise the new tests.
-- Routes after: self-review (`/review-architecture {name}`) if layer interactions changed → completion gate (`/review-pr`)
-- Recursion guard: n/a
+See [target-operating-model §1](../../../docs/ai/shared/target-operating-model.md) — `test-domain` routing.
 
-## Procedure
-1. Read `docs/ai/shared/skills/test-domain.md` for the full procedure.
-2. Read `docs/ai/shared/test-patterns.md` for factory patterns and test examples.
-3. Decide whether the request is generate mode or run mode.
-4. In generate mode: inspect the domain, compare existing tests to required file set, generate missing ones.
-5. In run mode: execute the relevant pytest scope and analyze failures.
-6. Keep factories and test names aligned with the shared test pattern file.
+## Procedure Authority
+Read `AGENTS.md`. Read and follow the [full procedure](../../../docs/ai/shared/skills/test-domain.md) before acting; it owns requirements, gates and outputs.
+
+## Procedure Overview
+1. Determine mode — generate or run (ask if unclear)
+2. Generate mode — identify Service/UseCase methods, check existing tests, generate missing files
+3. Run mode — execute pytest with appropriate scope, analyze failures
+4. Verification — verify imports, run tests, run pre-commit

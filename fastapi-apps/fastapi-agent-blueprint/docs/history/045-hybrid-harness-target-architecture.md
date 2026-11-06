@@ -129,7 +129,7 @@ To prevent the gap from cascading into Phase 2~5, the following Pillars are adde
 | 4 | `governor-review-log/` directory permanently archives review trails | [`docs/history/archive/governor-review-log/`](archive/governor-review-log/) |
 | 5 | `.github/pull_request_template.md` adds Governor-Changing PR checklist (artefact-locks the cross-tool review and self-application proof) | [`.github/pull_request_template.md`](../../.github/pull_request_template.md) |
 | 6 | Follow-up issues #121~#124 bodies link the log entry under "Inherited Review Constraints" | gh issue bodies |
-| 7 | Phase 4 completion-gate Stop adapter checks for missing governor-review-log entry | [`migration-strategy.md` §1 Phase 4 Acceptance](../ai/shared/migration-strategy.md) |
+| 7 | Phase 4 completion-gate Stop adapter checks for missing governor-review-log entry | [`migration-strategy.md` §1 Phase 4 Acceptance](archive/harness-context/migration-strategy.md) |
 | 8 | Optional supplemental — claude-code memory `feedback_codex_cross_review.md` generalised to phase-level review (helpful for the user's own claude-code sessions; not a load-bearing artefact because it is not repo-visible) | claude-code memory feedback file (per-user, per-machine) |
 
 The substantive enforcement lives in Pillars 4 + 5, both repo-visible. Pillar 8 was originally counted equally; Round-4 review (R4.2) downgraded it because a memory file outside the repo is not transmitted to new contributors or to CI. The downgrade does not weaken the system; it relabels honestly.
@@ -145,10 +145,23 @@ Round-4 also introduced the canonical [`governor-paths.md`](../ai/shared/governo
 - **Hard enforcement only (every task hook-blocks)** — Violates #117 Non-Goals (heavy ceremony, false-positive blocking) and Constraints (narrow exceptions). False-positive cost normalises bypass and disables the governor.
 - **Single ADR carrying matrix + model + strategy** — Living inventory cannot live in an immutable ADR. Length would exceed 1000 lines. Rejected for both shape and decay reasons.
 
+## Post-decision note — Historical rollout material (#414 B4)
+
+[ADR 063](063-on-demand-harness-documentation.md) archives the shipped migration plan and original repository-facts snapshot. The original output-layout table above describes the Phase 0 design; current adapters and routing live in target-operating-model, while the old shared filenames are navigation stubs. Historical migration links below resolve to the original plan.
+
 ## Related Documents
 
 - [`docs/ai/shared/harness-asset-matrix.md`](../ai/shared/harness-asset-matrix.md) — issue #117 Required Output #1
 - [`docs/ai/shared/target-operating-model.md`](../ai/shared/target-operating-model.md) — issue #117 Required Output #2
-- [`docs/ai/shared/migration-strategy.md`](../ai/shared/migration-strategy.md) — issue #117 Required Output #3
+- [`docs/history/archive/harness-context/migration-strategy.md`](archive/harness-context/migration-strategy.md) — issue #117 Required Output #3
 - [`AGENTS.md` § Default Coding Flow](../../AGENTS.md) — Phase 1 constitutional addition
 - [archive/044](archive/044-superpowers-gstack-process-governor-evaluation.md) — antecedent evaluation memo
+
+## Post-decision Update — 2026-11-06
+
+[ADR 061](061-retire-runtime-verify-and-content-heuristics.md) retires the
+verify-first reminder and command-log lifecycle, and replaces runtime content
+heuristics with the documented commit/review authorities. Existing token,
+marker, stage, shell-safety and active locale contracts remain. Actual supported
+verification outcomes remain in the local ledger; idle prompt-and-verification
+continuity is retained, while completed cache is not framed as a resumed session.

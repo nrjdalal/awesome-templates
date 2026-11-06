@@ -4,7 +4,7 @@ Coverage layers (verified through 8 rounds of Codex cross-validation, v8):
 
 1. Direct API — get_locale_string() for default / explicit / unknown / case
    / whitespace / missing-key locales.
-2. Identity / schema — _LOCALE_EN re-exports verify.REMINDER_TEXT and
+2. Identity / schema — _LOCALE_EN re-exports stage_gate.STAGE_GATE_REMINDER and
    completion_gate.GOVERNOR_REMINDER_* by reference (drift impossible).
 3. Per-hook emission map — every emitter Hook uses only the keys defined
    for its surface (Claude shell: 8, Codex Stop: 10).
@@ -13,14 +13,14 @@ Coverage layers (verified through 8 rounds of Codex cross-validation, v8):
 5. AST / tokenize guard — locale.py only contains Hangul inside
    _LOCALE_KO mapping values. Comments, docstrings, identifiers,
    _LOCALE_EN values must remain ASCII.
-6. Cycle import guard — verify.py / completion_gate.py do not import
+6. Cycle import guard — stage_gate.py / completion_gate.py do not import
    from .locale.
 7. CLI mode — python -m governor.locale KEY works (-m only; direct path
    execution unsupported).
 8. Always-fallback callsite guard (IC-19) — every hook callsite of
    _resolve_locale_string("KEY") is combined with `or KEY`; every _loc()
    call has 2 positional args with non-empty string fallback.
-9. In-process emission — verify-first / completion-gate / Codex
+9. In-process emission — stage-gate / completion-gate / Codex
    build_segments emit the right locale-resolved text without subprocess
    flakiness.
 10. Shell subprocess in temp git repo — Bash hook emits ko/en correctly.
@@ -52,17 +52,17 @@ SHARED_DIR = REPO_ROOT / ".agents" / "shared"
 # do NOT push `.claude/hooks` or `.codex/hooks` — doing so leaks search-order
 # ambiguity into tests/unit/agents_shared/test_completion_gate.py, which
 # imports both Claude and Codex completion_gate via spec_from_file_location
-# and depends on sys.path being clean for the `from verify_first import
+# and depends on sys.path being clean for the `from _shared import
 # session_id` resolution inside Codex completion_gate.py. All hook module
 # loads in THIS file use spec_from_file_location with explicit pre-load of
-# Codex verify_first under the canonical name (see _load_codex_completion_gate).
+# Codex _shared under the canonical name (see _load_codex_completion_gate).
 if str(SHARED_DIR) not in sys.path:
     sys.path.insert(0, str(SHARED_DIR))
 
 from governor import (  # noqa: E402
     GOVERNOR_REMINDER_NO_PR,
     GOVERNOR_REMINDER_WITH_PR,
-    REMINDER_TEXT,
+    STAGE_GATE_REMINDER,
 )
 from governor import locale as locale_mod  # noqa: E402
 
@@ -72,10 +72,9 @@ HANGUL_RE = re.compile(r"[가-힯ᄀ-ᇿ㄰-㆏]")
 _EXPECTED_KEYS = frozenset(
     {
         # 5 reminder constants
-        "REMINDER_TEXT",
+        "STAGE_GATE_REMINDER",
         "GOVERNOR_REMINDER_WITH_PR",
         "GOVERNOR_REMINDER_NO_PR",
-        "STAGE_GATE_REMINDER",
         "PLAN_EXECUTE_REMINDER",
         # 15 sync advisory keys (8 shell + 7 codex-only + 2 shared = 15 distinct)
         "SYNC_STRONG_HEADER",
@@ -102,23 +101,12 @@ _EXPECTED_KEYS = frozenset(
 # ---------------------------------------------------------------------------
 def test_default_locale_is_english(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("AGENT_LOCALE", raising=False)
-    assert locale_mod.get_locale_string("REMINDER_TEXT") == REMINDER_TEXT
+    assert locale_mod.get_locale_string("STAGE_GATE_REMINDER") == STAGE_GATE_REMINDER
 
 
 def test_explicit_en_locale(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("AGENT_LOCALE", "en")
-    assert locale_mod.get_locale_string("REMINDER_TEXT") == REMINDER_TEXT
-
-
-def test_ko_locale_reminder_text_structure(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("AGENT_LOCALE", "ko")
-    text = locale_mod.get_locale_string("REMINDER_TEXT")
-    assert text != REMINDER_TEXT  # actually translated
-    lines = text.split("\n")
-    assert len(lines) == 4
-    assert lines[0].startswith("[verify-first] ")  # English tag preserved
-    assert "Suggested next" in lines[2]  # technical anchor preserved
-    assert "[exploration]" in lines[3] and "[탐색]" in lines[3]
+    assert locale_mod.get_locale_string("STAGE_GATE_REMINDER") == STAGE_GATE_REMINDER
 
 
 def test_ko_locale_completion_gate_no_pr(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -144,24 +132,24 @@ def test_unknown_locale_falls_back_to_english(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("AGENT_LOCALE", "fr")
-    assert locale_mod.get_locale_string("REMINDER_TEXT") == REMINDER_TEXT
+    assert locale_mod.get_locale_string("STAGE_GATE_REMINDER") == STAGE_GATE_REMINDER
 
 
 def test_uppercase_locale_is_normalized(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("AGENT_LOCALE", "KO")
-    text = locale_mod.get_locale_string("REMINDER_TEXT")
-    assert text != REMINDER_TEXT  # ko table picked
+    text = locale_mod.get_locale_string("STAGE_GATE_REMINDER")
+    assert text != STAGE_GATE_REMINDER  # ko table picked
 
 
 def test_empty_locale_falls_back_to_english(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("AGENT_LOCALE", "")
-    assert locale_mod.get_locale_string("REMINDER_TEXT") == REMINDER_TEXT
+    assert locale_mod.get_locale_string("STAGE_GATE_REMINDER") == STAGE_GATE_REMINDER
 
 
 def test_whitespace_locale_is_stripped(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("AGENT_LOCALE", "  ko  ")
-    text = locale_mod.get_locale_string("REMINDER_TEXT")
-    assert text != REMINDER_TEXT
+    text = locale_mod.get_locale_string("STAGE_GATE_REMINDER")
+    assert text != STAGE_GATE_REMINDER
 
 
 def test_missing_key_in_partial_locale_falls_back_per_key(
@@ -170,11 +158,11 @@ def test_missing_key_in_partial_locale_falls_back_per_key(
     """If _LOCALE_KO loses a key, the resolver returns English (no KeyError)."""
     monkeypatch.setenv("AGENT_LOCALE", "ko")
     patched = dict(locale_mod._LOCALE_KO)
-    patched.pop("REMINDER_TEXT", None)
+    patched.pop("STAGE_GATE_REMINDER", None)
     monkeypatch.setattr(
         locale_mod, "_LOCALES", {"en": locale_mod._LOCALE_EN, "ko": patched}
     )
-    assert locale_mod.get_locale_string("REMINDER_TEXT") == REMINDER_TEXT
+    assert locale_mod.get_locale_string("STAGE_GATE_REMINDER") == STAGE_GATE_REMINDER
 
 
 def test_unknown_key_returns_empty_string(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -189,7 +177,7 @@ def test_locale_en_uses_canonical_constants_by_reference() -> None:
     """The English table re-exports verify/completion_gate constants — same
     object, not a literal copy. A future divergence in the canonical
     constant is reflected automatically."""
-    assert locale_mod._LOCALE_EN["REMINDER_TEXT"] is REMINDER_TEXT
+    assert locale_mod._LOCALE_EN["STAGE_GATE_REMINDER"] is STAGE_GATE_REMINDER
     assert (
         locale_mod._LOCALE_EN["GOVERNOR_REMINDER_WITH_PR"] is GOVERNOR_REMINDER_WITH_PR
     )
@@ -333,13 +321,6 @@ def _extract_locale_keys_from_shell(path: Path) -> set[str]:
     return set(re.findall(r"_resolve_locale\s+(\w+)", text))
 
 
-def test_claude_verify_first_emission_keys() -> None:
-    keys = _extract_locale_keys_from_python(
-        REPO_ROOT / ".claude" / "hooks" / "verify_first.py"
-    )
-    assert keys == {"REMINDER_TEXT"}
-
-
 def test_claude_completion_gate_emission_keys() -> None:
     keys = _extract_locale_keys_from_python(
         REPO_ROOT / ".claude" / "hooks" / "completion_gate.py"
@@ -368,17 +349,6 @@ def test_codex_completion_gate_emission_keys() -> None:
         REPO_ROOT / ".codex" / "hooks" / "completion_gate.py"
     )
     assert keys == {"GOVERNOR_REMINDER_WITH_PR", "GOVERNOR_REMINDER_NO_PR"}
-
-
-def test_codex_verify_first_emission_keys_via_helper() -> None:
-    """verify_first.localized_reminder_text() is the only place that
-    resolves REMINDER_TEXT on the Codex side. The Stop hook calls this
-    helper instead of touching the resolver directly, so the helper's
-    callsite is the only resolver entry."""
-    keys = _extract_locale_keys_from_python(
-        REPO_ROOT / ".codex" / "hooks" / "verify_first.py"
-    )
-    assert keys == {"REMINDER_TEXT"}
 
 
 def test_codex_stop_sync_emission_keys() -> None:
@@ -573,7 +543,7 @@ def test_locale_py_korean_only_in_locale_ko_dict_values() -> None:
 # ---------------------------------------------------------------------------
 # 8. Cycle import guard
 # ---------------------------------------------------------------------------
-@pytest.mark.parametrize("module_name", ["verify.py", "completion_gate.py"])
+@pytest.mark.parametrize("module_name", ["stage_gate.py", "completion_gate.py"])
 def test_no_locale_import_in_canonical_modules(module_name: str) -> None:
     """verify.py and completion_gate.py must NOT import from .locale.
     The dependency direction is one-way: locale -> {verify, completion_gate}."""
@@ -590,13 +560,13 @@ def test_locale_module_cli_mode_via_dash_m_default_english() -> None:
     env = {**os.environ, "PYTHONPATH": str(SHARED_DIR)}
     env.pop("AGENT_LOCALE", None)
     result = subprocess.run(
-        [sys.executable, "-m", "governor.locale", "REMINDER_TEXT"],
+        [sys.executable, "-m", "governor.locale", "STAGE_GATE_REMINDER"],
         env=env,
         capture_output=True,
         text=True,
     )
     assert result.returncode == 0, result.stderr
-    assert result.stdout.rstrip("\n") == REMINDER_TEXT
+    assert result.stdout.rstrip("\n") == STAGE_GATE_REMINDER
 
 
 def test_locale_module_cli_mode_via_dash_m_ko() -> None:
@@ -625,8 +595,6 @@ def _build_parent_map(tree: ast.AST) -> dict[int, ast.AST]:
 @pytest.mark.parametrize(
     "rel",
     [
-        ".claude/hooks/verify_first.py",
-        ".codex/hooks/verify_first.py",
         ".claude/hooks/completion_gate.py",
         ".codex/hooks/completion_gate.py",
         ".codex/hooks/stop-sync-reminder.py",
@@ -634,7 +602,6 @@ def _build_parent_map(tree: ast.AST) -> dict[int, ast.AST]:
         # both resolve a reminder key and must keep the IC-19 `or` fallback.
         ".claude/hooks/post_tool_stage_gate.py",
         ".claude/hooks/pre_tool_stage_block.py",
-        ".antigravity/hooks/verify_first.py",
         ".antigravity/hooks/completion_gate.py",
         ".antigravity/hooks/stop-sync-reminder.py",
     ],
@@ -781,31 +748,15 @@ def _load_module(name: str, path: Path):
 
 
 def _load_codex_completion_gate():
-    """Codex completion_gate does `from verify_first import session_id` at
-    import time. To be robust against test ordering and cached imports, we
-    temporarily install Codex verify_first as `sys.modules['verify_first']`
-    while exec'ing the Codex completion_gate, then restore the previous
-    binding (if any) so other tests' verify_first references are not
-    disturbed."""
-    codex_hooks = REPO_ROOT / ".codex" / "hooks"
-
-    saved_vf = sys.modules.pop("verify_first", None)
+    """Resolve the remaining per-tool _shared dependency by path."""
+    codex_hooks = REPO_ROOT / ".codex/hooks"
     saved_shared = sys.modules.pop("_shared", None)
     try:
-        # Pre-load Codex verify_first under the canonical name so the
-        # `from verify_first import session_id` inside completion_gate.py
-        # resolves to the Codex side.
         _load_module("_shared", codex_hooks / "_shared.py")
-        _load_module("verify_first", codex_hooks / "verify_first.py")
         return _load_module(
             "codex_completion_gate_test", codex_hooks / "completion_gate.py"
         )
     finally:
-        # Restore any prior bindings test_completion_gate.py / others rely on.
-        if saved_vf is not None:
-            sys.modules["verify_first"] = saved_vf
-        else:
-            sys.modules.pop("verify_first", None)
         if saved_shared is not None:
             sys.modules["_shared"] = saved_shared
         else:

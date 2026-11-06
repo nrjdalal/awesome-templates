@@ -91,10 +91,7 @@ TOKEN_LITERALS_BY_FILE: dict[str, set[str]] = {
     # Parser source: the regex literally lists the Korean token strings.
     ".agents/shared/governor/tokens.py": {"자명", "긴급", "탐색", "[탐색]"},
     # Token references in shared-module reminder strings and docstrings.
-    ".agents/shared/governor/verify.py": {"[탐색]", "탐색"},
     ".agents/shared/governor/completion_gate.py": {"[탐색]", "탐색"},
-    # Codex hook docstring references the token.
-    ".codex/hooks/verify_first.py": {"[탐색]", "탐색"},
     # Claude status and shared drift docs summarise token-vocabulary decisions.
     ".claude/rules/project-status.md": {
         "[자명]",
@@ -114,7 +111,7 @@ TOKEN_LITERALS_BY_FILE: dict[str, set[str]] = {
     },
     # Migration strategy + target operating model + repo facts mention tokens
     # in policy-table form. Reference docs that quote AGENTS.md verbatim.
-    "docs/ai/shared/migration-strategy.md": {
+    "docs/history/archive/harness-context/migration-strategy.md": {
         "[자명]",
         "[긴급]",
         "[탐색]",
@@ -130,7 +127,7 @@ TOKEN_LITERALS_BY_FILE: dict[str, set[str]] = {
         "긴급",
         "탐색",
     },
-    "docs/ai/shared/repo-facts.md": {
+    "docs/history/archive/harness-context/repo-facts.md": {
         "[자명]",
         "[긴급]",
         "[탐색]",

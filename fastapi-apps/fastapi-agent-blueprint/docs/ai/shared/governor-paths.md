@@ -47,10 +47,9 @@ Tier C is intentionally narrow today; the list grows only when an ADR explicitly
 ## Exclusions (NOT governor-changing even though path-glob looks close)
 
 - **Log-only backfill PRs**: a PR whose `changed_files` is **entirely under** `docs/history/archive/governor-review-log/` does **not** require its own new self-log entry. Per ADR 047 D6 the only permitted edit to a frozen entry is appending an `Errata YYYY-MM-DD:` heading with English-only errata; existing sections (Review Rounds / Self-Application Proof / Inherited Constraints) are write-protected. The narrower scope replaces the pre-ADR-047 phrasing that allowed extending those sections inline. This exclusion breaks the recursion that would otherwise require every errata-only PR to log itself.
-- **`/sync-guidelines` cosmetic edits (ADR 047 D4)**: a `.claude/rules/**` change is exempt from governor-changing classification when the *governor-matching subset* of `changed_files` is limited to one or more of the three covered files AND each covered file's diff contains only the cosmetic patterns listed below. Other changes outside `.claude/rules/**` are evaluated independently — they may or may not trigger on their own merits.
+- **`/sync-guidelines` cosmetic edits (ADR 047 D4)**: a `.claude/rules/**` change is exempt from governor-changing classification when the *governor-matching subset* of `changed_files` is limited to one or more of the two covered files AND each covered file's diff contains only the cosmetic patterns listed below. Other changes outside `.claude/rules/**` are evaluated independently — they may or may not trigger on their own merits.
   - `.claude/rules/project-status.md`: `> Last synced:` line edits + additions / edits of rows in the `## Recent Major Changes` table.
   - `.claude/rules/project-overview.md`: `> Last synced:` line edits.
-  - `.claude/rules/commands.md`: `> Last synced:` line edits.
   Semantic edits to those same files (new sections, regenerated bodies, rule additions, anything outside the cosmetic patterns) still trigger. The carve-out is deliberately narrow because `/sync-guidelines` produces these cosmetic edits as a routine closure step on most feature PRs; without the carve-out, every feature PR would inherit the full governor-changing ceremony purely because of its closure step (the original "self-loop" identified in ADR 047 Background).
 - **Generated artefact regeneration**: `docs/assets/architecture/*.svg` regenerated via `make diagrams` after a `docs/ai/shared/architecture-diagrams.md` source edit. The source edit itself triggers; the regenerated SVGs do not double-trigger.
 - **`.gitignore`d entries**: `.claude/settings.local.json` and similar — never in PR diffs by definition.
@@ -81,7 +80,7 @@ When the rules above classify a PR as governor-changing (and after [ADR 047](../
 | `AGENTS.md` § Default Coding Flow → Doc-only carve-out | Auto-escape exclusion |
 | `docs/ai/shared/target-operating-model.md` §3 | Auto-escape carve-out |
 | `docs/ai/shared/target-operating-model.md` §5 Independent Review Cadence | Trigger detection |
-| `docs/ai/shared/migration-strategy.md` Phase 4 acceptance | Hard reminder trigger |
+| [Archived migration plan](../../history/archive/harness-context/migration-strategy.md) Phase 4 acceptance | Historical acceptance trace; current reminder policy lives in target-operating-model |
 | `docs/ai/shared/drift-checklist.md` §1D | Sync verification |
 | `.github/pull_request_template.md` § Governor-Changing PR | Author self-classification |
 | Phase 5 shared governor module | Programmatic detection |

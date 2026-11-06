@@ -5,6 +5,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 from pathlib import Path
 from typing import Any
 
@@ -144,3 +145,12 @@ def session_env_id() -> str | None:
         if value:
             return value
     return None
+
+
+_PROCESS_START_NS = time.monotonic_ns()
+
+
+def session_id() -> str:
+    """Per-tool identity for stage-gate deduplication, independent of logging."""
+    explicit = session_env_id()
+    return explicit or f"{os.getppid()}-{os.getpid()}-{_PROCESS_START_NS:016x}"

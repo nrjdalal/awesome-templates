@@ -8,7 +8,7 @@ at hook *emit* time (not module import time) so test isolation via
 
 Usage from a hook (always combine with an English fallback):
 
-    text = get_locale_string("REMINDER_TEXT") or REMINDER_TEXT
+    text = get_locale_string("STAGE_GATE_REMINDER") or STAGE_GATE_REMINDER
 
 CLI mode (used by ``.claude/hooks/stop-sync-reminder.sh`` so a Bash file does
 not need to embed translated strings):
@@ -16,8 +16,7 @@ not need to embed translated strings):
     PYTHONPATH=.agents/shared python3 -m governor.locale SYNC_STRONG_HEADER
 
 Direct path execution (``python3 .agents/shared/governor/locale.py``) is not
-supported because ``from .verify import REMINDER_TEXT`` is a package-relative
-import.
+supported because canonical reminders use package-relative imports.
 
 This file is the only entry in
 ``tools/check_language_policy.py::LOCALE_DATA_FILES``. Korean strings are
@@ -33,7 +32,6 @@ import sys
 
 from .completion_gate import GOVERNOR_REMINDER_NO_PR, GOVERNOR_REMINDER_WITH_PR
 from .stage_gate import PLAN_EXECUTE_REMINDER, STAGE_GATE_REMINDER
-from .verify import REMINDER_TEXT
 
 # Re-export canonical English constants from their source modules so the
 # default-locale path is byte-identical to the existing constants by
@@ -41,7 +39,6 @@ from .verify import REMINDER_TEXT
 # this module; their English values are mirrored in the hook fallback
 # arguments and asserted by drift-guard tests.
 _LOCALE_EN: dict[str, str] = {
-    "REMINDER_TEXT": REMINDER_TEXT,
     "GOVERNOR_REMINDER_WITH_PR": GOVERNOR_REMINDER_WITH_PR,
     "GOVERNOR_REMINDER_NO_PR": GOVERNOR_REMINDER_NO_PR,
     "STAGE_GATE_REMINDER": STAGE_GATE_REMINDER,
@@ -77,14 +74,6 @@ _LOCALE_EN: dict[str, str] = {
 
 
 _LOCALE_KO: dict[str, str] = {
-    "REMINDER_TEXT": "\n".join(
-        [
-            "[verify-first] 변경된 .py 파일에 대한 검증 단계가 빠진 것 같습니다.",
-            "계속하기 전에 테스트나 정적 검사를 실행하세요.",
-            "Suggested next: `/test-domain run <domain>` (또는 `pytest tests/unit/<domain>/`)",
-            "의도적으로 탐색 중이라면 `[exploration]` / `[탐색]` 접두사로 이 알림을 숨길 수 있습니다.",
-        ]
-    ),
     "GOVERNOR_REMINDER_WITH_PR": "\n".join(
         [
             "[completion-gate] 거버너 관련 변경이 감지되었습니다 (Pillar 7).",

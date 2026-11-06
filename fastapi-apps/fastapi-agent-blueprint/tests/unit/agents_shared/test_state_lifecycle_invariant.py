@@ -6,7 +6,7 @@ Five regression guards that protect the Phase 2/4 state lifecycle:
   2. Garbage ts values are skipped by read_latest_token (no crash).
   3. Bulk consume of 200 stale markers completes in < 5 seconds.
   4. stop-sync-reminder.py static check: both consume_phase2_markers and
-     cleanup_stale_verify_logs are still called (neither may be dropped).
+     the active marker consumers remain called (ADR 061 retires verify logs).
   5. Cross-reference: the AST-based fixture leak guard (test_no_test_state_leak.py)
      must be present and contain its key test function.
 """
@@ -114,7 +114,7 @@ def test_bulk_200_markers_consume(tmp_path: Path) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Guard 4 — stop-sync-reminder.py calls both cleanup functions (static)
+# Guard 4 — stop-sync-reminder.py calls the active marker consumer (static)
 # ---------------------------------------------------------------------------
 
 
@@ -126,17 +126,6 @@ def test_stop_hook_calls_consume_phase2_markers() -> None:
     assert "consume_phase2_markers" in hook_text, (
         "REGRESSION: stop-sync-reminder.py no longer calls consume_phase2_markers. "
         "Phase 2 marker cleanup (IC-11 Option A) must be preserved."
-    )
-
-
-def test_stop_hook_calls_cleanup_stale_verify_logs() -> None:
-    """stop-sync-reminder.py must call cleanup_stale_verify_logs. Regression guard."""
-    hook_text = (REPO_ROOT / ".codex" / "hooks" / "stop-sync-reminder.py").read_text(
-        encoding="utf-8"
-    )
-    assert "cleanup_stale_verify_logs" in hook_text, (
-        "REGRESSION: stop-sync-reminder.py no longer calls cleanup_stale_verify_logs. "
-        "Stale verify-log cleanup must be preserved."
     )
 
 

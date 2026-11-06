@@ -112,7 +112,7 @@ def test_implementation_path_relative(tmp_path: Path) -> None:
         "docs/ai/shared/project-dna.md",
         "src/user/README.md",
         "tools/check_examples_copyflow.py",
-        ".claude/hooks/verify_first.py",
+        ".claude/hooks/completion_gate.py",
     ],
 )
 def test_non_implementation_paths_silent(tmp_path: Path, rel: str) -> None:

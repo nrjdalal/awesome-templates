@@ -216,111 +216,51 @@ def check_stop_hook_schema(root: Path = PROJECT_ROOT) -> CheckResult:
 # ---------------------------------------------------------------------------
 
 
-_VERIFY_LOG_GLOB = "verify-log-*.json"
-_SHARED_CLEANUP = "cleanup_stale_verify_logs"
-
-
-def _calls_shared_cleanup(source: str) -> bool:
-    """True only if the source actually *calls* the shared cleanup helper.
-
-    A substring check is not enough: the shim imports the name, so
-    ``cleanup_stale_verify_logs`` appears in the file even after the call site
-    is deleted — and "the helper exists but never runs" is precisely the #334
-    defect this check is supposed to catch. Parse and look for a call node.
-
-    Falls back to the substring test only when the file does not parse, so a
-    syntax error degrades to the old behaviour rather than a false alarm.
-    """
+def _calls_marker_consumer(source: str) -> bool:
+    """Require an actual marker-consumption call, not an import-only token."""
     import ast
 
     try:
         tree = ast.parse(source)
     except SyntaxError:
-        return _SHARED_CLEANUP in source
-    for node in ast.walk(tree):
-        if not isinstance(node, ast.Call):
-            continue
-        func = node.func
-        name = getattr(func, "id", None) or getattr(func, "attr", None)
-        if name == _SHARED_CLEANUP:
-            return True
-    return False
+        return False
+    return any(
+        isinstance(node, ast.Call)
+        and (getattr(node.func, "id", None) or getattr(node.func, "attr", None))
+        == "consume_phase2_markers"
+        for node in ast.walk(tree)
+    )
 
 
 def check_marker_glob_coverage(root: Path = PROJECT_ROOT) -> CheckResult:
     issues: list[str] = []
-
-    # Codex Stop hook must call consume_phase2_markers
-    codex_stop = root / ".codex" / "hooks" / "stop-sync-reminder.py"
-    if not codex_stop.exists():
-        issues.append(".codex/hooks/stop-sync-reminder.py not found")
-    else:
-        if "consume_phase2_markers" not in codex_stop.read_text(encoding="utf-8"):
-            issues.append(
-                ".codex/hooks/stop-sync-reminder.py: consume_phase2_markers not referenced"
-            )
-
-    antigravity_stop = root / ".antigravity" / "hooks" / "stop-sync-reminder.py"
-    if not antigravity_stop.exists():
-        issues.append(".antigravity/hooks/stop-sync-reminder.py not found")
-    else:
-        if "consume_phase2_markers" not in antigravity_stop.read_text(encoding="utf-8"):
-            issues.append(
-                ".antigravity/hooks/stop-sync-reminder.py: consume_phase2_markers not referenced"
-            )
-
-    # governor/markers.py must define the exception-token glob
-    markers_py = root / ".agents" / "shared" / "governor" / "markers.py"
-    if not markers_py.exists():
-        issues.append(".agents/shared/governor/markers.py not found")
-    else:
-        text = markers_py.read_text(encoding="utf-8")
-        if "exception-token-*.json" not in text:
-            issues.append(
-                "governor/markers.py: exception-token-*.json glob pattern not found"
-            )
-
-    # Every harness must prune verify logs at Stop. Two valid shapes: the glob
-    # inline (.codex, .antigravity) or a call to the shared helper that owns it
-    # (.claude, whose hooks are thin shims over .agents/shared/governor per
-    # ADR 045 Phase 5). Checking only for the literal would fail the shim.
-    #
-    # .claude was absent from this check until #334 — which is exactly why it
-    # produced none of the state this tool reports on.
-    for harness in (".codex", ".antigravity", ".claude"):
-        gate_py = root / harness / "hooks" / "completion_gate.py"
-        if not gate_py.exists():
-            issues.append(f"{harness}/hooks/completion_gate.py not found")
-            continue
-        body = gate_py.read_text(encoding="utf-8")
-        if _VERIFY_LOG_GLOB in body or _calls_shared_cleanup(body):
-            continue
+    # Retired verify logs have no writer/reader/cleanup contract (ADR 061).
+    # All active exception-token consumers remain mandatory.
+    consumers = (
+        ".codex/hooks/stop-sync-reminder.py",
+        ".antigravity/hooks/stop-sync-reminder.py",
+        ".claude/hooks/completion_gate.py",
+    )
+    for relative in consumers:
+        path = root / relative
+        if not path.exists() or not _calls_marker_consumer(
+            path.read_text(encoding="utf-8")
+        ):
+            issues.append(f"{relative}: consume_phase2_markers() call not found")
+    markers = root / ".agents/shared/governor/markers.py"
+    if not markers.exists() or "exception-token-*.json" not in markers.read_text(
+        encoding="utf-8"
+    ):
         issues.append(
-            f"{harness}/hooks/completion_gate.py: neither the "
-            f"{_VERIFY_LOG_GLOB} glob nor a {_SHARED_CLEANUP}() call found"
-        )
-
-    # The shared helper is where .claude's glob actually lives, so its absence
-    # would silently defeat the shim branch above.
-    shared_verify = root / ".agents" / "shared" / "governor" / "verify.py"
-    if not shared_verify.exists():
-        issues.append(".agents/shared/governor/verify.py not found")
-    elif _VERIFY_LOG_GLOB not in shared_verify.read_text(encoding="utf-8"):
-        issues.append(
-            f".agents/shared/governor/verify.py: {_VERIFY_LOG_GLOB} glob not found"
-        )
-
-    if issues:
-        return CheckResult(
-            "C4_marker_glob_coverage",
-            False,
-            "; ".join(issues),
-            {"issues": issues},
+            "governor/markers.py: exception-token-*.json glob pattern not found"
         )
     return CheckResult(
         "C4_marker_glob_coverage",
-        True,
-        "All expected marker glob patterns present",
+        not issues,
+        "; ".join(issues)
+        if issues
+        else "All active exception-token lifecycle consumers present",
+        {"issues": issues},
     )
 
 
@@ -781,12 +721,10 @@ def check_stale_stats(root: Path = PROJECT_ROOT) -> CheckResult:
         token_counts = _count_stale(
             abs_dir, "exception-token-*.json", _STALE_THRESHOLD_S
         )
-        verify_counts = _count_stale(abs_dir, "verify-log-*.json", _STALE_THRESHOLD_S)
         stats[dir_key] = {
             "exception_token": token_counts,
-            "verify_log": verify_counts,
         }
-        total_stale += token_counts["stale"] + verify_counts["stale"]
+        total_stale += token_counts["stale"]
 
     detail = f"{total_stale} stale marker(s) found across tool state dirs"
     return CheckResult(

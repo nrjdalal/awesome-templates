@@ -80,6 +80,7 @@ import errno
 import json
 import os
 import re
+import shlex
 import subprocess
 import tempfile
 import time
@@ -482,6 +483,56 @@ def update_workflow_state(
     _update_ledger(set_workflow, updated_by=updated_by, state_root=None)
 
 
+def _is_shell_control_token(token: str) -> bool:
+    """Return True for a shlex punctuation token that sequences, pipes or backgrounds.
+
+    ``shlex`` groups adjacent operator characters, so ``|&``, ``&|`` and ``;;``
+    arrive as single tokens; any token carrying ``|`` or ``;`` is rejected, as is
+    an ``&`` run without a redirection. Pure redirections such as ``2>&1`` keep
+    the command's own exit status and stay allowed; plain ``>``/``>>`` output
+    redirection stays rejected as before.
+    """
+    if not token or set(token) - set(";&|<>"):
+        return False
+    if token in {">", ">>"} or "|" in token or ";" in token:
+        return True
+    return not set(token) & set("<>")
+
+
+def is_verification_command(command: str) -> bool:
+    """Recognize simple verify invocations without creating command-log state.
+
+    Shell control operators are excluded: a composite command's exit code may
+    describe a later echo/fallback instead of the verification. Unknown forms
+    remain unrecorded rather than manufacturing a passing result.
+    """
+    try:
+        if "\n" in command or "\r" in command:
+            return False
+        lexer = shlex.shlex(command, posix=True, punctuation_chars=";&|<>")
+        lexer.whitespace_split = True
+        args = list(lexer)
+    except ValueError:
+        return False
+    if any(_is_shell_control_token(part) for part in args):
+        return False
+    if args[:2] == ["uv", "run"]:
+        args = args[2:]
+    if not args:
+        return False
+    inspection_flags = {"--help", "-h", "--version", "-V", "--collect-only", "--co"}
+    if any(arg.split("=", 1)[0] in inspection_flags for arg in args[1:]):
+        return False
+    executable = Path(args[0]).name
+    if executable in {"pytest", "pyright", "pre-commit"}:
+        return executable != "pre-commit" or args[1:2] == ["run"]
+    if executable in {"python", "python3"}:
+        return args[1:3] == ["-m", "pytest"]
+    if executable == "make":
+        return args[1:2] in [["test"], ["demo"], ["demo-rag"], ["check-core"]]
+    return executable == "alembic" and args[1:2] == ["upgrade"]
+
+
 def mark_verified(
     command: str, passed: bool, *, state_root: Path | None = None
 ) -> None:
@@ -588,6 +639,18 @@ def build_session_summary(*, state_root: Path | None = None) -> str | None:
     py_files = verification.get("changed_py_files") or []
     updated_at = (ledger.get("meta") or {}).get("updated_at", "?")
 
+    # Completed cache is not a request to resume old work. Preserve unresolved
+    # verification/review/blockers even if a caller marked the workflow complete.
+    if (
+        workflow.get("stage") == "complete"
+        and not py_files
+        and v_status not in {"pending", "failed"}
+        and not blockers
+        and (workflow.get("review") or {}).get("status")
+        in {None, "not_required", "complete"}
+    ):
+        return None
+
     # Only inject when there is something useful to say.
     workflow_active = workflow.get("stage") not in (None, "idle")
     has_content = any(
@@ -596,7 +659,9 @@ def build_session_summary(*, state_root: Path | None = None) -> str | None:
     if not has_content:
         return None
 
-    parts.append(f"[work-ledger] Resuming session — last updated {updated_at}")
+    parts.append(
+        f"[work-ledger] Previous work (local cache) — last updated {updated_at}"
+    )
     if goal:
         parts.append(f"  Goal     : {goal}")
     if scope:

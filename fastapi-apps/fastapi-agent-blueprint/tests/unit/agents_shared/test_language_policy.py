@@ -72,10 +72,10 @@ def _scan(tmp_path: Path, rel_path: str, content: str):
 # ---------------------------------------------------------------------------
 
 
-def test_korean_prose_in_claude_rules_is_violation(tmp_path: Path) -> None:
+def test_korean_prose_in_shared_commands_is_violation(tmp_path: Path) -> None:
     violations = _scan(
         tmp_path,
-        ".claude/rules/commands.md",
+        "docs/ai/shared/commands.md",
         "# 개발환경 셋업\nmake setup\n",
     )
     assert len(violations) == 1

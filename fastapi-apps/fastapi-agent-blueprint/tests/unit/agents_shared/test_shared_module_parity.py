@@ -10,7 +10,6 @@ The five scenarios mirror Plan §Step 5 (R0-B.2):
     1. empty / invalid JSON / EOF → fail-open
     2. token NFKC + Korean → marker on both sides, identical schema
     3. Codex safety-block-first → block + no marker (HC-1)
-    4. verify-first exploration / stale marker silence (PostToolUse path)
     5. completion-gate 4 branches (silent_log_only, missing+PR, missing
        no PR, match) — exercised via direct shared-module call because
        the real Stop hook depends on git/gh state we cannot fake here.
@@ -28,7 +27,6 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parents[3]
 CLAUDE_PARSER = REPO_ROOT / ".claude" / "hooks" / "user_prompt_submit.py"
 CODEX_PARSER = REPO_ROOT / ".codex" / "hooks" / "user-prompt-submit.py"
-CLAUDE_VERIFY = REPO_ROOT / ".claude" / "hooks" / "verify_first.py"
 
 
 def _run(hook: Path, stdin: str) -> subprocess.CompletedProcess[str]:
@@ -110,120 +108,14 @@ def test_scenario3_codex_safety_blocks_no_marker(prompt: str) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Scenario 4 — verify-first exploration silence (Claude PostToolUse path)
+# ADR 061 retires the former scenario 4 verify-first surface.
 # ---------------------------------------------------------------------------
-def test_scenario4_verify_first_exploration_silences_reminder(
-    tmp_path, monkeypatch
-) -> None:
-    """Claude verify-first: an exploration marker silences the reminder
-    even when a .py file was edited."""
-
-    monkeypatch.setenv("PYTHONPATH", str(REPO_ROOT / ".agents" / "shared"))
-    state_dir = tmp_path / "state"
-    state_dir.mkdir()
-
-    # Seed an exploration marker via the shared writer.
-    sys.path.insert(0, str(REPO_ROOT / ".agents" / "shared"))
-    try:
-        from governor import write_marker  # noqa: PLC0415
-
-        write_marker(
-            {"matched": True, "token": "exploration", "rationale_required": True},
-            state_dir,
-        )
-    finally:
-        sys.path.pop(0)
-
-    # Run the Claude shim with the seeded state_dir via monkeypatched STATE_DIR.
-    # We use a Python -c subprocess that imports the shim and overrides STATE_DIR.
-    code = f"""
-import sys
-from pathlib import Path
-sys.path.insert(0, {str(CLAUDE_VERIFY.parent)!r})
-import verify_first as vf
-state_dir = Path({str(state_dir)!r})
-vf.STATE_DIR = state_dir
-payload = {{"tool_input": {{"file_path": "src/foo.py"}}}}
-print(vf.should_remind(payload, state_dir=state_dir))
-"""
-    result = subprocess.run(  # noqa: S603
-        [sys.executable, "-c", code],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    assert result.returncode == 0, result.stderr
-    assert result.stdout.strip() == "False"
 
 
 # ---------------------------------------------------------------------------
 # Scenario 4 supplement (R1-A.3 / R1-B.2) — stale 24h+ marker is ignored
-# by the reader; verify-first must NOT be silenced by a leftover marker.
+# Token freshness and marker consumption remain covered by marker tests.
 # ---------------------------------------------------------------------------
-def test_scenario4_stale_marker_does_not_silence_verify_first(tmp_path) -> None:
-    """A 26h-old exploration marker must be filtered out by the 24h
-    defensive window so verify-first emits the reminder."""
-
-    from datetime import UTC, datetime, timedelta
-
-    sys.path.insert(0, str(REPO_ROOT / ".agents" / "shared"))
-    try:
-        # Write a marker manually with a 26h-old ISO timestamp.
-        stale_ts = (datetime.now(tz=UTC) - timedelta(hours=26)).strftime(
-            "%Y-%m-%dT%H:%M:%SZ"
-        )
-        marker = tmp_path / "exception-token-stale-x.json"
-        marker.write_text(
-            json.dumps(
-                {
-                    "matched": True,
-                    "token": "exploration",
-                    "rationale_required": True,
-                    "ts": stale_ts,
-                },
-                ensure_ascii=False,
-            ),
-            encoding="utf-8",
-        )
-
-        from governor import (  # noqa: PLC0415
-            MarkerLifecycle,
-            read_latest_token,
-        )
-
-        # Stale marker must be filtered by _within_24h.
-        assert read_latest_token(tmp_path, MarkerLifecycle.READ_ONLY) is None
-    finally:
-        sys.path.pop(0)
-
-
-def test_scenario4_malformed_marker_skipped_not_crash(tmp_path) -> None:
-    """Marker with missing ``token`` / non-string ``ts`` must be skipped
-    silently — pre-Phase-5 readers already had this behaviour (R1-A.3)."""
-
-    sys.path.insert(0, str(REPO_ROOT / ".agents" / "shared"))
-    try:
-        # Various malformed shapes — none should crash the reader.
-        (tmp_path / "exception-token-bad1.json").write_text(
-            "not json", encoding="utf-8"
-        )
-        (tmp_path / "exception-token-bad2.json").write_text(
-            json.dumps({"ts": "2026-04-27T00:00:00Z"}),  # no token
-            encoding="utf-8",
-        )
-        (tmp_path / "exception-token-bad3.json").write_text(
-            json.dumps({"ts": 12345, "token": "trivial"}),  # non-string ts
-            encoding="utf-8",
-        )
-
-        from governor import (  # noqa: PLC0415
-            MarkerLifecycle,
-            read_latest_token,
-        )
-
-        assert read_latest_token(tmp_path, MarkerLifecycle.READ_ONLY) is None
-    finally:
-        sys.path.pop(0)
 
 
 # ---------------------------------------------------------------------------

@@ -4,37 +4,25 @@ Shared project rules live in [AGENTS.md](AGENTS.md).
 This file intentionally keeps only Claude-specific setup and workflow guidance.
 
 ## Pre-work Checklist
-1. Read shared project rules from `AGENTS.md` (not auto-loaded — read explicitly)
+1. Read `AGENTS.md` explicitly (not auto-loaded). Keep the core Default Coding Flow, exception tokens, ADR 050/054 boundaries and Reasoning-Level Consistency Guards in scope for all work. For routine source work, the Tool-Specific Harnesses, Common Commands and Drift Management sections and the Default Coding Flow subsections on Independent Review Trigger, Skill Mapping and Alignment may be deferred until harness/governor work needs them. Language Policy may be deferred only when no Tier 1 path is being edited.
 2. Read shared workflow references from `docs/ai/shared/` when the task needs deeper context (`project-dna.md`, checklists, onboarding tracks)
 3. Check current project status via `.claude/rules/project-status.md` (auto-loaded)
-4. Check DO/DON'T via `.claude/rules/architecture-conventions.md` (auto-loaded)
+4. Check DO/DON'T in shared `AGENTS.md` / `project-dna.md`; architecture and overview projections are path-scoped. Consult a relevant projection if needed and not visible.
 
 ## Claude Collaboration Rules
 - If diagnosis/review result is "adequate", do not force improvement suggestions
 - Only propose modifying or deleting existing Claude-specific structures when the benefit is clear
-- Skill `SKILL.md` frontmatter supported attributes: `name`, `argument-hint`, `description`, `disable-model-invocation`, `compatibility`
+- Skill frontmatter follows the [Claude Code reference](https://code.claude.com/docs/en/skills#frontmatter-reference), including `context: fork`, `agent`, `model`, `effort`, `allowed-tools` and `paths`; consult the reference for supported fields and semantics instead of maintaining a local exhaustive list.
 - Before changing shared rules or structure, follow the drift management rules in `AGENTS.md`
 - Shared workflow references now live under `docs/ai/shared/`; Claude skills should point there instead of keeping private copies
 - When delegating to agents, explicitly pass the list of changed files
 - Tier 1 shared/governance files are English-only; bilingual escape tokens and locale data files (`LOCALE_DATA_FILES`) are the two narrowly-scoped exceptions. See [AGENTS.md § Language Policy](AGENTS.md#language-policy) for the path list, hidden-rationale prohibition, and AI-when-editing rule. Conversation language is user-local (set by your global CLAUDE.md); file artefacts are governed strictly by the path policy.
 - Reasoning-Level Consistency Guards (F / G / H / I) apply to every conversation, cross-review, and document-generation step — not only to PR-level work. See [AGENTS.md § Reasoning-Level Consistency Guards](AGENTS.md#reasoning-level-consistency-guards) for the canonical surface.
 
-## Skills (slash commands)
-- `/plan-feature {description}` — Feature implementation planning (requirements interview → architecture analysis → security check → task decomposition → Execution Packet)
-- `/execute-plan {packet|plan-ref}` — Execute an approved Execution Packet through native workflow gates (task order → verification gates → review gates → ledger closure)
-- `/new-domain {name}` — Full domain scaffolding (15 content + 25 `__init__.py` + 4 tests = 44 files)
-- `/add-api {description}` — Add API endpoint to existing domain
-- `/add-worker-task {domain} {task}` — Add async Taskiq task
-- `/add-admin-page {domain}` — Add NiceGUI admin page to existing domain
-- `/add-cross-domain from:{a} to:{b}` — Wire cross-domain dependency
-- `/review-architecture {domain|all}` — Architecture compliance audit
-- `/security-review {domain|file|all}` — Security quality-gate audit with feature-freshness preflight
-- `/test-domain {domain} [generate|run]` — Generate or run tests
-- `/fix-bug {description}` — Structured bug-fix workflow (existence gate -> root-cause trace -> Cause Impact Matrix -> verify -> Bug Fix Report)
-- `/review-pr {number|URL}` — PR quality-gate review with drift-candidate detection
-- `/sync-guidelines` — Close the quality gate after design changes or review-detected drift
-- `/migrate-domain {generate|upgrade|downgrade|status}` — Alembic migration management
-- `/onboard` — Interactive onboarding for new members (project structure → rules → workflow)
+## Skills — defined in `.claude/skills/` (auto-listed each session; Codex: `.agents/skills/`)
+
+Four are user-invoked only (`disable-model-invocation: true`) and therefore absent from the auto list:
+`/sync-guidelines` (closure), `/migrate-domain {generate|upgrade|downgrade|status}`, and on-demand `/trace` and `/why`.
 
 ## Default Coding Flow
 
@@ -64,7 +52,7 @@ Default Flow is **subordinate** to (a) active sandbox / approval policy, (b) `.c
 
 > Shared architecture rules, terminology, conversion patterns, and DTO criteria are defined in `AGENTS.md`.
 > Shared workflow references live in `docs/ai/shared/`.
-> Detailed shell commands are in `.claude/rules/commands.md` (auto-loaded); Makefile shortcuts are in `AGENTS.md`.
+> Consult [shared shell commands](docs/ai/shared/commands.md) when needed; architecture / overview rules load only for their scoped paths. Shared policy remains in `AGENTS.md`.
 > context7 is a project-required MCP server for Claude (configured via `.mcp.json`).
 
 ### Code Exploration / Reading (by priority)

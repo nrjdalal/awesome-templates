@@ -1,15 +1,10 @@
 # Interactive Onboarding — Detailed Procedure
 
 ## Default Flow Position
+See [target-operating-model §1](../target-operating-model.md) — `onboard` routing.
+Recursion guard: Do not invoke this skill recursively or invoke plan-feature from inside it.
 
-This skill is **outside** the normal Default Coding Flow. It belongs to **session-start** orientation only and is invoked explicitly by a user (typically a new contributor) at the beginning of a session, not as a step inside a coding task.
-
-Implications:
-- `/onboard` does not become an automatic phase of Default Flow.
-- A coding-flow session that starts with `/onboard` should treat the subsequent coding work as a fresh Default Flow run (the onboard session is its own context).
-- The `[exploration]` / `[탐색]` exception token is appropriate when a new contributor wants to combine onboarding with read-only investigation.
-
-Recursion guard: do **not** invoke `/onboard` recursively, and do not invoke `/plan-feature` from inside this skill.
+## Orientation Sources
 
 > **Design Principle**: This skill does not have its own architecture documentation.
 > All information is read at runtime from existing sources (README.md, ADR, AGENTS.md, `docs/ai/shared/project-dna.md`, harness guides, rules files, `docs/ai/shared/`, `src/user/` code).
@@ -121,37 +116,17 @@ Explain the following:
 
 ### 1.2 Evolution of This Project
 
-Reference the ADRs in `docs/history/` directory and convey in narrative form what **problem** each major decision originated from:
-
-**Story 1: Structural Evolution**
-- Read `docs/history/006-ddd-layered-architecture.md` and convey the key points
-- "Originally apps/ and domains/ were separate, but code navigation was inconvenient, so we switched to per-domain flattening"
-- Key takeaway: Opening just one domain folder shows all code for that feature
-
-**Story 2: Entity -> DTO Unification**
-- Read `docs/history/004-dto-entity-responsibility.md` and convey the key points
-- "Entity was introduced following the DDD pattern, but since there was no business logic, its role overlapped with DTO"
-- "to_entity/from_entity conversion was repeated in every handler -> removed and unified to DTO"
-- Key takeaway: This is the background for the "No Entity pattern, DTO unification" rule
-
-**Story 3: 4-Tier -> 3-Tier Hybrid**
-- Read `docs/history/011-3tier-hybrid-architecture.md` and convey the key points
-- "UseCase -> Service -> Repository each simply delegated to the layer below (passthrough)"
-- "BaseService was restored, and UseCase is added only when needed -- transitioning to a hybrid"
-- Key takeaway: This is the background for the "UseCase is optional" rule. More layers does not mean better architecture
-
-**Story 4: Why IoC Container**
-- Read `docs/history/archive/013-why-ioc-container.md` and convey the key points
-- "Inheritance implies an is-a relationship, but Service uses (has-a) Repository, not is-a"
-- "FastAPI Depends() only works in Router -> cannot be reused in Worker"
-- "Container connects Protocol (interface) and implementation at runtime"
-- Key takeaway: This is the mechanism that enables the "No Infrastructure import in Domain" rule
+Use the source-based provenance procedure in [why](why.md) inline, without requiring
+another session. Cover structural evolution (ADR 006), DTO unification (ADR 004),
+optional UseCase (ADR 011), and DI (archived ADR 013), adapting depth to experience.
+Retain the critical-topic flags above. Explain the problem and recorded alternatives
+from each source; do not memorize or repeat a retrospective story as fact.
 
 ### 1.3 AIDD (AI-Driven Development)
 
 Read the **AI Pair Programming (AIDD)** section of `README.md` and explain the following:
 - This project is designed for pair programming with AI coding agents
-- 14 Skills (slash commands) automate domain creation, API addition, architecture verification, etc.
+- 17 Skills (slash commands) automate domain creation, API addition, architecture verification, etc.
 - Skills reference `AGENTS.md`, `docs/ai/shared/project-dna.md`, shared checklists, and rules to automatically follow project rules
 
 > "If you have any questions, feel free to ask. Otherwise, say 'next'."
@@ -285,11 +260,11 @@ Read the **AI Pair Programming (AIDD)** section of `README.md` and explain the f
 
 ## Phase 5: Development Workflow and Skills
 
-**Information Source**: Harness guide Skills section, commands reference
+**Information Source**: Each harness’s native skill index (`.claude/skills/` for Claude, whose wrapper also names the user-invoked-only skills; `.agents/skills/` for Codex and Antigravity), commands reference
 
 **Q&A Mode**: Present the following topic map and wait for questions.
 > **Phase 5 Topics -- Workflow & Skills**
-> 1. Skills overview -- 14 slash commands and their workflow order
+> 1. Skills overview -- 17 slash commands and their workflow order
 > 2. Frequently used CLI commands (server start, tests, lint)
 >
 > Ask about any topic, or say 'next' to move on.

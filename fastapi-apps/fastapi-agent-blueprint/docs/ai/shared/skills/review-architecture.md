@@ -1,15 +1,8 @@
 # Architecture Compliance Audit
 
 ## Default Flow Position
-
-This skill participates in the [Default Coding Flow](../../../../AGENTS.md#default-coding-flow) at the **`self-review`** step.
-
-It is invoked after `implement` and `verify` for changes that altered layer interactions, base classes, generics, DI wiring, or cross-domain Protocol contracts. Auto-escapes do **not** apply: a single-file refactor that changed a Service/Repository signature still wants this audit.
-
-After self-review, route to:
-- `completion gate` — `/sync-guidelines` if drift candidates were detected, otherwise `/review-pr`
-
-Recursion guard: do **not** invoke `/review-architecture` recursively from within itself, and do not invoke `/plan-feature` from inside this skill.
+See [target-operating-model §1](../target-operating-model.md) — `review-architecture` routing.
+Recursion guard: Do not invoke this skill recursively or invoke plan-feature from inside it.
 
 ## Purpose
 

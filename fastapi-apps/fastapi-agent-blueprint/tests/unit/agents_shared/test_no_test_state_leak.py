@@ -1,6 +1,6 @@
 """AST guard: no pytest fixture may write directly to real state dirs (PR-A.1).
 
-Rationale: if a test fixture writes exception-token or verify-log markers to
+Rationale: if a test fixture writes exception-token or stage markers to
 the real ``.claude/state/``, ``.codex/state/``, or ``.antigravity/state/``
 directories (not tmp_path), it poisons the production lifecycle and causes
 the very stale-marker accumulation this PR is diagnosing.

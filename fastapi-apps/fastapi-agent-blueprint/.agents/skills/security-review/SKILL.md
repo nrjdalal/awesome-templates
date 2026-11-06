@@ -8,17 +8,14 @@ metadata:
 # Security Review
 
 ## Default Flow Position
-- Step: **`self-review`** (security-sensitive surfaces: auth, tokens, sensitive fields, file upload, credentials)
-- Routes after: completion gate (`/sync-guidelines` if drift; otherwise `/review-pr`)
-- Recursion guard: do not invoke `/security-review` recursively, do not invoke `/plan-feature` from inside
+See [target-operating-model §1](../../../docs/ai/shared/target-operating-model.md) — `security-review` routing.
+Recursion guard: Do not invoke this skill recursively or invoke plan-feature from inside it.
 
-## Procedure
-1. Read `AGENTS.md` and `docs/ai/shared/skills/security-review.md` for the full procedure.
-2. Read `docs/ai/shared/security-checklist.md` and `docs/ai/shared/project-dna.md` as the shared security rule sources.
-3. Resolve the audit scope and run the feature-detection / reference-freshness preflight (Phase 0).
-4. Audit the target against the 13 security checklist categories using the shared applicability rules (Phase 1).
-5. Determine stale-reference drift, other `Drift Candidates`, and whether `Sync Required` is `true` or `false` (Phase 2).
-6. Report using the protocol output contract: `Scope`, `Effect Answer`, `Sources Loaded`, `Findings` (open only), `Coverage` (OK/SKIP), `Drift Candidates`, `Verdict: N/A (audit-only scope)`, `Next Actions`, `Completion State`, `Sync Required` (Phase 3). `Effect Answer` is mandatory — see `docs/ai/shared/review-protocol.md` §3 for the contract and Guard H context.
+## Procedure Authority
+Read `AGENTS.md`. Read and follow the [full procedure](../../../docs/ai/shared/skills/security-review.md) before acting; it owns requirements, gates and outputs.
 
-For cross-tool review prompts, use the `Cross-Tool Review Prompt Template`
-section in `docs/ai/shared/skills/security-review.md`; do not duplicate it here.
+## Procedure Overview
+1. Resolve the audit scope and run the feature-detection / reference-freshness preflight (Phase 0)
+2. Audit the target against the 13 security checklist categories (Phase 1)
+3. Determine stale-reference drift, other `Drift Candidates`, and whether `Sync Required` is `true` or `false` (Phase 2)
+4. Report using the protocol output contract — `Findings` (open) + `Coverage` (OK/SKIP) + `Verdict: N/A (audit-only scope)` (Phase 3)

@@ -97,7 +97,7 @@ class TestTrackedStateFilesFailHard:
 
 class TestStaleMarkersAreWarnOnly:
     @pytest.mark.parametrize(
-        "name", ["exception-token-abc.json", "verify-log-local_abc.json"]
+        "name", ["exception-token-abc.json", "exception-token-local_abc.json"]
     )
     def test_a_stale_marker_warns_without_failing(
         self, monkeypatch, capsys, tmp_path: Path, name: str
@@ -115,7 +115,7 @@ class TestStaleMarkersAreWarnOnly:
         self, monkeypatch, capsys, tmp_path: Path
     ) -> None:
         state = tmp_path / ".claude" / "state"
-        _marker(state, "verify-log-local_abc.json")
+        _marker(state, "exception-token-local_abc.json")
         monkeypatch.setattr(module, "_git_tracked_state_files", lambda: [])
         monkeypatch.setattr(module, "REPO_ROOT", tmp_path)
         monkeypatch.setattr(module, "_STATE_DIRS", (state,))
@@ -128,7 +128,7 @@ class TestStaleMarkersAreWarnOnly:
     ) -> None:
         state = tmp_path / ".claude" / "state"
         for i in range(module._STALE_WARN_THRESHOLD + 1):
-            _marker(state, f"verify-log-local_{i}.json", age_seconds=_STALE)
+            _marker(state, f"exception-token-local_{i}.json", age_seconds=_STALE)
         monkeypatch.setattr(module, "_git_tracked_state_files", lambda: [])
         monkeypatch.setattr(module, "REPO_ROOT", tmp_path)
         monkeypatch.setattr(module, "_STATE_DIRS", (state,))
@@ -141,18 +141,21 @@ class TestStaleCounts:
     def test_a_missing_directory_is_zero_not_an_error(self, tmp_path: Path) -> None:
         assert module._stale_counts(tmp_path / "nope") == {"total": 0, "stale": 0}
 
-    def test_only_the_two_marker_patterns_are_counted(self, tmp_path: Path) -> None:
-        _marker(tmp_path, "verify-log-local_a.json", age_seconds=_STALE)
+    def test_only_active_exception_markers_are_counted(self, tmp_path: Path) -> None:
+        _marker(tmp_path, "exception-token-local_a.json", age_seconds=_STALE)
         _marker(tmp_path, "exception-token-b.json", age_seconds=_STALE)
         _marker(tmp_path, "unrelated.json", age_seconds=_STALE)
         _marker(tmp_path, "notes.txt", age_seconds=_STALE)
+        _marker(tmp_path, "verify-log-retired.json", age_seconds=_STALE)
 
         assert module._stale_counts(tmp_path) == {"total": 2, "stale": 2}
 
     def test_the_boundary_is_24_hours(self, tmp_path: Path) -> None:
         # Just inside the window is not stale; comfortably outside it is.
-        _marker(tmp_path, "verify-log-local_fresh.json", age_seconds=_ONE_DAY - 400)
+        fresh = "exception-token-local_fresh.json"
+        _marker(tmp_path, fresh, age_seconds=_ONE_DAY - 400)
         assert module._stale_counts(tmp_path)["stale"] == 0
 
-        _marker(tmp_path, "verify-log-local_old.json", age_seconds=_ONE_DAY + 600)
+        old = "exception-token-local_old.json"
+        _marker(tmp_path, old, age_seconds=_ONE_DAY + 600)
         assert module._stale_counts(tmp_path)["stale"] == 1

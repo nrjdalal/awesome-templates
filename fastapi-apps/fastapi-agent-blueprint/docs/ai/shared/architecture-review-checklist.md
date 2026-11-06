@@ -12,6 +12,10 @@
 > The shared-rule-source cross-reference safeguard remains in `AGENTS.md` and
 > harness docs because it is a process rule, not a code-grep rule.
 
+Use [scoped ADR evidence](adr-evidence.md) alongside these categories: identify
+applicable current decision clauses and inspect the changed implementation. A
+historical design or an ADR number alone cannot establish an architecture defect.
+
 ## 1. Layer Dependency Rules
 
 Grep-check Python files in each domain.

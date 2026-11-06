@@ -4,7 +4,7 @@
 Two-tier policy:
   FAIL-HARD (exit 1) — git-tracked files exist under .claude/state/,
     .codex/state/, or .antigravity/state/: the .gitignore guard has been
-    bypassed and exception-token or verify-log files may be committed to
+    bypassed and exception-token files may be committed to
     version control.
 
   WARN-ONLY (exit 0 + stderr) — stale marker count exceeds the threshold K.
@@ -56,7 +56,7 @@ def _stale_counts(state_dir: Path) -> dict[str, int]:
     now = time.time()
     total = 0
     stale = 0
-    for pattern in ("exception-token-*.json", "verify-log-*.json"):
+    for pattern in ("exception-token-*.json",):
         for path in state_dir.glob(pattern):
             total += 1
             try:

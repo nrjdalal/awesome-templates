@@ -354,3 +354,117 @@ def test_write_ledger_fail_open_on_permission_error(tmp_path, monkeypatch):
     result = wl.write_ledger(wl._default_ledger())
     assert result is False
     locked.parent.chmod(0o755)  # restore for cleanup
+
+
+def test_completed_clean_ledger_does_not_inject_old_task():
+    wl.update_goal_scope_plan(goal="already completed", plan="old plan")
+    wl.update_workflow_state(stage="complete")
+    assert wl.build_session_summary() is None
+
+
+@pytest.mark.parametrize("stage", ["idle", "executing", "blocked"])
+def test_summary_keeps_prompt_verify_continuity_as_local_cache(stage):
+    wl.update_last_prompt("investigate current issue")
+    wl.update_workflow_state(stage=stage)
+    wl.mark_verified("pytest focused", passed=False)
+    summary = wl.build_session_summary()
+    assert summary is not None
+    assert "investigate current issue" in summary
+    assert "FAILED" in summary
+    assert "local cache" in summary
+    assert "Resuming session" not in summary
+
+
+def test_completed_ledger_with_changed_python_remains_visible():
+    ledger = wl._default_ledger()
+    ledger["workflow"]["stage"] = "complete"
+    ledger["verification"]["changed_py_files"] = ["src/a.py"]
+    ledger["verification"]["status"] = "pending"
+    wl.write_ledger(ledger)
+    summary = wl.build_session_summary()
+    assert summary is not None and "src/a.py" in summary
+
+
+@pytest.mark.parametrize(
+    "command,expected",
+    [
+        ("uv run pytest tests/unit/", True),
+        ("pytest tests/", True),
+        ("python -m pytest tests/", True),
+        ("uv run pyright", True),
+        ("make test", True),
+        ("alembic upgrade head", True),
+        ("uv run pytest tests/unit/ -q 2>&1", True),
+        ("rg pytest docs/", False),
+        ("echo pytest", False),
+        ("pytest tests/ || true", False),
+        ("pytest tests/; echo done", False),
+        ('pytest "unterminated', False),
+    ],
+)
+def test_verification_command_classification_without_command_logs(command, expected):
+    assert wl.is_verification_command(command) is expected
+
+
+def test_completed_ledger_does_not_hide_failed_verification():
+    wl.update_workflow_state(stage="complete")
+    wl.mark_verified("pytest focused", passed=False)
+    summary = wl.build_session_summary()
+    assert summary is not None and "FAILED" in summary
+
+
+@pytest.mark.parametrize(
+    "review_status,suppressed",
+    [
+        (None, True),
+        ("not_required", True),
+        ("complete", True),
+        ("pending", False),
+        ("fallback", False),
+        ("blocked", False),
+        ("in_progress", False),
+        ("unknown", False),
+        ("future_state", False),
+    ],
+)
+def test_completed_cache_only_suppresses_known_clean_review(review_status, suppressed):
+    wl.update_goal_scope_plan(goal="finished")
+    wl.update_workflow_state(stage="complete", review_status=review_status)
+    assert (wl.build_session_summary() is None) is suppressed
+
+
+@pytest.mark.parametrize("blockers", ["waiting for owner", ["review not resolved"]])
+def test_completed_cache_keeps_blockers_visible(blockers):
+    ledger = wl._default_ledger()
+    ledger["workflow"]["stage"] = "complete"
+    ledger["blockers"] = blockers
+    wl.write_ledger(ledger)
+    summary = wl.build_session_summary()
+    assert summary is not None and "Blockers" in summary
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "pytest --help",
+        "pytest -h",
+        "pytest --version",
+        "pytest --collect-only tests/",
+        "pytest --co tests/",
+        "python -m pytest --collect-only",
+        "uv run pyright --version",
+        "pre-commit run --help",
+        "uv run --group dev pytest tests/",
+        "FOO=1 pytest tests/",
+        "cd x && pytest tests/",
+        "pytest tests/ | tail",
+        "pytest tests/ |& tee out.txt",
+        "pytest tests/ &|",
+        "pytest tests/ &",
+        "pytest tests/ ;; true",
+        "pytest tests/ 2>&1 | tail",
+        "uv run --no-sync pytest tests/",
+    ],
+)
+def test_nonexecution_or_ambiguous_forms_never_count_as_verification(command):
+    assert not wl.is_verification_command(command)

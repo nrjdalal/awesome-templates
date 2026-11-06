@@ -8,17 +8,14 @@ metadata:
 # Review Architecture
 
 ## Default Flow Position
-- Step: **`self-review`** (architecture commitments)
-- Routes after: completion gate (`/sync-guidelines` if drift; otherwise `/review-pr`)
-- Recursion guard: do not invoke `/review-architecture` recursively, do not invoke `/plan-feature` from inside
+See [target-operating-model §1](../../../docs/ai/shared/target-operating-model.md) — `review-architecture` routing.
+Recursion guard: Do not invoke this skill recursively or invoke plan-feature from inside it.
 
-## Procedure
-1. Read `AGENTS.md` and `docs/ai/shared/skills/review-architecture.md` for the full procedure.
-2. Read `docs/ai/shared/architecture-review-checklist.md` and `docs/ai/shared/project-dna.md` as the shared architecture rule sources.
-3. Resolve the audit target and load the shared rule sources (Phase 0).
-4. Audit the target against the 10 architecture checklist categories (Phase 1).
-5. Determine `Drift Candidates` and whether `Sync Required` is `true` or `false` (Phase 2).
-6. Report using the protocol output contract: `Scope`, `Effect Answer`, `Sources Loaded`, `Findings` (open only), `Coverage` (OK/SKIP), `Drift Candidates`, `Verdict: N/A (audit-only scope)`, `Next Actions`, `Completion State`, `Sync Required` (Phase 3). `Effect Answer` is mandatory — see `docs/ai/shared/review-protocol.md` §3 for the contract and Guard H context.
+## Procedure Authority
+Read `AGENTS.md`. Read and follow the [full procedure](../../../docs/ai/shared/skills/review-architecture.md) before acting; it owns requirements, gates and outputs.
 
-For cross-tool review prompts, use the `Cross-Tool Review Prompt Template`
-section in `docs/ai/shared/skills/review-architecture.md`; do not duplicate it here.
+## Procedure Overview
+1. Resolve the audit target and load the shared rule sources (Phase 0)
+2. Audit the target against the 10 architecture checklist categories (Phase 1)
+3. Determine `Drift Candidates` and whether `Sync Required` is `true` or `false` (Phase 2)
+4. Report using the protocol output contract — `Findings` (open) + `Coverage` (OK/SKIP) + `Verdict: N/A (audit-only scope)` (Phase 3)

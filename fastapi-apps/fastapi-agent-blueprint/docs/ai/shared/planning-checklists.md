@@ -92,7 +92,7 @@
 | Bug fix | `/fix-bug` | `"{description}"` | Reproduce (existence gate) -> Trace (Cause Impact Matrix) -> Fix -> Verify, then a Bug Fix Report carrying `Outcome` |
 | DB migration | `/migrate-domain` | `generate\|upgrade\|downgrade\|status` | Manual review required after autogenerate |
 | New member onboarding | `/onboard` | (none) | Experience-level adaptive (Beginner/Intermediate/Advanced) |
-| Sub-feature design | `/plan-feature` | `"{description}"` | Recursive use when splitting large features |
+| Sub-feature design | `/plan-feature` | `"{description}"` | Decompose inside the same Execution Packet; never invoke recursively |
 | PR review | `/review-pr` | `{number\|URL}` | Diff review + drift candidates + explicit sync-required decision |
 | DynamoDB migration | `python -m migrations.dynamodb.cli --env {env}` | — | DynamoDB table/GSI creation (manual CLI) |
 | **Unmappable** items | Manual implementation | — | External API integrations, middleware, etc. |
@@ -153,10 +153,15 @@
 
 ### Recommended Approach
 - Selected: Option {X}
-- Why: {rationale for the chosen approach}
+- Why: {rationale; for an affected architectural choice, link its scoped Decision Basis
+  under Architecture Impact rather than only listing ADR IDs}
 - Why not others: Option {Y} — {one-line reason}; Option {Z} — {one-line reason}
 
 ## 3. Architecture Impact Analysis
+
+{For affected choices, apply `docs/ai/shared/adr-evidence.md` inside this section:
+explain how the governing clause changes the choice and link current evidence or
+limits. If none is affected, give one scope-based reason.}
 
 ### Changes by Layer
 | Layer | Change Type | Details |
@@ -221,9 +226,12 @@ Required fields:
 - **Goal**: one sentence.
 - **Scope**: affected domains, files, interfaces, and explicit exclusions.
 - **Success Criteria**: observable completion conditions.
-- **Selected Approach**: selected option and rationale.
+- **Selected Approach**: selected option and rationale, including how applicable
+  decision clauses influenced the choice; link the existing Architecture Impact evidence.
 - **Architecture Impact**: layer, domain, dependency, DTO, migration, and
-  compatibility impact.
+  compatibility impact, with a scoped [Decision Basis](adr-evidence.md) for affected
+  choices (or a scope-based no-affected-decision reason). This reuses the existing
+  field; it adds no required top-level packet field.
 - **Task List**: ordered task IDs, titles, mapped skills, dependencies, and
   initial status.
 - **Verification Gates**: exact commands or manual probes with expected result.
@@ -249,3 +257,13 @@ update_workflow_state(
     updated_by="skill:plan-feature",
 )
 ```
+
+## 7. Ticket Brief Projection
+
+Project an approved Execution Packet into the [ticket contract](ticket-workflow.md):
+intent, non-goals, done-when, premises with evidence, approved packet/approval,
+predecessors, file set, Parallel Group and Supervision L1-L3. Keep implementation
+choices in the packet; project applicable decision constraints and their evidence
+through the existing premises field, linking the packet's Decision Basis rather
+than copying the ADR. Epic/ticket/task criteria and fresh-session execution live
+in that contract; native issue bodies use the repository Execution Ticket template.

@@ -10,33 +10,18 @@ description: |
 
 # Pull Request Quality Gate Review
 
-Target: $ARGUMENTS (PR number, GitHub URL, or empty for current branch)
+Input: $ARGUMENTS
 
 ## Default Flow Position
-- Step: **`completion gate`** (final review at end of work)
-- Routes after: `/sync-guidelines` if drift detected
-- Recursion guard: do not invoke `/review-pr` recursively, do not invoke `/plan-feature` from inside
+See [target-operating-model §1](../../../docs/ai/shared/target-operating-model.md) — `review-pr` routing.
+Recursion guard: Do not invoke this skill recursively or invoke plan-feature from inside it.
+
+## Procedure Authority
+Read and follow the [full procedure](../../../docs/ai/shared/skills/review-pr.md) before acting; it owns requirements, gates and outputs.
 
 ## Procedure Overview
-1. Resolve PR; collect diff + **intent** (PR body / issue / acceptance criteria) and load the
-   Review Protocol + its checklists; on a re-review round, also extract prior rounds'
-   `Summary Finding Ledger` and diff every key against the new head (Phase 0)
-2. Review changed files against the protocol dimensions — `CORR / REG / STAB / CONTRACT /
-   ARCH / SEC / GOV` (Phase 1)
-3. Determine `Drift Candidates` and whether `Sync Required` is `true` or `false` (Phase 2)
-4. Report using the protocol output contract — `Findings` (open) + `Coverage` (OK/SKIP) +
-   `Verdict` (Phase 3)
-5. Post to GitHub per protocol §5 only after user confirmation (Phase 4)
-
-Read `docs/ai/shared/skills/review-pr.md` for detailed steps, and
-[`docs/ai/shared/review-protocol.md`](../../../docs/ai/shared/review-protocol.md) for the shared
-dimensions, finding basis, output contract, and posting rules.
-For cross-tool review prompts, use the shared procedure's `Cross-Tool Review Prompt Template`
-section; do not duplicate the template here.
-
-## Claude-Specific: Finding Basis
-Every finding obeys the protocol's [Finding Basis rule](../../../docs/ai/shared/review-protocol.md#2-finding-basis-anti-hallucination-rule):
-`ARCH` / `SEC` / `GOV` findings must cite a shared rule source (you may navigate via
-`.claude/rules/architecture-conventions.md`, but the citation is the shared checklist / `AGENTS.md`);
-`CORR` / `REG` / `STAB` / `CONTRACT` findings must cite `diff` / `contract` / `test` / `runtime`
-evidence. A concern with no basis is a `Question`, not a finding.
+1. Resolve the target and intent; load sources and prior Summary Finding Ledgers (Phase 0).
+2. Review all required protocol dimensions with evidence (Phase 1).
+3. Resolve Drift Candidates and Sync Required (Phase 2).
+4. Report the full protocol contract, including Effect Answer and open findings (Phase 3).
+5. Post externally only with authorization under protocol §5 (Phase 4).

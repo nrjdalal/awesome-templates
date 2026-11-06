@@ -66,7 +66,7 @@ def test_agents_shared_is_foundation() -> None:
 
 
 def test_claude_hook_is_foundation() -> None:
-    assert _level([".claude/hooks/pre_tool_security.py"]) == "foundation"
+    assert _level([".claude/hooks/post_tool_stage_gate.py"]) == "foundation"
 
 
 def test_claude_rules_is_foundation() -> None:

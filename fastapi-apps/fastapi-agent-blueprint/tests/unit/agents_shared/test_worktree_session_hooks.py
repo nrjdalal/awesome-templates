@@ -75,7 +75,7 @@ _CLAUDE_STOP = _STOP["claude"]
 
 # A sync-cosmetic file (ADR 047 D4): committed, so a worktree edit to it shows up
 # in `git diff` — the carve-out treats an *empty* diff as cosmetic.
-_COSMETIC_RULES = ".claude/rules/commands.md"
+_COSMETIC_RULES = ".claude/rules/project-overview.md"
 
 
 @dataclass(frozen=True)
@@ -173,7 +173,7 @@ def _run(
         env["HARNESS_STATE_ROOT"] = str(state_root)
     # The launcher would otherwise look for main/.venv and then try `uv run`.
     env["HARNESS_PYTHON_VENV"] = sys.executable
-    # The id the verify-log writer and the Stop cleanup share (verify_log.py).
+    # Stable identity for the active stage and token lifecycle.
     env["CLAUDE_CODE_HOST_SESSION_ID"] = "wt-session"
     return subprocess.run(  # noqa: S603
         argv,
@@ -289,50 +289,6 @@ def _write_token_marker(state_dir: Path, token: str) -> None:
         ),
         encoding="utf-8",
     )
-
-
-@pytest.mark.parametrize(
-    ("marker_tree", "reminded"), [("worktree", False), ("main", True)]
-)
-def test_verify_first_reads_the_worktrees_token_markers(
-    layout: DesktopLayout, marker_tree: str, reminded: bool
-) -> None:
-    """An [exploration] typed in the worktree session silences the reminder there,
-    and one left in main's state dir does not."""
-    root = layout.worktree if marker_tree == "worktree" else layout.main
-    _write_token_marker(root / ".claude" / "state", "exploration")
-
-    result = _run(
-        layout,
-        ["bash", ".claude/hooks/verify-first.sh"],
-        {
-            **_edit_payload(layout, "src/app/service.py"),
-            "hook_event_name": "PostToolUse",
-        },
-    )
-
-    assert result.returncode == 0, result.stderr
-    assert ("[verify-first]" in result.stdout) is reminded
-
-
-def test_verify_log_is_written_where_the_stop_hook_prunes_it(
-    layout: DesktopLayout,
-) -> None:
-    result = _run(
-        layout,
-        ["bash", ".claude/hooks/verify-log.sh"],
-        {
-            "session_id": "wt-session",
-            "cwd": str(layout.worktree),
-            "hook_event_name": "PostToolUse",
-            "tool_name": "Bash",
-            "tool_input": {"command": "uv run pytest tests/unit -q"},
-        },
-    )
-
-    assert result.returncode == 0, result.stderr
-    assert list((layout.worktree / ".claude" / "state").glob("verify-log-*.json"))
-    assert not (layout.main / ".claude" / "state").exists()
 
 
 def test_stop_consumes_the_worktrees_token_markers(layout: DesktopLayout) -> None:
@@ -586,45 +542,6 @@ def test_state_override_outranks_a_valid_worktree_cwd(
     assert not main_state.exists()
     assert not (layout.worktree / ".claude" / "state").exists()
     assert not (layout.main / ".claude" / "state").exists()
-
-
-def test_state_override_also_owns_verify_logs_and_stop_cleanup(
-    layout: DesktopLayout, tmp_path: Path
-) -> None:
-    """The writer and the Stop cleanup agree on the override with a real cwd;
-    main's and the worktree's markers and logs are not theirs to touch."""
-    override = tmp_path / "override"
-    old = time.time() - 3 * 86400
-    for root in (layout.main, layout.worktree, override):
-        state = root / ".claude" / "state"
-        _write_token_marker(state, "trivial")
-        stale = state / "verify-log-another-session.json"
-        stale.write_text("{}\n", encoding="utf-8")
-        os.utime(stale, (old, old))
-    payload: dict[str, object] = {
-        "session_id": "wt-session",
-        "cwd": str(layout.worktree),
-    }
-
-    logged = _run(
-        layout,
-        ["bash", ".claude/hooks/verify-log.sh"],
-        {**payload, "tool_name": "Bash", "tool_input": {"command": "pytest -q"}},
-        state_root=override,
-    )
-    stopped = _run(layout, _CLAUDE_STOP, payload, state_root=override)
-
-    assert logged.returncode == 0, logged.stderr
-    assert stopped.returncode == 0, stopped.stderr
-    override_state = override / ".claude" / "state"
-    assert (override_state / "verify-log-wt-session.json").exists()
-    assert not list(override_state.glob("exception-token-*.json"))
-    assert not (override_state / "verify-log-another-session.json").exists()
-    for root in (layout.main, layout.worktree):
-        state = root / ".claude" / "state"
-        assert list(state.glob("exception-token-*.json")), root
-        assert (state / "verify-log-another-session.json").exists(), root
-        assert not (state / "verify-log-wt-session.json").exists(), root
 
 
 # ---------------------------------------------------------------------------
@@ -921,3 +838,82 @@ def test_pr_lookup_runs_gh_in_the_given_tree(
     assert gate.pr_number_from_branch(tmp_path) == 425
     assert gate.pr_number_from_branch() == 425
     assert seen == [tmp_path, None]
+
+
+def test_state_override_owns_stop_marker_consumption_after_log_retirement(
+    layout: DesktopLayout, tmp_path: Path
+) -> None:
+    """Retiring command logs must not weaken override-scoped token cleanup."""
+    override = tmp_path / "override"
+    for root in (layout.main, layout.worktree, override):
+        _write_token_marker(root / ".claude/state", "trivial")
+    stopped = _run(
+        layout,
+        _CLAUDE_STOP,
+        {"session_id": "wt-session", "cwd": str(layout.worktree)},
+        state_root=override,
+    )
+    assert stopped.returncode == 0, stopped.stderr
+    assert not list((override / ".claude/state").glob("exception-token-*.json"))
+    for root in (layout.main, layout.worktree):
+        assert list((root / ".claude/state").glob("exception-token-*.json")), root
+
+
+@pytest.mark.parametrize("harness", ["codex", "antigravity"])
+@pytest.mark.parametrize(
+    "command,result_data,expected",
+    [
+        ("rg pytest docs/", {"exit_code": 0}, "pending"),
+        ("unrecognized-command", {"exit_code": 0}, "pending"),
+        ("pytest -q", {}, "pending"),
+        ("pytest -q", {"exit_code": 1}, "failed"),
+    ],
+)
+def test_real_outcome_recorder_rejects_names_and_unknown_results(
+    layout: DesktopLayout, harness: str, command: str, result_data: dict, expected: str
+) -> None:
+    target = layout.ledger(layout.worktree)
+    _write_ledger(
+        target, verification={"status": "pending", "changed_py_files": ["src/a.py"]}
+    )
+    before = target.read_bytes()
+    payload = {
+        "cwd": str(layout.worktree),
+        "tool_name": "Bash" if harness == "codex" else "run_shell_command",
+        "tool_input": {"command": command},
+        **result_data,
+    }
+    result = _run(
+        layout, ["sh", _LAUNCHER, f".{harness}/hooks/post-tool-format.py"], payload
+    )
+    assert result.returncode == 0, result.stderr
+    assert json.loads(target.read_text())["verification"]["status"] == expected
+    if expected == "pending":
+        assert target.read_bytes() == before
+    assert not layout.ledger(layout.main).exists()
+    assert not list(layout.worktree.glob(".*/state/verify-log-*.json"))
+
+
+def test_real_gemini_cancel_does_not_record_a_verify_verdict(
+    layout: DesktopLayout,
+) -> None:
+    target = layout.ledger(layout.worktree)
+    _write_ledger(
+        target, verification={"status": "pending", "changed_py_files": ["src/a.py"]}
+    )
+    before = target.read_bytes()
+    result = _run(
+        layout,
+        ["sh", _LAUNCHER, ".antigravity/hooks/post-tool-format.py"],
+        {
+            "cwd": str(layout.worktree),
+            "tool_name": "run_shell_command",
+            "tool_input": {"command": "pytest -q"},
+            "tool_response": {
+                "error": {"message": "Operation cancelled by user."},
+                "llmContent": "Output: partial",
+            },
+        },
+    )
+    assert result.returncode == 0, result.stderr
+    assert target.read_bytes() == before

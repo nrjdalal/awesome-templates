@@ -22,7 +22,6 @@ def test_antigravity_repo_local_harness_assets_exist() -> None:
         ".antigravity/hooks/user-prompt-submit.py",
         ".antigravity/hooks/pre-tool-security.py",
         ".antigravity/hooks/post-tool-format.py",
-        ".antigravity/hooks/verify_first.py",
         ".antigravity/hooks/completion_gate.py",
         ".antigravity/hooks/stop-sync-reminder.py",
     ]
@@ -76,7 +75,6 @@ def test_antigravity_hooks_import_shared_governor_policy() -> None:
     hook_files = [
         ".antigravity/hooks/user-prompt-submit.py",
         ".antigravity/hooks/pre-tool-security.py",
-        ".antigravity/hooks/verify_first.py",
         ".antigravity/hooks/completion_gate.py",
         ".antigravity/hooks/stop-sync-reminder.py",
     ]

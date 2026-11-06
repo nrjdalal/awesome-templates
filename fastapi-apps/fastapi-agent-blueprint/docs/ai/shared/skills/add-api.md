@@ -1,15 +1,7 @@
 # Add API Endpoint — Detailed Procedure
 
 ## Default Flow Position
-
-This skill participates in the [Default Coding Flow](../../../../AGENTS.md#default-coding-flow) at the **`implement`** step.
-
-`approach options` upstream is **conditionally mandatory**: required when the new endpoint introduces non-trivial response shape, cross-domain access, or a new validation pattern. Skip when the endpoint is a straightforward CRUD addition with existing DTOs.
-
-After implementation, route to:
-- `verify` — `/test-domain {name} run`
-- `self-review` — `/review-architecture {name}` only if you introduced new layer interactions
-- `completion gate` — `/sync-guidelines` if shared docs reference the new endpoint
+See [target-operating-model §1](../target-operating-model.md) — `add-api` routing.
 
 ## Analysis
 

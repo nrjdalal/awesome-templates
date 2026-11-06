@@ -102,3 +102,21 @@ Versioning is load-bearing because #185 shipped v1 into real ledgers before #257
 - [x] Right-sized: a single gitignored JSON file + advisory hooks, not an orchestration engine.
 - [x] A reader in 6 months learns why it is local+native (not superpowers), why versioned, why advisory-first.
 - [x] Honest about being retroactive (050 already consumes it) and about the enforcement gaps.
+
+## Amendment — ADR 060 (2026-11-06)
+
+[ADR 060](060-ticket-session-boundaries-and-review-packets.md) adopts native ticket
+briefs and fresh serial execution sessions. Issue/approved packet, PR and CI are
+durable evidence; the ledger is a local resume cache hydrated from the ticket.
+The explicit execute-plan boundary, existing stage gate, fail-open behavior and
+schema compatibility remain unchanged. This amends the handoff/authority model,
+not the historical implementation or runtime hooks.
+
+## Post-decision Update — 2026-11-06
+
+[ADR 061](061-retire-runtime-verify-and-content-heuristics.md) retires the
+verify-first reminder and command-log lifecycle, and replaces runtime content
+heuristics with the documented commit/review authorities. Existing token,
+marker, stage, shell-safety and active locale contracts remain. Actual supported
+verification outcomes remain in the local ledger; idle prompt-and-verification
+continuity is retained, while completed cache is not framed as a resumed session.

@@ -12,7 +12,11 @@ V1 validates block shape only:
   (``` ``` ``` or ``~~~``) are skipped.
 - Each non-blank line in the block matches ``- <field>: <value>`` with single
   spaces.
-- All 10 fields present, in declared order, no extras, no duplicates.
+- All 10 fields present, in declared order, no extras, no duplicates, when
+  ``trigger: yes``. A ``trigger: no`` footer only declares the trigger: the
+  remaining lines are optional and not validated, matching the PR template
+  guidance. ``--require-governor-footer`` still rejects ``trigger: no`` on a
+  governor-changing change set.
 - Enum vocabularies for ``trigger`` and ``final-verdict`` match exactly.
 - Integer fields parse as non-negative ints; ``rounds: 0`` is rejected when
   ``trigger: yes``.
@@ -251,6 +255,13 @@ def parse_footer(
         fields[field] = (lineno, value)
         seen_order.append(field)
         violations.extend(_validate_value(field, value, lineno, source))
+
+    trigger = fields.get("trigger")
+    if trigger is not None and trigger[1] == "no":
+        # Non-governor footer: only the trigger line is meaningful, so an
+        # untouched template default does not fail. check_body still rejects
+        # `trigger: no` when the change set is governor-changing.
+        return fields, []
 
     expected = list(FIELD_ORDER)
     missing = [f for f in expected if f not in fields]

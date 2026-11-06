@@ -75,7 +75,7 @@ Codex's repository workflow layer is split across:
 Recommended verification flow:
 1. Trust the project in Codex.
 2. Run `codex mcp list` and `codex mcp get context7`.
-3. Run `codex debug prompt-input -c 'project_doc_max_bytes=400' "healthcheck" | rg "Shared Collaboration Rules|AGENTS\\.md"` and confirm `AGENTS.md` is included in the prompt input.
+3. Run `codex debug prompt-input -c 'project_doc_max_bytes=32768' "healthcheck" | rg -o '## Drift Management'` and confirm the tail of `AGENTS.md` is included in the prompt input. The default 32 KiB cap truncates silently, so assert the final `Drift Management` section rather than a head marker; the probe explicitly tests the default 32 KiB budget while repository config provides a 64 KiB fallback.
 4. Use `codex -p research` or `codex --search` only when live web search is actually required.
 5. Treat Codex memories as personal/session optimization only, not as team-shared governance.
 

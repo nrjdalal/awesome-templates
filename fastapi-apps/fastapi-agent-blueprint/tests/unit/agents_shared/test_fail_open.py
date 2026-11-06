@@ -13,7 +13,7 @@ Three tiers:
 
 # The harness hook modules here are loaded *by path* under harness-qualified
 # aliases, because the same basenames exist in `.claude/hooks`, `.codex/hooks` and
-# `.antigravity/hooks` — `import verify_first` names three files and `sys.modules`
+# `.antigravity/hooks` — `import completion_gate` names three files and `sys.modules`
 # picks one (#401). The suppressions this comment used to explain are gone with the
 # bare imports that needed them.
 from __future__ import annotations
@@ -30,13 +30,11 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parents[3]
 CLAUDE_HOOKS = [
     REPO_ROOT / ".claude" / "hooks" / "user_prompt_submit.py",
-    REPO_ROOT / ".claude" / "hooks" / "verify_first.py",
     REPO_ROOT / ".claude" / "hooks" / "completion_gate.py",
     REPO_ROOT / ".claude" / "hooks" / "post_tool_stage_gate.py",
 ]
 CODEX_HOOKS = [
     REPO_ROOT / ".codex" / "hooks" / "user-prompt-submit.py",
-    REPO_ROOT / ".codex" / "hooks" / "verify_first.py",
     REPO_ROOT / ".codex" / "hooks" / "completion_gate.py",
 ]
 
@@ -44,8 +42,8 @@ CODEX_HOOKS = [
 def _load_claude_hook(stem: str):
     """Load a Claude hook by path, under a harness-qualified alias.
 
-    `verify_first` and `completion_gate` exist in all three harness directories,
-    so `import verify_first` names three files and `sys.modules` picks one. The
+    `completion_gate` exists in all three harness directories,
+    so `import completion_gate` names three files and `sys.modules` picks one. The
     tier-2 tests below used to guard against that with `sys.modules.pop(...)`
     plus a `sys.path` insert, which does work — measured — but only while every
     future test remembers both halves. Loading by path removes the bare key from
@@ -153,38 +151,9 @@ def test_tier2_function_call_import_error_returns_safe_default(
 
 
 # ---------------------------------------------------------------------------
-# Tier 2 supplement (R1-B.1) — verify_first / completion_gate entry points
+# Tier 2 supplement (R1-B.1) — completion_gate entry points
 # also degrade safely when the shared module raises at attribute lookup.
 # ---------------------------------------------------------------------------
-def test_tier2_verify_first_read_latest_token_marker_safe_default(
-    monkeypatch, tmp_path
-) -> None:
-    """Claude verify_first.read_latest_token_marker must return None when
-    the shared reader raises rather than propagating to the Stop hook."""
-
-    sys.path.insert(0, str(REPO_ROOT / ".claude" / "hooks"))
-    try:
-        vf = _load_claude_hook("verify_first")
-
-        def boom(*_args, **_kwargs):
-            raise ImportError("simulated shared reader failure")
-
-        monkeypatch.setattr(vf, "read_latest_token", boom)
-        # Tier 2 contract: hook helpers do not propagate exceptions.
-        # Drive the degraded path explicitly via _SHARED_OK=False.
-        monkeypatch.setattr(vf, "_SHARED_OK", False)
-        # read_latest_token_marker must surface the degraded state as None.
-        assert vf.read_latest_token_marker(tmp_path) is None
-        # should_remind must complete WITHOUT raising; the boolean it
-        # returns is decided by the existing verify-first decision tree
-        # (no marker → not exploration → reminder fires) and is not the
-        # invariant under test here. The invariant is "no propagation".
-        payload = {"tool_input": {"file_path": "src/foo.py"}}
-        result = vf.should_remind(payload, state_dir=tmp_path)
-        assert isinstance(result, bool)
-    finally:
-        sys.path.pop(0)
-        sys.modules.pop("claude_verify_first", None)
 
 
 def test_tier2_completion_gate_entry_points_safe_default(monkeypatch, tmp_path) -> None:

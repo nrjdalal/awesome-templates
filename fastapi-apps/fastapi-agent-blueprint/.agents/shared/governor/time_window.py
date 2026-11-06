@@ -2,7 +2,7 @@
 
 Single source of truth for the ``_within_24h`` helper that Phase 2/3/4
 hook scripts duplicated across four sites
-(``.{claude,codex}/hooks/{verify_first,completion_gate}.py``).
+(``.{claude,codex}/hooks/completion_gate.py``).
 
 Behaviour invariance contract (HC-5.1): identical input must produce
 identical output to the pre-Phase-5 implementations. The body therefore

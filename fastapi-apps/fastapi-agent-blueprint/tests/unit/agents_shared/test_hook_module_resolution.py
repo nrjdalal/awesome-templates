@@ -1,34 +1,8 @@
 """A test must load the harness copy its name claims (#401).
 
-Eight hook basenames exist in more than one harness directory — `verify_first.py`
-and `completion_gate.py` in all three — so `import verify_first` after a
-`sys.path.insert` is ambiguous, and `sys.modules` decides it. The suite leaves
-those keys pointing at the Codex copies:
-
-    verify_first     -> .codex/hooks/verify_first.py
-    completion_gate  -> .codex/hooks/completion_gate.py
-
-**No test was getting the wrong copy.** #401 was filed claiming they were, on a
-misreading — the end state of `sys.modules` is not what an earlier test received —
-and the tier-2 tests in `test_fail_open.py` had guarded themselves with a
-`sys.modules.pop` plus `sys.path[0]`. What was missing is that nothing said so and
-nothing enforced it: the next test to import a colliding basename without both
-halves gets whichever copy is cached, and would pass while exercising another
-harness. The two copies of `verify_first.py` differ by 228 lines.
-
-**The pollution is not the tests' fault and cannot be fixed by renaming.** The hook
-files import their own siblings by bare name — `.codex/hooks/completion_gate.py`
-does `import _shared` and `import verify_first` — which is correct for a standalone
-hook process, where one harness directory is on `sys.path`. It only collides inside
-a shared pytest process that loads more than one harness's copies. So the invariant
-this file pins is the one a test *can* control: load by path, never by bare name.
-
-Two tests, in the order they matter:
-
-1. No test in this directory imports a colliding harness basename. That is the
-   structural rule; the AST check cannot be satisfied by accident.
-2. The tier-2 fail-open tests actually receive `.claude/hooks` modules. That is the
-   behaviour the rule exists to protect, checked directly rather than inferred.
+Completion-gate and _shared basenames still exist in several harnesses after
+ADR 061 retires verify-first. Pin path-based loading and actual Claude module
+resolution so a cached bare key cannot silently substitute another harness.
 """
 
 from __future__ import annotations
@@ -84,15 +58,15 @@ def test_more_than_one_harness_copy_exists() -> None:
     """The precondition. If this ever fails the rest of the file is moot."""
     colliding = _colliding_basenames()
 
-    assert "verify_first" in colliding, (
-        "verify_first no longer exists in multiple harness directories — if the "
+    assert "completion_gate" in colliding, (
+        "completion_gate no longer exists in multiple harness directories — if the "
         "copies were consolidated, this whole file can go"
     )
     assert len(colliding) >= 2, f"expected several colliding basenames, got {colliding}"
 
 
 def test_no_test_imports_a_colliding_harness_module_by_name() -> None:
-    """`import verify_first` cannot say which copy it means.
+    """A bare completion-gate import cannot identify a harness.
 
     Checked by AST rather than by grep, so a mention inside a docstring or a
     subprocess script string — both of which exist in this directory and are
@@ -118,14 +92,12 @@ def test_no_test_imports_a_colliding_harness_module_by_name() -> None:
     assert not offenders, (
         "these imports name a module that exists in more than one harness copy, so "
         f"`sys.modules` decides which one arrives: {offenders}. Load it by path "
-        "instead — `importlib.util.spec_from_file_location('claude_verify_first', "
+        "instead — `importlib.util.spec_from_file_location('claude_completion_gate', "
         "path)` — which is what the rest of this directory already does."
     )
 
 
-@pytest.mark.parametrize(
-    "stem", ["user_prompt_submit", "verify_first", "completion_gate"]
-)
+@pytest.mark.parametrize("stem", ["user_prompt_submit", "completion_gate"])
 def test_claude_hooks_load_from_the_claude_directory(stem: str) -> None:
     """The behaviour the rule protects, for the three modules tier 2 exercises.
 

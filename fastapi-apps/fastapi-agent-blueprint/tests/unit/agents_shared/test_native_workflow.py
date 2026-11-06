@@ -15,6 +15,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import yaml
+
 REPO_ROOT = Path(__file__).resolve().parents[3]
 SHARED_SKILLS = REPO_ROOT / "docs" / "ai" / "shared" / "skills"
 CLAUDE_SKILLS = REPO_ROOT / ".claude" / "skills"
@@ -248,3 +250,63 @@ def test_codex_stop_hook_refreshes_work_ledger_before_building_segments() -> Non
         "Codex Stop hook must refresh work-ledger verification state before "
         "building native workflow advisory segments."
     )
+
+
+def test_skill_routing_has_one_canonical_table_and_three_compact_pointers() -> None:
+    """Routing compaction must preserve every skill and the seven local guards."""
+    import re
+
+    model = REPO_ROOT / "docs/ai/shared/target-operating-model.md"
+    table = _text(model).split("| Skill | Step(s) |", 1)[1].split("\n## §2", 1)[0]
+    table = table.split("\n\n", 1)[0]
+    names = set(re.findall(r"^\| `([^`]+)` \|", table, re.MULTILINE))
+    guarded = {
+        "plan-feature",
+        "review-pr",
+        "review-architecture",
+        "security-review",
+        "sync-guidelines",
+        "fix-bug",
+        "onboard",
+    }
+    shared_names = {path.stem for path in SHARED_SKILLS.glob("*.md")}
+    assert names == shared_names
+    for wrappers in (CLAUDE_SKILLS, CODEX_SKILLS):
+        assert {path.parent.name for path in wrappers.glob("*/SKILL.md")} == names
+    for name in sorted(names):
+        for path in (
+            SHARED_SKILLS / f"{name}.md",
+            CLAUDE_SKILLS / name / "SKILL.md",
+            CODEX_SKILLS / name / "SKILL.md",
+        ):
+            section = _text(path).split("## Default Flow Position\n", 1)[1]
+            section = section.split("\n## ", 1)[0].strip().splitlines()
+            assert len(section) == (2 if name in guarded else 1), path
+            target = re.search(r"\]\(([^)]+)\)", section[0])
+            assert target is not None, path
+            assert (path.parent / target.group(1)).resolve() == model.resolve(), path
+            assert f"`{name}` routing" in section[0], path
+            if name in guarded:
+                assert section[1].startswith("Recursion guard:"), path
+
+
+def test_user_only_skill_registration_preserves_vendor_specific_policies() -> None:
+    """On-demand investigations stay explicit; legacy Codex policies stay as shipped."""
+    claude_user_only = set()
+    for wrapper in CLAUDE_SKILLS.glob("*/SKILL.md"):
+        frontmatter = yaml.safe_load(_text(wrapper).split("---", 2)[1])
+        if frontmatter.get("disable-model-invocation") is True:
+            claude_user_only.add(wrapper.parent.name)
+    assert claude_user_only == {"sync-guidelines", "migrate-domain", "trace", "why"}
+    for name in ("trace", "why"):
+        frontmatter = yaml.safe_load(
+            _text(CLAUDE_SKILLS / name / "SKILL.md").split("---", 2)[1]
+        )
+        assert frontmatter["context"] == "fork"
+        assert frontmatter["agent"] == "Explore"
+        policy = yaml.safe_load(_text(CODEX_SKILLS / name / "agents" / "openai.yaml"))
+        assert policy["policy"]["allow_implicit_invocation"] is False
+    # These two legacy skills are explicit-only in Claude, but have no Codex
+    # invocation-policy override. B6/#427 must not silently change that policy.
+    for name in ("sync-guidelines", "migrate-domain"):
+        assert not (CODEX_SKILLS / name / "agents" / "openai.yaml").exists()

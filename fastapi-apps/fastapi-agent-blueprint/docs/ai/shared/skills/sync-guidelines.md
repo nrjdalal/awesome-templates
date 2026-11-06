@@ -1,18 +1,16 @@
 # Guideline Synchronization Quality Gate
 
 ## Default Flow Position
+See [target-operating-model §1](../target-operating-model.md) — `sync-guidelines` routing.
+Recursion guard: Do not invoke this skill recursively or invoke plan-feature from inside it.
 
-This skill participates in the [Default Coding Flow](../../../../AGENTS.md#default-coding-flow) at the **`completion gate`** step (or as a follow-up to `self-review` when drift is detected).
+## PR packaging
 
-It is invoked when any of:
-- A `self-review` skill (`/review-architecture`, `/security-review`, `/review-pr`) reported `Drift Candidates` or `Sync Required: true`.
-- The change touched shared rule sources (`AGENTS.md`, `docs/ai/shared/`, `.claude/rules/`, `.codex/rules/`, `.antigravity/rules/`, `.gemini/`, ADRs).
-- An ADR was created or amended in the session.
-
-Recursion guard: do **not** invoke `/sync-guidelines` recursively from within itself, and do not invoke `/plan-feature` from inside this skill. This skill is the closure step of the flow; it does not re-enter the flow.
-
-Use this skill to close the documentation and workflow side of the quality gate
-after architecture, security, or workflow changes.
+Default to integrating triggered sync into the feature PR before final review;
+standalone sync PRs are reserved for release audits or independently discovered
+post-merge drift. Sync checks and drift closure are unchanged. Run the merged-PR
+Footer history audit (drift-checklist §1D) at release; a feature PR checks its own
+Footer and changed rules. See [ticket-workflow](../ticket-workflow.md).
 
 ## Operating Modes
 
@@ -79,7 +77,12 @@ language.
 
 ## Phase 1: Reconcile Drift Candidates with Code and References
 
-Process incoming drift first.
+Process incoming drift first. Reconcile [ADR decision evidence](../adr-evidence.md)
+with current code and dependent references. Identify durable choices needing a
+record or explicit successor; ordinary edits stay in PR/CHANGELOG. A contradiction
+between code and a decision requires evidence and a REVIEW disposition, not an
+automatic rewrite of history or a new permission grant. Include that reconciliation
+in the existing Input Drift Candidates / AUTO-FIX / REVIEW / Remaining fields.
 
 - verify whether each candidate is still real
 - promote still-valid candidates into `AUTO-FIX` or `REVIEW`
@@ -110,7 +113,11 @@ Before closing:
 - verify Antigravity assets reference shared skills and governor policy instead
   of copying shared procedure text
 - verify shared procedures do not contain tool-specific instructions
-- **`project-status.md` table hygiene**: count rows in the `Recent Major Changes` table; if row count exceeds 15, flag for archival; scan cells for multi-line content that would break markdown table rendering; when a new version ships, archive pre-release rows to `docs/history/archive/project-status/` following the PR-B.1 pattern
+- **Compact sync headers**: use `> Last synced: YYYY-MM-DD via <reference>` (at most 200 UTF-8 bytes); never append narrative or `Prior:` chains. The one-off sync-log migration does not authorise per-PR archive writes.
+- **Optional-infra projections**: behaviour (toggles, env vars, dispatch semantics) has one home in the shared constitution plus its operations runbook; tool projections carry one-line pointers only.
+- **`project-status.md` table hygiene**: each data row must be <= 300 UTF-8 bytes (including pipes, all cells, and links), with a single-sentence impact; narrative belongs in `CHANGELOG.md [Unreleased]` and the PR body, never a per-PR archive write; count rows in the `Recent Major Changes` table; if row count exceeds 15, flag for archival; scan cells for multi-line content that would break markdown table rendering; when a new version ships, archive pre-release rows to `docs/history/archive/project-status/` following the PR-B.1 pattern
+- Canonical shared rules and live code govern every tool. Claude projections may be path-scoped: inspect relevant projection content when reviewing its consistency, even if it is not visible. Tool-neutral procedures do not require private tool projections for unrelated work; wrappers supply tool-specific source guidance.
+
 
 Emit the full sync contract and clearly state whether the quality gate is closed
 or waiting on review follow-up.
@@ -175,7 +182,7 @@ Sources Loaded
 - docs/ai/shared/drift-checklist.md
 - docs/ai/shared/governor-paths.md
 - docs/ai/shared/harness-asset-matrix.md
-- docs/ai/shared/repo-facts.md
+- docs/ai/shared/commands.md (when the command surface changed; historical repo-facts is not a required source)
 - Affected shared procedures, wrappers, checklists, and harness docs
 
 Review Angles
@@ -184,7 +191,9 @@ Review Angles
 2. Shared-source consistency: do AGENTS.md, shared docs, wrappers, and harness
    docs agree without re-declaring governor-path globs?
 3. Hybrid C parity: do shared procedures and both wrapper families point to the
-   same canonical source without duplicating bodies?
+   same canonical source without duplicating bodies? Does the active wrapper load
+   relevant scoped projections when checking projection drift, without assuming
+   they are present or requiring them for unrelated tool-neutral work?
 4. Volatile facts: are file existence, path lists, index rows, and changed
    surfaces verified from current repository state?
 5. Closure discipline: are AUTO-FIX, REVIEW, Remaining, and Next Actions
@@ -235,3 +244,7 @@ below and surface any findings as R-points with the same closure categories
 **Language Policy**
 - [ ] Any Tier 1 file modified contains only English prose (bilingual escape
   tokens and `LOCALE_DATA_FILES` are the two narrow exceptions).
+
+Context-budget gate: run `uv run python tools/check_context_budget.py` after sync.
+The blocking hook enforces byte limits previously checked by eye. Sync dates equal
+the last content change; do not touch a file whose content did not change.

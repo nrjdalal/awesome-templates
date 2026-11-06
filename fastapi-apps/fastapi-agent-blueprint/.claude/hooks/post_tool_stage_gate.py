@@ -6,7 +6,7 @@ the documented model-visible, non-blocking PostToolUse channel (plain
 stderr on exit 0 reaches only the user transcript; see ADR 050 D3).
 
 Module-level invariants (Plan §D3 fail-open redesign, mirrors
-``verify_first.py``):
+``completion_gate.py``):
     * No top-level ``sys.exit`` / ``raise SystemExit``.
     * Shared import failure → ``_SHARED_OK = False``; ``main()`` returns 0
       silently (HC-5.5).

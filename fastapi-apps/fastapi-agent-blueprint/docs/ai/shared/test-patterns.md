@@ -145,29 +145,27 @@ def test_searchable_fields_configured():
 
 ## Harness Hook Tests — `tests/unit/agents_shared/`
 
-**Load a harness hook by path, never by basename.** Eight hook filenames exist in
-more than one harness directory — `verify_first.py` and `completion_gate.py` in all
-three — so `import verify_first` names three files and `sys.modules` decides which
-one arrives:
+**Load a harness hook by path, never by basename.** `completion_gate.py` and
+`_shared.py` still exist in multiple harness directories after ADR 061 retires
+verify-first. A bare module name lets `sys.modules` decide which copy arrives:
 
 ```python
 # wrong: which copy this is depends on what ran first
 sys.path.insert(0, str(REPO_ROOT / ".claude" / "hooks"))
-import verify_first as vf
+import completion_gate as gate
 
 # right: the alias says which harness, and the path settles it
-spec = importlib.util.spec_from_file_location("claude_verify_first", path)
+spec = importlib.util.spec_from_file_location("claude_completion_gate", path)
 assert spec is not None and spec.loader is not None
 module = importlib.util.module_from_spec(spec)
-sys.modules["claude_verify_first"] = module
+sys.modules["claude_completion_gate"] = module
 spec.loader.exec_module(module)
 ```
 
 Three properties make this the rule rather than a preference:
 
 - **The pollution cannot be fixed on the test side.** The hook files import their own
-  siblings by bare name (`.codex/hooks/completion_gate.py` does `import _shared` and
-  `import verify_first`), which is correct for a standalone hook process where one
+  siblings by bare name (`.codex/hooks/completion_gate.py` imports `_shared`), which is correct for a standalone hook process where one
   harness directory is on `sys.path`. It only collides inside a shared pytest
   process, so tests have to be the ones that stop relying on the bare key.
 - **A `sys.modules.pop(...)` + `sys.path.insert(0, …)` pair does work** — that is
@@ -186,7 +184,7 @@ while the real loader regressed to a dynamic `importlib.import_module(name)`, wh
 no AST rule can see.
 
 If a double must temporarily occupy a bare name (the Codex `completion_gate` does
-`from verify_first import …` at import time, so its dependency has to be installed
+`from _shared import …` at import time, so its dependency has to be installed
 under the canonical name first), save the previous binding and restore it in a
 `finally` — see `test_locale.py::_load_codex_completion_gate`.
 

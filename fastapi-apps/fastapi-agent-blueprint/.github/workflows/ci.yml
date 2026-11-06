@@ -313,6 +313,7 @@ jobs:
       - name: Install pre-commit
         run: uv run pre-commit install
 
+      # Includes the generated harness-inventory gate (ADR 062).
       - name: Run architecture checks
         run: uv run pre-commit run --all-files
 

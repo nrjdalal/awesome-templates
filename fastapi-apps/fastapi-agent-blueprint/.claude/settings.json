@@ -26,15 +26,6 @@
     ],
     "PreToolUse": [
       {
-        "matcher": "Edit|Write|Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash .claude/hooks/pre-tool-security.sh"
-          }
-        ]
-      },
-      {
         "matcher": "Edit|Write",
         "hooks": [
           {
@@ -54,20 +45,7 @@
           },
           {
             "type": "command",
-            "command": "bash .claude/hooks/verify-first.sh"
-          },
-          {
-            "type": "command",
             "command": "bash .claude/hooks/stage-gate.sh"
-          }
-        ]
-      },
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash .claude/hooks/verify-log.sh"
           }
         ]
       }

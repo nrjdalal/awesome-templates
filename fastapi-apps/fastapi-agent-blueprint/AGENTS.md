@@ -19,20 +19,17 @@ Tool-specific harness files must reference this document instead of duplicating 
 Issue #117 introduced a hybrid local process governor. The four documents below, indexed from [ADR 045](docs/history/045-hybrid-harness-target-architecture.md), define how default coding work is routed:
 
 - [`docs/history/045-hybrid-harness-target-architecture.md`](docs/history/045-hybrid-harness-target-architecture.md) — top-level decisions + design-question resolutions
-- [`docs/ai/shared/harness-asset-matrix.md`](docs/ai/shared/harness-asset-matrix.md) — living inventory of every harness asset and its bucket (Keep / Replace / Overlay / Drop)
+- [`docs/ai/shared/harness-asset-matrix.md`](docs/ai/shared/harness-asset-matrix.md) — navigator over the generated harness inventory and reviewed path-to-bucket map (Keep / Replace / Overlay / Drop)
 - [`docs/ai/shared/target-operating-model.md`](docs/ai/shared/target-operating-model.md) — the target workflow, exception model, Claude/Codex/Antigravity alignment, and sample-workflow traces
-- [`docs/ai/shared/migration-strategy.md`](docs/ai/shared/migration-strategy.md) — phased migration plan, rollback rules, and the asset-move ordering
+- [Historical migration plan](docs/history/archive/harness-context/migration-strategy.md) — shipped phases, rollback record, and original asset-move ordering
 
 ### Hybrid Harness v1 status
 
-- **Phase 5 shipped** (#124 — 2026-05-03; extended to Antigravity on 2026-07-09): governor *policy* consolidated into [`.agents/shared/governor/`](.agents/shared/governor/); Claude / Codex / Antigravity hook scripts are thin shims enforced by `tests/unit/agents_shared/test_governor_boundary.py`; future governor changes must go into the shared package, not per-tool inline copies.
-- **[ADR 047](docs/history/047-governor-review-provenance-consolidation.md) / [ADR 048](docs/history/048-independent-review-generalization.md) steady state**: independent review provenance lives in the PR description `## Governor Footer` block (CI-linted); durable governance constraints promoted to ADR Consequences (`ADR{NNN}-G{N}` slots); `governor-review-log/` archive frozen as closed historical record.
-- **Permanent governance model**: escape-token vocabulary, tool-specific adapters, and scope-of-impact-driven independent review remain permanent (target-operating-model §3 / §7).
+Change governor policy in [`.agents/shared/governor/`](.agents/shared/governor/), never in tool-hook shims. [ADR 047](docs/history/047-governor-review-provenance-consolidation.md) / [ADR 048](docs/history/048-independent-review-generalization.md) define permanent review governance; see [target-operating-model §3 / §7](docs/ai/shared/target-operating-model.md).
 
 ## Project Scale
 
-This project is an AI Agent Backend Platform targeting enterprise-grade services with 10+ domains and 5+ team members.
-All proposals and designs must consider scalability, maintainability, and team collaboration at this scale.
+Design this enterprise AI Agent Backend Platform for 10+ domains and 5+ team members: scalability, maintainability, and team collaboration are required.
 
 ## Absolute Prohibitions
 
@@ -73,85 +70,69 @@ Enforcement: (1) pre-commit `tier1-language-policy`; (2) CI `architecture` job; 
 
 ## Default Coding Flow
 
-> Source of truth: [ADR 045](docs/history/045-hybrid-harness-target-architecture.md) + [`docs/ai/shared/target-operating-model.md`](docs/ai/shared/target-operating-model.md). Edit those first, then sync this section via `/sync-guidelines`.
-
-Coding work proceeds through seven steps by default. Mandatory-by-default steps must be either performed or explicitly skipped via an escape token (see below). Other steps are conditional.
+> Canonical detail: [ADR 045](docs/history/045-hybrid-harness-target-architecture.md) + [target-operating-model.md](docs/ai/shared/target-operating-model.md) (§1 steps, §2 mandatory work, §3 exceptions, §7 review). Edit those first, then sync this summary via `/sync-guidelines`.
 
 ```
 problem framing → approach options → plan → implement
                 → verify → self-review → completion gate
 ```
 
-Mandatory-by-default for implementation-class work: `framing`, `plan`, `verify`, `self-review`.
-Conditionally mandatory (architecture commitment present): `approach options`.
-Mandatory-by-default; non-blocking reminder via Phase 4 hook + Governor Footer Lint CI: `completion gate`.
+Implementation-class work requires `framing`, `plan`, `verify`, and `self-review` by default; architecture commitments also require `approach options`. `completion gate` is mandatory by default (non-blocking Phase 4 reminder + Governor Footer Lint CI). Only allowed escapes skip mandatory steps.
 
 ### Precedence
 
-The Default Coding Flow ranks **below** the following four layers, in this order:
+Default Flow and escape tokens rank below these layers, in order:
 
-1. Active sandbox / approval policy / explicit user scope (e.g. read-only, review-only)
+1. Active sandbox / approval policy / explicit user scope (including read-only)
 2. `.codex/rules/*` prefix rules (`forbidden` / `prompt`)
 3. Safety hooks (security checks, destructive-command guards)
-4. `## Absolute Prohibitions` (this document)
-
-Escape tokens never override any of these four layers; they only reduce process burden inside the Default Coding Flow itself.
+4. This document's Absolute Prohibitions
 
 ### Exception Tokens
 
-A prompt may opt out of mandatory-by-default steps by carrying a leading exception token on its first line. Tokens are recognised after NFKC normalisation, case-insensitive, only as the leading bracketed token followed by whitespace or end-of-line.
+Only a leading bracketed token on prompt line 1 followed by whitespace or end-of-line is recognised, after NFKC normalisation, case-insensitively.
 
 | Token (English) | Token (Korean) | Meaning |
 |---|---|---|
-| `[trivial]` | `[자명]` | Self-evident change (typo, comment, rename); skip framing / approach / plan |
-| `[hotfix]` | `[긴급]` | Urgent fix; skip approach options; verify still required |
+| `[trivial]` | `[자명]` | Self-evident change; skip framing / approach / plan |
+| `[hotfix]` | `[긴급]` | Urgent fix; skip approach options; verify and self-review remain required |
 | `[exploration]` | `[탐색]` | Read-only investigation or spike; nothing produces a commit |
 
 Recognition regex: `^\s*\[(trivial|hotfix|exploration|자명|긴급|탐색)\](?:\s|$)`.
 
-> The bilingual entries above (`[자명]`, `[긴급]`, `[탐색]`) and the locale-data carve-out (§ Language Policy → Exemptions → `LOCALE_DATA_FILES`) are the two narrowly-scoped exceptions to § Language Policy. The bilingual entries are machine-parseable and pinned by the regex; the per-file allowlist in `tools/check_language_policy.py` keeps Korean token references scoped to the files that legitimately need them.
+The bilingual literals are the narrowly-scoped Language Policy token exception. The next commit message must record the escape rationale.
 
-Use of an exception token carries a follow-up obligation: the next commit message must record the rationale (one line is enough).
-
-Auto-escapes (no token required): `changed_files == 0`, *general* doc-only changes, comment-only changes.
-
-> **Doc-only carve-out** (Pillar 3 / Codex review R8 — added to prevent governance loosening). The doc-only auto-escape applies only to **general docs** such as `README.md`, `CHANGELOG.md`, contributor guides, and `docs/` content that is not policy or harness governance. The auto-escape does **not** apply to any path classified under Tier A of [`docs/ai/shared/governor-paths.md`](docs/ai/shared/governor-paths.md). Such changes go through normal `framing` → `plan` → `verify` → `self-review` even though they look doc-only, because they redefine the rules of the system.
+Auto-escapes: `changed_files == 0`, general doc-only changes, comment-only changes. **Doc-only carve-out:** Tier A policy / harness governance paths in [governor-paths.md](docs/ai/shared/governor-paths.md) still require framing → plan → verify → self-review; only general docs qualify for the doc-only escape.
 
 ### Mid-Task Scope Expansion (ADR 050)
 
-The flow is evaluated **per unit of implementation-class work, not per prompt**. Discovering mid-execution that a needed capability does not exist is new implementation-class work: **stop → report the gap → route to `/plan-feature` / `$plan-feature`** before any implementation edit for the new capability. The test: is the change required by the approved plan's success criteria, or is it a capability the plan never mentioned? Exception tokens cover same-scope work only. Canonical text: [`target-operating-model.md` §2](docs/ai/shared/target-operating-model.md) → "Mid-Task Scope Expansion"; runtime nudge: advisory stage-gate hook ([ADR 050](docs/history/050-midtask-scope-expansion-gate.md)).
+Evaluate the flow per unit of implementation-class work, not per prompt. A capability absent from the approved plan requires **stop → report the gap → route to `/plan-feature` / `$plan-feature`** before implementing it. Work required by the approved success criteria remains in scope; tokens cover same-scope work only. See [target-operating-model.md §2](docs/ai/shared/target-operating-model.md#mid-task-scope-expansion-adr-050) for the test and advisory adapters.
 
 ### Plan→Execute Boundary (ADR 054)
 
-`/plan-feature` (`$plan-feature`) **ends at the approved Execution Packet — it does not implement.** Beginning implementation is a separate, explicit step: invoke `/execute-plan` (`$execute-plan`), which advances the ledger to `executing` and routes to the implement skills internally, or authorise a single self-evident follow-up with a `[trivial]`/`[hotfix]` token (a bare verbal go-ahead does not release the block). Never auto-continue from planning into edits in the same turn. Enforced by a sibling stage-gate keyed to `workflow.stage == "planned"` (disjoint from the ADR 050 set), with **asymmetric strength**: on **Claude** a `PreToolUse Edit|Write` **hard block** (`pre_tool_stage_block.py`, exit 2) for `.py` under `src/`/`examples/`; on **Codex** a Stop-time advisory (`plan_execute_segment`) since Codex has no `PreToolUse`. Release by invoking `/execute-plan` (advances the stage to `executing`) or a `[trivial]`/`[hotfix]` token. Best-effort by fail-open — never fail-closed; ranks below the four precedence layers in the § Precedence table above. Canonical text: [`target-operating-model.md` §2](docs/ai/shared/target-operating-model.md) → "Plan→Execute Boundary" ([ADR 054](docs/history/054-plan-execute-boundary-hard-gate.md)).
+`/plan-feature` / `$plan-feature` stops at the approved Execution Packet. Never auto-implement in the same turn: separately invoke `/execute-plan` / `$execute-plan` (ledger → `executing`), or use `[trivial]`/`[hotfix]` for a single self-evident follow-up. A bare go-ahead does not release the boundary. Claude blocks before edits; Codex advises at Stop. The gate is fail-open and below the four precedence layers. Details: [target-operating-model.md §2](docs/ai/shared/target-operating-model.md#planexecute-boundary-adr-054).
 
 ### Self-Review Step — Independent Review Trigger (Pillar 2)
 
-`self-review` is mandatory by default. When the change touches any path classified under **Tier A or Tier B (or Tier C)** of [`docs/ai/shared/governor-paths.md`](docs/ai/shared/governor-paths.md) — and is not entirely covered by an exclusion in the same file — `self-review` must include an **independent review** as a mandatory sub-step.
+Self-review is mandatory. Changes touching Tier A, B, or C in [governor-paths.md](docs/ai/shared/governor-paths.md), unless entirely covered by an exclusion, must include independent review. Non-governor changes are exempt from the governor requirement. Implementation tickets separately default to a one-round P0/P1 precision-filter pre-review; see [ticket workflow](docs/ai/shared/ticket-workflow.md) and [review protocol](docs/ai/shared/review-protocol.md#ticket-precision-filter-mode-adr-060) (ADR 060).
 
-**Independent review modes (one is sufficient; record the mode in the footer's `reviewer` field):**
+Use one mode and record `reviewer`:
 
-| Mode | When to use | `reviewer` field value |
-|---|---|---|
-| `cross-tool` | Another AI tool (e.g. `codex exec --sandbox read-only "<review prompt>"`, escalating model/effort only when warranted) reads the change set | `codex-cli`, `claude-code`, or tool name |
-| `self-structured` | Single-tool environment — apply the structured self-review checklist in `docs/ai/shared/skills/review-pr.md` § "Self-Structured Review Checklist"; include a checklist evidence summary (checked items and any deferred rationale) in the PR body | `self-structured` |
-| `human` | A human reviewer (not the PR author) reviews the governor-changing surface | `human:<github-handle>` |
+- `cross-tool`: another AI tool reads the change set (`codex-cli`, `claude-code`, or tool name).
+- `self-structured`: in a single-tool environment, apply the [Self-Structured Review Checklist](docs/ai/shared/skills/review-pr.md#self-structured-review-checklist) and include checklist evidence / deferred rationale in the PR body.
+- `human`: a reviewer other than the author (`human:<github-handle>`).
 
-**Round cap guidance:** resolve each R-point within 2 rounds (initial + follow-up). If a third round is needed, treat it as a signal to split the PR. Each round is counted in the footer's `rounds` field.
+Resolve each R-point within two rounds (initial + follow-up); a third round signals splitting the PR. Record `rounds` and all Findings / Drift Candidates / Sync Required / Final Verdict in the PR description's `## Governor Footer`; close every R-point as Fixed / Deferred-with-rationale / Rejected with matching counts (Guard G). Governor Footer Lint CI enforces presence and shape. Promote durable governance constraints into the relevant ADR's Consequences (`ADR{NNN}-G{N}`); domain invariants belong in `project-dna.md` or the domain doc. The [governor-review-log archive](docs/history/archive/governor-review-log/README.md) is closed; do not add review records there.
 
-- capture the resulting `Findings` / `Drift Candidates` / `Sync Required` / Final Verdict in the **PR description's `## Governor Footer` block** (post-ADR-047 — `tools/check_governor_footer.py --require-governor-footer` enforces presence + shape via the `Governor Footer Lint` CI workflow). Durable governance constraints derived from the review are added to the relevant ADR's Consequences section (e.g. ADR 047 §"Durable Governance Constraints (ADR047-G1 ~ ADR047-G27)"); durable domain invariants go to `project-dna.md` or the relevant domain doc;
-- address surfaced R-points or explicitly defer with rationale (closure label vocabulary `Fixed` / `Deferred-with-rationale` / `Rejected` per AGENTS.md guard G — the linter parses the footer's `r-points-*` counts);
-- the existing `docs/history/archive/governor-review-log/` directory is a **closed historical archive** for entries written before PR #158 (ADR 047) — see [`governor-review-log/README.md`](docs/history/archive/governor-review-log/README.md) for the alias map back to ADR 047 G-slots.
-
-Non-governor-changing PRs are **exempt** from independent review (issue #117 Non-Goals: avoid heavy ceremony).
+Architectural decisions use [scoped ADR evidence](docs/ai/shared/adr-evidence.md) in existing workflow fields; verify applicable clauses against current code (ADR 064).
 
 ### Skill Mapping
 
-Each step routes to one or more skills. The shared procedure for each skill (under [`docs/ai/shared/skills/`](docs/ai/shared/skills/)) carries a "Default Flow Position" section documenting which step(s) the skill participates in, and tool-specific wrappers (`.claude/skills/`, `.agents/skills/`) mirror the same position. See [`target-operating-model.md`](docs/ai/shared/target-operating-model.md) §1 for the canonical mapping.
+Shared procedures define skill positions; wrappers may point to the [canonical step-to-skill table](docs/ai/shared/target-operating-model.md#1-default-coding-flow-7-step) instead of mirroring it.
 
 ### Claude / Codex / Antigravity Alignment
 
-This document is canonical. Tool-specific enforcement adapters are defined per migration phase in [`migration-strategy.md`](docs/ai/shared/migration-strategy.md). In particular, Codex enforcement is built around prompt-time routing and changed-file completion checks, not Bash-only `PostToolUse` matchers — skill-body instructions alone are insufficient because Codex does not read a skill until it is invoked.
+[target-operating-model.md §5](docs/ai/shared/target-operating-model.md#5-claude--codex--antigravity-alignment) defines adapters to this canonical document. Codex needs prompt-time routing and changed-file completion checks; skill text alone cannot govern before invocation.
 
 ## Reasoning-Level Consistency Guards
 
@@ -209,52 +190,24 @@ Provider SDK exceptions (PydanticAI, boto3, openai, anthropic) must be translate
 
 - **Domain services**: let exceptions propagate — no `try/except` around provider calls
 - **Infrastructure adapters** (e.g. `PydanticAIEmbeddingAdapter`): catch SDK exceptions and call `map_llm_error(exc)` (NoReturn — always raises a domain exception)
-- **FastAPI `generic_exception_handler`**: catches all unhandled exceptions, calls `try_map_llm_error(exc)` (returns `Optional`) before falling through to 500
+- **FastAPI `generic_exception_handler`**: catches unhandled exceptions; `try_map_llm_error(exc)` returns an optional domain exception with mapped HTTP status, otherwise the response is 500
 - **ACL module**: `src/_core/infrastructure/llm/error_mapper.py` — the only place that knows provider SDK class names
-
-```
-Provider SDK exception
-  → propagates through domain service untouched
-  → caught by FastAPI generic_exception_handler
-  → try_map_llm_error(exc) → LLMException (mapped HTTP status)
-  OR → 500 Internal Server Error (unrecognised exception)
-```
 
 ## Optional AI Infra: Protocol + Selector Pattern
 
-All AI features (LLM classification, RAG answering, embedding) follow the same Protocol + Infra Adapter + Selector pattern. Background: [ADR 040](docs/history/040-rag-as-reusable-pattern.md) + [ADR 042](docs/history/042-optional-infrastructure-di-pattern.md).
+AI features use a domain `typing.Protocol`, a real infrastructure adapter, a deterministic stub, and a container `providers.Selector(real=..., stub=...)`. Tight DTO coupling may place the adapter in domain-specific infrastructure. Each selector returns `"real"` when its own feature setting is set (`settings.llm_model_name` for LLM features, `settings.embedding_model_name` for embeddings), otherwise `"stub"`.
 
-**Pattern:**
-1. `{domain}/domain/protocols/{feature}_protocol.py` — `typing.Protocol` contract
-2. `_core/infrastructure/{feature}/pydantic_ai_{feature}.py` — real adapter (or domain-specific if DTO coupling is tight)
-3. `_core/infrastructure/{feature}/stub_{feature}.py` — deterministic stub for quickstart/no-LLM
-4. Domain container uses `providers.Selector(real=..., stub=...)` to branch
-
-**Reference implementations:**
-- RAG: `AnswerAgentProtocol` → `PydanticAIAnswerAgent` / `StubAnswerAgent` (in `_core/infrastructure/rag/`)
-- Classifier: `ClassifierProtocol` → `PydanticAIClassifier` / `StubClassifier` (in `classification/infrastructure/classifier/`)
-
-**Selector selector function convention:** `def _classifier_selector() -> str: return "real" if settings.llm_model_name else "stub"`
-
-Deeper non-canonical reference: [docs/ai/shared/ai-infrastructure-overview.md](docs/ai/shared/ai-infrastructure-overview.md) — current status of AI infra issues (#74/#75/#97) and OTEL backend comparison.
+Examples and paths: [scaffolding-layers.md](docs/ai/shared/scaffolding-layers.md) (classifier); `src/docs/infrastructure/di/docs_container.py` (RAG). Decisions: [ADR 040](docs/history/040-rag-as-reusable-pattern.md), [ADR 042](docs/history/042-optional-infrastructure-di-pattern.md). Status / observability context: [ai-infrastructure-overview.md](docs/ai/shared/ai-infrastructure-overview.md).
 
 ## Admin Service Contract
 
-Admin pages consume domain services through `AdminCrudServiceProtocol` (`_core/domain/protocols/admin_service_protocol.py`). Any `BaseService` subclass satisfies this protocol automatically.
+Admin pages use `AdminCrudServiceProtocol` (see Responsibility Matrix); `BaseService` subclasses satisfy it.
 
 - `_service_provider: Callable[[], AdminCrudServiceProtocol]` — main CRUD service, wired by bootstrap
 - `extra_services_config: dict[str, str]` — declare additional services by alias → container attr name
 - `_get_extra_service(alias: str)` — resolve and call an extra service (e.g. `"query"` → `docs_query_service`)
 
-**Example** (docs domain needing a query service alongside the main CRUD service):
-```python
-docs_admin_page = BaseAdminPage(
-    domain_name="docs",
-    extra_services_config={"query": "docs_query_service"},
-)
-# In page handler:
-service = docs_admin_page._get_extra_service("query")
-```
+See [project-dna.md §11](docs/ai/shared/project-dna.md#11-admin-page-pattern) for the admin page configuration example.
 
 ## Optional Infrastructure Toggles
 
@@ -350,53 +303,23 @@ RDB CRUD writes use Service-owned validation hooks, not Router checks, Repositor
 
 ## Common Commands
 
+See [commands.md](docs/ai/shared/commands.md).
+
 ### Run
 
-```bash
-make quickstart   # zero-config evaluation (SQLite + InMemory broker)
-make demo         # curl walkthrough against running quickstart
-make dev          # real local dev (PostgreSQL via docker-compose)
-make worker
-make diagrams     # regenerate SVGs under docs/assets/architecture/
-
-make worktree-setup  # bootstrap a fresh git worktree (copy gitignored env files
-                     # + install admin/aws extras). Idempotent; agent-agnostic.
-```
-
-A git worktree is a fresh checkout: `_env/*.env` is gitignored and the
-`admin`/`aws` extras are not part of uv's default sync, so run
-`make worktree-setup` once in a new worktree. Worktree managers can call it from
-their post-create hook (`paseo.json` in this repo does). Tools that read
-`.worktreeinclude` — Claude Code, Conductor, Roo Code, CodeBuddy — copy the env
-files themselves when they create the worktree; the extras still need the target.
+Run `make worktree-setup` once in a fresh worktree to copy gitignored env files and install `admin` / `aws` extras; `.worktreeinclude` copies env files only. See [run commands](docs/ai/shared/commands.md#run).
 
 ### Test
 
-```bash
-make test
-make test-cov
-make check        # fast local alias for check-core
-make check-core   # lint + format check + core tests
-make check-full   # CI-parity checks; requires admin + aws extras and dynamodb-local
-make check-minimal
-```
+See [test commands and prerequisites](docs/ai/shared/commands.md#test).
 
 ### Lint / Format
 
-```bash
-make lint
-make format
-make pre-commit
-```
+See [lint / format commands](docs/ai/shared/commands.md#lint--format).
 
 ### Migration
 
-```bash
-make migrate
-make migration
-uv run alembic downgrade -1
-uv run alembic current
-```
+See [migration commands](docs/ai/shared/commands.md#db-migrations).
 
 ## Drift Management
 
@@ -405,5 +328,6 @@ uv run alembic current
 - `AGENTS.md` is the canonical source for shared rules — tool-specific harness docs point here, never re-copy
 - Shared rule sources: `AGENTS.md`, `docs/ai/shared/`, `.claude/`, `.codex/`, `.antigravity/`, `.gemini/`, `.agents/`
 - Update related docs in the same change when shared rules or harness behavior changes (see drift-checklist.md for the full sync checklist)
+- Context growth: `python3 tools/check_context_budget.py` blocks over-budget tracked harness content (ADR 059); sync dates record content changes, never periodic refreshes.
 - Language drift: new prose in Tier 1 paths must be English — run `python3 tools/check_language_policy.py` before closing work
 - Link drift: a document that points at a moved authority is drift the reader cannot see. `python3 tools/check_doc_links.py` resolves every relative markdown link and `#anchor` in the repository against the git index (#408); it runs blocking on every commit, so the usual reason to invoke it by hand is to check a target *before* moving or renaming it

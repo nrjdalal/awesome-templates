@@ -1,10 +1,10 @@
 # Suggested Commands
 
-> Last synced: 2026-11-02 via PR #429. Prior: 2026-11-02 via #425 (PR #428). Prior: 2026-09-05 via #408 (PR #411) — one command added to Architecture Verification: `uv run python tools/check_doc_links.py`. It is blocking on every commit via the new `doc-links` pre-commit hook, so the reason to type it is to check inbound pointers *before* moving a file or renaming a heading. Two notes worth keeping. First, it is a **full-repo** scan (`always_run: true`, `pass_filenames: false`), which is not a stylistic choice — the anchor half of the check is invisible to a changed-files hook, because the commit that renames a heading does not touch the files pointing at it; that is how `## AI-Native Development` and `## Project Structure` orphaned two inbound anchors in #79 and nobody noticed for four months. Second, it resolves against the **git index**, not `Path.exists()` — macOS is case-insensitive by default, so `docs/History/x.md` opens locally and 404s on Linux CI, and an untracked local file must not mask a link that is dead for everyone else. Prior: 2026-09-04 via the **`/fix-bug` skill hardening** — **reviewed, no command surface changed**: no new CLI command, env var, or target. One command moved *into* a workflow that had never named it — `/fix-bug` Phase 4 now runs `uv run pyright`, which this file has documented as the single blocking type check since #375 but which the bug-fix procedure never mentioned, so a fix could pass that skill's verify step and still fail CI. Prior: 2026-08-13 via #401 (PR #402) — **reviewed, no command surface changed**: the work is confined to how `tests/unit/agents_shared/` loads harness hook modules. `uv run pyright` still covers the whole repository (945 files, 0 errors). Prior: 2026-08-13 via #394–#399 — `uv run pyright` now covers the **whole repository** (944 files, 0 errors) including `tests/`; nothing about how you invoke it changed. Prior: 2026-08-12 via #375 / #381 / #387 (PRs #382–#386, #388, #390) — the Lint / Format section now names `uv run pyright` as the single type check and no longer claims `pre-commit run --all-files` runs mypy; that hook is gone. Two command-level consequences worth knowing: `make scheduler` **had never actually run the scheduler** before #375 (the coroutine was created and dropped, so the process exited 0 having scheduled nothing), and `make quickstart` runs `uv sync --extra admin`, which **uninstalls every other extra** — aws, otel, pydantic-ai, sqs, rabbitmq. The `dev` group survives (uv syncs default groups regardless of `--extra`), so the trap is not missing test tooling: inside a dev checkout `pytest tests/` then **aborts during collection** because two modules import `aioboto3`, and `uv run pyright` reports 47 unresolved imports. The target now detects this and prints a restore hint; corrected here after the first wording said "removes the dev extras", which measurement disproved. Prior: 2026-08-12 via #374 (the `make test-pg` clean-database caveat is gone — the fixture now loads every model, so a pre-existing schema no longer breaks it) and #368 (no new commands). Prior: 2026-08-11 via #365/PR #366 (Admin Dashboard — the UI theming block now names the neutral-mono theme instead of the Toss-style one, and records that the `--q-*` brand group must be emitted under `body` with `!important`, because NiceGUI writes that palette as an inline body style and a `:root` declaration is inert — the pre-#365 state, in which the whole brand half of the palette never applied). Prior: 2026-08-01 via #286/PR #313 + #315/PR #319 (Error Notification — severity channel routing section and example added; `:159` corrected, it had contradicted the Coverage bullet in the same block since #310). Prior: 2026-07-28 via #310 (Error Notification — dispatch extended to Taskiq worker task failures; the server-only scope note from PR #311 is superseded). Prior: 2026-07-27 via #307/PR #311 (Error Notification section — runbook pointer, server-only dispatch scope, first-dispatch disabled warning). Prior: 2026-07-23 via #17/PR #304 (added the Error Notification section — `NOTIFICATION_*` env vars for Slack/Discord webhook alerts fired from the exception handlers). Prior: 2026-07-20 via ADR 056 (added `tools/check_migration_safety.py` — advisory unsafe-DDL scan for zero-downtime migrations — to Architecture Verification + DB Migrations). Prior: 2026-07-20 via #293 (added `make perf-test` — Locust performance-test harness — to the Test section).
-> Purpose: Quick reference for Claude Code when executing shell commands.
+> Last synced: 2026-11-06 via #414 B1/B4/B5
+> Purpose: Consulted shell-command reference for Claude, Codex, and Antigravity; load when needed.
 > Also referenced when running Skills.
-> Default Flow context: see [`AGENTS.md` § Default Coding Flow](../../AGENTS.md#default-coding-flow). The commands below are consulted by the `implement` and `verify` steps; this file is **not** a primary entry point in the Default Flow.
-> Makefile targets (`make dev`, `make test`, etc.) are available as shortcuts — see `AGENTS.md` Common Commands.
+> Default Flow context: see [`AGENTS.md` § Default Coding Flow](../../../AGENTS.md#default-coding-flow). The commands below are consulted by the `implement` and `verify` steps; this file is **not** a primary entry point in the Default Flow.
+> Makefile targets are shortcuts; shared policy remains in [AGENTS.md](../../../AGENTS.md).
 
 ## Run
 ```bash
@@ -190,6 +190,17 @@ uv run python tools/check_examples_copyflow.py
 # No argv = full repo; pass paths to check only those files.
 uv run python tools/check_doc_links.py
 
+# Sensitive logging production-source lexical gate (ADR 061).
+# Review false positives before a deliberate SKIP=sensitive-logging bypass;
+# skipping is not a passing logging check. See CONTRIBUTING.md.
+uv run pre-commit run sensitive-logging --all-files
+
+# Check tracked harness byte budgets (blocking context-budget hook, ADR 059)
+uv run python tools/check_context_budget.py
+
+# Check generated harness inventory and reviewed buckets (blocking, ADR 062)
+uv run python tools/generate_harness_inventory.py --check
+
 # Scan Alembic revisions for unsafe (non-zero-downtime) DDL — advisory (ADR 056)
 uv run python tools/check_migration_safety.py
 ```
@@ -217,26 +228,7 @@ STORAGE_TYPE=s3 python run_server_local.py --env local
 ```
 
 ## Error Notification (#17, #310, #286)
-```bash
-# Slack/Discord webhook alerts fired from the HTTP exception handlers and Taskiq worker task failures (optional infra, ADR 042)
-NOTIFICATION_PROVIDER=slack SLACK_WEBHOOK_URL=https://hooks.slack.com/services/T/B/X python run_server_local.py --env local
-NOTIFICATION_PROVIDER=discord DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/<id>/<token> python run_server_local.py --env local
-
-# Severity channel routing (#286) — the threshold is the switch; the two URLs alone are rejected at boot
-NOTIFICATION_PROVIDER=slack SLACK_WEBHOOK_URL=https://hooks.slack.com/services/T/B/BASE \
-  NOTIFICATION_WARNING_THRESHOLD=400 \
-  NOTIFICATION_CRITICAL_WEBHOOK_URL=https://hooks.slack.com/services/T/B/ALERTS \
-  NOTIFICATION_WARNING_WEBHOOK_URL=https://hooks.slack.com/services/T/B/MONITORING \
-  python run_server_local.py --env local
-```
-
-- Tuning: `NOTIFICATION_SEVERITY_THRESHOLD` (default 500 — 5xx only, and the critical-tier boundary once routing is on), `NOTIFICATION_COOLDOWN_SECONDS` (default 60; per-process, keyed on `error_code` — `{tier}:{error_code}` under routing, `{tier}:{task_name}:{error_code}` on the worker)
-- Channel routing (#286): `NOTIFICATION_WARNING_THRESHOLD` (unset by default) is the **sole switch** — it lowers the alerting floor to `min(severity, warning)` and routes that band to `NOTIFICATION_WARNING_WEBHOOK_URL`. Each per-tier URL falls back to the single provider webhook when unset, and setting one *without* the threshold fails at boot (#315)
-- Unset provider → `NoopNotificationClient` (one-time `notification_client_disabled` warning, logged at the first dispatch attempt rather than at boot; no alerts delivered)
-- Webhook URLs are credentials — keep them in gitignored env files only
-- Coverage: HTTP exception handlers + Taskiq worker task failures (#310). Worker alerts fire once per incident on the terminal failure — permanent errors immediately, retryable ones after the last attempt
-- Not alerted: `validation_exception_handler` (422), `http_exception_handler` (incl. a hand-raised 500), and NiceGUI admin exceptions (log-only, stated non-goal in AGENTS.md)
-- Operator runbook (setup, coverage limits, cooldown/payload caveats, local-sink verification): [`docs/operations/error-notifications.md`](../../docs/operations/error-notifications.md)
+Error Notification: see [AGENTS.md § Optional Infrastructure Toggles](../../../AGENTS.md#optional-infrastructure-toggles) + [runbook](../../operations/error-notifications.md).
 
 ## Admin Dashboard
 ```bash
@@ -254,3 +246,18 @@ uv sync --extra admin   # install; → http://127.0.0.1:8001/admin
 ADMIN_BRAND_NAME="Acme Admin" uv run python run_server_local.py --env local  # header/login brand text
 ADMIN_DARK_MODE_DEFAULT=true ...       # unset=follow OS; true/false to force initial light/dark
 ```
+
+## Codex Healthcheck
+
+Run from a trusted checkout. The default 32 KiB project-doc cap truncates silently;
+assert the final section instead of a head marker. The explicit default cap tests
+the lean constitution, while project config provides a 64 KiB fallback.
+
+```bash
+codex mcp list
+codex mcp get context7
+codex debug prompt-input -c 'project_doc_max_bytes=32768' "healthcheck" | rg -o '## Drift Management'
+codex execpolicy check --rules .codex/rules/fastapi-agent-blueprint.rules git push origin main
+```
+
+Context7 setup / trust troubleshooting: [CONTRIBUTING.md](../../../CONTRIBUTING.md#codex-minimum-setup).

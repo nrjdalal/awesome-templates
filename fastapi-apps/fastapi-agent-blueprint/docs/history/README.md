@@ -65,8 +65,15 @@ Read top-to-bottom; each builds on the ones above it.
 | [054](054-plan-execute-boundary-hard-gate.md) | Plan→Execute Boundary Hard Gate | `/plan-feature` ends at the approved Execution Packet; implementing from the `planned` stage without `/execute-plan` or a waiver token is hard-blocked on Claude, advisory on Codex. |
 | [055](055-summary-finding-ledger.md) | Summary Finding Ledger | Out-of-diff review findings post as a task-list ledger with complete carry-forward per round; any `OPEN` ledger key blocks Approve and the completion gate (closes the #292 merge-gate bypass). |
 | [056](056-zero-downtime-migration-safety.md) | Zero-Downtime Migration Safety | No-downtime migration playbook (expand-contract + per-engine safe/unsafe DDL) + an advisory checker that scans Alembic revisions for unsafe DDL; advisory-first, plan-time data-model contracts explicitly out of scope. |
-| [058](058-base-repository-engine-guarantees.md) | What `BaseRepository` Guarantees Regardless of `DATABASE_ENGINE` | Five defects in the base class six domains and nine examples inherit. Bulk insert now refreshes like the singular path (it 500'd on any dialect without RETURNING, for rows already committed); offset pagination carries a deterministic order; search and sort fail closed with curated 4xx instead of returning the whole table or an opaque 500; the dead `related_entities` branch is gone. Verified by forcing the dialect flag rather than a MySQL CI leg — limitation stated. |
 | [057](057-audit-actor-correlation-only.md) | Admin Audit Actor — Correlation-Only, No Foreign Key | `admin_audit_log.admin_user_id` drops its foreign key: the value is an `admin_identity.id` and migration 0009's id-preserving copy left the two id spaces overlapping, so a constraint against either table can be satisfied by the wrong row. Integrity moves to the read path; the swallowed audit-write failure that hid it becomes loud. |
+| [058](058-base-repository-engine-guarantees.md) | What `BaseRepository` Guarantees Regardless of `DATABASE_ENGINE` | Five defects in the base class six domains and nine examples inherit. Bulk insert now refreshes like the singular path (it 500'd on any dialect without RETURNING, for rows already committed); offset pagination carries a deterministic order; search and sort fail closed with curated 4xx instead of returning the whole table or an opaque 500; the dead `related_entities` branch is gone. Verified by forcing the dialect flag rather than a MySQL CI leg — limitation stated. |
+| [059](059-harness-context-byte-budgets.md) | Harness Context Byte Budgets | Blocking byte caps prevent automatic context from regrowing; sync dates record content changes. |
+| [060](060-ticket-session-boundaries-and-review-packets.md) | Ticket Session Boundaries and Review Packets | Native ticket briefs, fresh serial execution, risk floors, precision-filter review and measured follow-up. |
+| [061](061-retire-runtime-verify-and-content-heuristics.md) | Retire Runtime Verify and Content Heuristics | Removes redundant runtime checks while preserving active safety, outcomes and continuity. |
+| [062](062-generated-harness-inventory.md) | Generated Harness Inventory | Tracked scope discovery, reviewed bucket judgments and generated-output gate. |
+| [063](063-on-demand-harness-documentation.md) | Consult Detailed References on Demand | Consulted commands, scoped projections and compact policy references with historical snapshots. |
+| [064](064-scoped-adr-evidence-in-agent-workflow.md) | Scoped ADR Evidence in Agent Workflow | Connect applicable decision clauses and status to choices, current evidence, conflicts and revisit routes. |
+| [065](065-native-skill-discovery-and-procedure-authority.md) | Native Skill Discovery and Procedure Authority | Keep tool-native discovery and invocation metadata separate from shared procedure authority. |
 
 ## Archive
 
@@ -81,7 +88,7 @@ the rationale behind each archival bucket.
 
 ## Writing a new ADR
 
-Numbering continues sequentially (next free number is 057). Only add a new
+Numbering continues sequentially (next free number is 066). Only add a new
 ADR when the decision is **load-bearing** — i.e. it constrains how future
 code will be written, not merely which tool was picked. Purely
 operational choices can be captured in `CHANGELOG.md` or a PR description.
@@ -105,6 +112,19 @@ options, and why one was chosen.
   corrected after experience?
 - Acknowledging trade-offs and what was sacrificed
 
+Use the [scoped Decision Basis contract](../ai/shared/adr-evidence.md) when a task
+makes or tests an architectural choice. Start from the affected concern and this
+index; read only applicable clauses and their amendments/current carriers. A
+scoped explanation that no ADR decision is affected is sufficient when true.
+An Accepted status records a decision, not proof that code implements it or tests
+pass. An archive supplies history unless a current rule explicitly carries its
+constraint; do not promote historical rationale into current authority.
+
+Retrospective records are valid when labelled honestly. Distinguish the decision
+date from the recording date, cite contemporaneous evidence where available, and
+identify later reconstruction or missing evidence. Do not invent past alternatives
+or pretend the present author witnessed the original decision.
+
 ### Language
 
 ADRs must be written in English.
@@ -121,9 +141,12 @@ e.g.: 042-your-decision-topic.md
 ```markdown
 # {number}. {title}
 
-- Status: Accepted / Deprecated / Superseded by {number}
-- Date: YYYY-MM-DD
+- Status: Proposed / Accepted / Deprecated / Superseded by {number and clause scope}
+- Date: YYYY-MM-DD (label whether decision or recording date)
+- Record type: contemporaneous / retrospective
+- Decision evidence: {approved issue, PR, discussion, or unavailable}
 - Related issue: #{number}
+- Amends / supersedes: {linked ADR clauses/current carriers, or none}
 
 ## Summary
 <!-- 1-2 sentences: "To solve {problem}, we chose {approach}" -->
@@ -131,12 +154,14 @@ e.g.: 042-your-decision-topic.md
 ## Background
 <!-- Trigger: what made this decision necessary NOW -->
 <!-- Decision type: upfront design / experience-based correction / external factor -->
+<!-- For retrospective records, separate sourced history from later analysis. -->
 
 ## Problem
 
 ## Alternatives Considered
 ### A. {alternative}
 ### B. {alternative}
+<!-- Identify which alternatives were considered then; label later analysis. -->
 
 ## Decision
 
@@ -148,10 +173,27 @@ e.g.: 042-your-decision-topic.md
 - [ ] Is this the right approach for the current project scale?
 - [ ] Will a reader understand "why" 6 months from now without extra context?
 - [ ] Am I recording the decision process, or justifying a conclusion?
+
+## Consequences
+<!-- Applicable scope, trade-offs, evidence/limits, and conditions for revisiting.
+Link current code/tests separately; do not treat Accepted as implementation proof. -->
 ```
 
 ### Status values
 
-- **Accepted** — Currently in effect
-- **Deprecated** — No longer valid
-- **Superseded by XXX** — Replaced by another decision
+- **Proposed** — A candidate decision; not an accepted constraint or permission to implement.
+- **Accepted** — The recorded decision applies within its stated scope, subject to
+  explicit amendments/supersession and the current rule carrier. Verify implementation separately.
+- **Deprecated** — Retained history, no longer the current decision.
+- **Superseded by XXX** — Replaced in the linked scope; identify whether replacement
+  is complete or clause-specific instead of silently discarding unaffected decisions.
+
+Clarifications, reviewed corrections, status links and explicit dated amendments
+may be added to an Accepted ADR without rewriting its original rationale. A change
+to an underlying architectural constraint needs an explicit new/revisiting decision
+and links from the affected record/carriers, not silent editing to match today's
+code. Follow [ADR 047 D3](047-governor-review-provenance-consolidation.md#d3--durable-inherited-constraints-move-to-adr-consequences):
+existing `ADR047-G*` bodies are write-once; changed constraints get successor slots
+and alias supersession links. The closed governor-review archive permits only
+append-only English `Errata YYYY-MM-DD:` notes under its last section (ADR 047 D6);
+this template does not authorize rewriting frozen entries.

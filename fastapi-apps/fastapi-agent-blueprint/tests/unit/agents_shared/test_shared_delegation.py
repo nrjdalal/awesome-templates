@@ -7,7 +7,7 @@ in all paths (HC-5.5 execution fail-open).
 
 # The harness hook modules here are loaded *by path* under harness-qualified
 # aliases, because the same basenames exist in `.claude/hooks`, `.codex/hooks` and
-# `.antigravity/hooks` — `import verify_first` names three files and `sys.modules`
+# `.antigravity/hooks` — `import completion_gate` names three files and `sys.modules`
 # picks one (#401). The suppressions this comment used to explain are gone with the
 # bare imports that needed them.
 from __future__ import annotations

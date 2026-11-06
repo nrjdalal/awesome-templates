@@ -1,3 +1,4 @@
+project_doc_max_bytes = 65536
 sandbox_mode = "workspace-write"
 approval_policy = "on-request"
 web_search = "disabled"

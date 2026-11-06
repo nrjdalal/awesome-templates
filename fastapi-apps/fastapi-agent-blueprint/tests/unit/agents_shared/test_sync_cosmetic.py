@@ -108,7 +108,7 @@ def test_overview_cosmetic_only_accepts_last_synced(gov):
 def test_overview_rejects_table_row_outside_status(gov):
     """`Recent Major Changes` table only exists in project-status.md.
 
-    project-overview.md / commands.md may NOT add table rows under the
+    project-overview.md may NOT add table rows under the
     sync-cosmetic carve-out.
     """
 
@@ -256,3 +256,12 @@ def test_evaluate_gate_silences_when_only_overview_last_synced(gov, tmp_path: Pa
     )
     assert result.status == "silent_sync_cosmetic"
     assert result.governor_changing is False
+
+
+@pytest.mark.parametrize(
+    "path", [".claude/rules/commands.md", "docs/ai/shared/commands.md"]
+)
+def test_relocated_commands_never_receive_cosmetic_exemption(gov, path):
+    """The consulted command reference is not a routine auto-loaded projection."""
+    sync, _ = gov
+    assert not sync.is_sync_cosmetic_only([path], lambda _: COSMETIC_DIFF_OVERVIEW)

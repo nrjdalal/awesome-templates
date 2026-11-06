@@ -31,7 +31,7 @@ from .time_window import _within_24h
 class MarkerLifecycle(Enum):
     """IC-12 marker lifecycle policy.
 
-    ``READ_ONLY`` — used by verify-first reader (Phase 3); markers stay
+    ``READ_ONLY`` — used by stage and completion readers; markers stay
     on disk until Stop consumes them.
 
     ``READ_AND_DELETE`` — used by completion-gate Stop hook (Phase 4

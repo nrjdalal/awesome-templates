@@ -6,7 +6,7 @@ These tests enforce the boundary so accidental regression is caught at CI time.
 
 Guards:
   1. No re.compile() in either hook (patterns live in governor submodules).
-  2. No SQL keyword regex pattern in either hook (delegated to code_safety.py).
+  2. No retired SQL keyword regex pattern reintroduced in either hook.
   3. Hooks import from governor submodules, not from the governor facade.
   4. No getattr(governor, ...) bypass in either hook.
 """
@@ -19,7 +19,7 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 
 PRE_TOOL_HOOKS = [
     REPO_ROOT / ".codex" / "hooks" / "pre-tool-security.py",
-    REPO_ROOT / ".claude" / "hooks" / "pre_tool_security.py",
+    REPO_ROOT / ".antigravity" / "hooks" / "pre-tool-security.py",
 ]
 
 
@@ -39,10 +39,10 @@ def test_no_re_compile_in_codex_pre_tool_hook() -> None:
     )
 
 
-def test_no_re_compile_in_claude_pre_tool_hook() -> None:
-    hook = REPO_ROOT / ".claude" / "hooks" / "pre_tool_security.py"
+def test_no_re_compile_in_antigravity_pre_tool_hook() -> None:
+    hook = REPO_ROOT / ".antigravity" / "hooks" / "pre-tool-security.py"
     assert "re.compile(" not in _text(hook), (
-        f"{hook.name}: contains re.compile() — move patterns to governor.code_safety."
+        f"{hook.name}: contains re.compile() — keep active patterns in shared policy."
     )
 
 
@@ -64,7 +64,7 @@ def test_no_inline_sql_patterns_in_pre_tool_hooks() -> None:
         for signal in _SQL_PATTERN_SIGNALS:
             assert signal not in text, (
                 f"{hook.name}: inline SQL keyword pattern {signal!r} detected. "
-                "SQL injection checks must live in governor.code_safety — "
+                "Runtime SQL heuristics were retired by ADR 061 — "
                 "the hook is a thin shim only."
             )
 

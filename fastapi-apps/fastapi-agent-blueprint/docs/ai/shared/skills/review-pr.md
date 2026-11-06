@@ -1,15 +1,8 @@
 # Pull Request Quality Gate Review
 
 ## Default Flow Position
-
-This skill participates in the [Default Coding Flow](../../../../AGENTS.md#default-coding-flow) at the **`completion gate`** step.
-
-It is invoked at the end of work — after `implement`, `verify`, and `self-review` have settled — to apply a final review against the change set as a whole.
-
-After completion-gate review, route to:
-- `/sync-guidelines` if the review reported `Drift Candidates` or `Sync Required: true`
-
-Recursion guard: do **not** invoke `/review-pr` recursively from within itself, and do not invoke `/plan-feature` from inside this skill (the change has already been implemented).
+See [target-operating-model §1](../target-operating-model.md) — `review-pr` routing.
+Recursion guard: Do not invoke this skill recursively or invoke plan-feature from inside it.
 
 ## Core Principle
 

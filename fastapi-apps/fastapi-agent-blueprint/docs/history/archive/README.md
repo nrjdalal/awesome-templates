@@ -80,9 +80,26 @@ The core reading order lives in [`../README.md`](../README.md).
 |------|-------------|
 | [project-status/project-status-pre-v0.4.0.md](project-status/project-status-pre-v0.4.0.md) | Major changes v0.2.0 → v0.4.0 (26 rows archived 2026-05-06) |
 | [project-status/project-status-v0.4.0-v0.5.0.md](project-status/project-status-v0.4.0-v0.5.0.md) | Major changes v0.4.0 → v0.5.0 (18 rows archived 2026-05-11, PR #187) |
+| [project-status/project-status-v0.5.0-v0.6.0.md](project-status/project-status-v0.5.0-v0.6.0.md) | Major changes v0.5.0 → v0.6.0 (6 rows) |
+| [project-status/project-status-v0.6.0-v0.8.0.md](project-status/project-status-v0.6.0-v0.8.0.md) | Major changes v0.6.0 → v0.8.0 (14 rows) |
+| [project-status/project-status-v0.8.0-v0.9.0.md](project-status/project-status-v0.8.0-v0.9.0.md) | Major changes v0.8.0 → v0.9.0 (15 rows) |
+| [project-status/project-status-v0.9.0-v0.11.0.md](project-status/project-status-v0.9.0-v0.11.0.md) | Major changes v0.9.0 → v0.11.0 (13 rows) |
+| [project-status/project-status-since-v0.11.1.md](project-status/project-status-since-v0.11.1.md) | Original 6 long-form rows through v0.11.2, including pre-v0.11.1 changes; one-off #417 migration |
+| [project-status/sync-log.md](project-status/sync-log.md) | Five original per-source sync narrative chains; one-off #415 migration |
 
 ### Governor review log (closed archive)
 
 | Directory | Description |
 |-----------|-------------|
 | [governor-review-log/](governor-review-log/) | 18 per-PR cross-tool review entries from PR #125 to PR #158. Closed historical archive (ADR 047 D6). New reviews use PR-description Governor Footer blocks instead. |
+
+### Harness context snapshots (#414)
+
+| File | Original source / purpose |
+|---|---|
+| [harness-context/migration-strategy.md](harness-context/migration-strategy.md) | Shipped migration phases and rollback record |
+| [harness-context/repo-facts.md](harness-context/repo-facts.md) | Historical asset map, context7 decision and command notes |
+| [harness-context/target-operating-model-appendices.md](harness-context/target-operating-model-appendices.md) | Appendices A/C design workstreams and resolution pointers; Appendix B stays live |
+| [harness-context/ai-infrastructure-file-map.md](harness-context/ai-infrastructure-file-map.md) | Original per-issue implementation map |
+| [harness-context/project-dna.md](harness-context/project-dna.md) | Pre-compression examples and source-derived catalogs |
+| [harness-context/architecture-conventions.md](harness-context/architecture-conventions.md) | Original Selection projections, including the stale storage claim |

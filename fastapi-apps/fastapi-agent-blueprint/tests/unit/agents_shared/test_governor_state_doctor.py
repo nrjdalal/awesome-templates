@@ -83,22 +83,9 @@ def _make_minimal_marker_files(root: Path) -> None:
     markers_py.parent.mkdir(parents=True, exist_ok=True)
     markers_py.write_text('glob("exception-token-*.json")', encoding="utf-8")
 
-    gate_py = root / ".codex" / "hooks" / "completion_gate.py"
-    gate_py.write_text('glob("verify-log-*.json")', encoding="utf-8")
-
-    antigravity_gate = root / ".antigravity" / "hooks" / "completion_gate.py"
-    antigravity_gate.write_text('glob("verify-log-*.json")', encoding="utf-8")
-
-    # .claude is a thin shim (ADR 045 Phase 5): it calls the shared helper
-    # instead of carrying the glob, so C4 accepts either shape (#334).
-    claude_gate = root / ".claude" / "hooks" / "completion_gate.py"
+    claude_gate = root / ".claude/hooks/completion_gate.py"
     claude_gate.parent.mkdir(parents=True, exist_ok=True)
-    claude_gate.write_text(
-        "cleanup_stale_verify_logs(STATE_DIR, _verify_session_id())", encoding="utf-8"
-    )
-
-    verify_py = root / ".agents" / "shared" / "governor" / "verify.py"
-    verify_py.write_text('glob("verify-log-*.json")', encoding="utf-8")
+    claude_gate.write_text("consume_phase2_markers(STATE_DIR)", encoding="utf-8")
 
 
 # ---------------------------------------------------------------------------
@@ -261,8 +248,8 @@ def test_marker_glob_coverage_fail_no_consume(tmp_path: Path) -> None:
     assert "consume_phase2_markers" in result.detail
 
 
-def test_marker_glob_coverage_fail_claude_produces_nothing(tmp_path: Path) -> None:
-    # The #334 state itself: .claude reads verify-log state it never writes.
+def test_marker_glob_coverage_fail_claude_drops_marker_consumer(tmp_path: Path) -> None:
+    # Claude must consume active token markers even after log retirement.
     _make_minimal_marker_files(tmp_path)
     claude_gate = tmp_path / ".claude" / "hooks" / "completion_gate.py"
     claude_gate.write_text("# no cleanup here", encoding="utf-8")
@@ -277,13 +264,13 @@ def test_marker_glob_coverage_fail_import_without_call(tmp_path: Path) -> None:
     """The realistic regression: the helper is imported but never invoked.
 
     A substring check passes here — the import line contains the name — while
-    the Stop hook prunes nothing. That is the #334 defect wearing a disguise,
+    the Stop hook consumes nothing. The active lifecycle requires a call,
     so the check parses for a call node instead.
     """
     _make_minimal_marker_files(tmp_path)
     claude_gate = tmp_path / ".claude" / "hooks" / "completion_gate.py"
     claude_gate.write_text(
-        "from governor import cleanup_stale_verify_logs\n\n"
+        "from governor import consume_phase2_markers\n\n"
         "def main() -> int:\n    return 0\n",
         encoding="utf-8",
     )
@@ -295,30 +282,16 @@ def test_marker_glob_coverage_fail_import_without_call(tmp_path: Path) -> None:
 
 
 def test_marker_glob_coverage_pass_on_an_attribute_call(tmp_path: Path) -> None:
-    # `governor.cleanup_stale_verify_logs(...)` is a call too — the check must
+    # `governor.consume_phase2_markers(...)` is a call too — the check must
     # not require a bare name.
     _make_minimal_marker_files(tmp_path)
     claude_gate = tmp_path / ".claude" / "hooks" / "completion_gate.py"
     claude_gate.write_text(
-        "import governor\n\ngovernor.cleanup_stale_verify_logs(STATE_DIR, sid)\n",
+        "import governor\n\ngovernor.consume_phase2_markers(STATE_DIR, sid)\n",
         encoding="utf-8",
     )
 
     assert check_marker_glob_coverage(tmp_path).ok is True
-
-
-def test_marker_glob_coverage_fail_shared_helper_lost_its_glob(
-    tmp_path: Path,
-) -> None:
-    # .claude's shim branch is only sound while the shared helper owns the glob.
-    _make_minimal_marker_files(tmp_path)
-    verify_py = tmp_path / ".agents" / "shared" / "governor" / "verify.py"
-    verify_py.write_text("# no glob here", encoding="utf-8")
-
-    result = check_marker_glob_coverage(tmp_path)
-
-    assert result.ok is False
-    assert "governor/verify.py" in result.detail
 
 
 def test_marker_glob_coverage_fail_no_exception_token_glob(tmp_path: Path) -> None:
@@ -328,15 +301,6 @@ def test_marker_glob_coverage_fail_no_exception_token_glob(tmp_path: Path) -> No
     result = check_marker_glob_coverage(tmp_path)
     assert result.ok is False
     assert "exception-token-*.json" in result.detail
-
-
-def test_marker_glob_coverage_fail_no_verify_log_glob(tmp_path: Path) -> None:
-    _make_minimal_marker_files(tmp_path)
-    gate_py = tmp_path / ".codex" / "hooks" / "completion_gate.py"
-    gate_py.write_text("# no verify-log glob", encoding="utf-8")
-    result = check_marker_glob_coverage(tmp_path)
-    assert result.ok is False
-    assert "verify-log-*.json" in result.detail
 
 
 # ---------------------------------------------------------------------------
@@ -414,20 +378,6 @@ def test_stale_stats_with_stale_markers(tmp_path: Path) -> None:
     dir_stats = result.data["state_dirs"][".claude/state"]
     assert dir_stats["exception_token"]["total"] == 3
     assert dir_stats["exception_token"]["stale"] == 2
-
-
-def test_stale_stats_verify_log_counted(tmp_path: Path) -> None:
-    state_dir = tmp_path / ".codex" / "state"
-    state_dir.mkdir(parents=True)
-
-    stale_ts = time.time() - (48 * 3600)
-    vlog = state_dir / "verify-log-oldsession.json"
-    vlog.write_text("{}", encoding="utf-8")
-    os.utime(vlog, (stale_ts, stale_ts))
-
-    result = check_stale_stats(tmp_path)
-    assert result.data["state_dirs"][".codex/state"]["verify_log"]["stale"] == 1
-    assert result.data["total_stale"] == 1
 
 
 # ---------------------------------------------------------------------------

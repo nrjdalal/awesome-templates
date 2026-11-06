@@ -1,15 +1,8 @@
 # Security Quality Gate Audit
 
 ## Default Flow Position
-
-This skill participates in the [Default Coding Flow](../../../../AGENTS.md#default-coding-flow) at the **`self-review`** step.
-
-It is invoked when the change touches security-sensitive surfaces: authentication, password handling, token issuance, sensitive-field exposure (admin pages, logs), file upload, external request handling, or migration of credentials.
-
-After self-review, route to:
-- `completion gate` — `/sync-guidelines` if drift candidates were detected, otherwise `/review-pr`
-
-Recursion guard: do **not** invoke `/security-review` recursively, and do not invoke `/plan-feature` from inside this skill.
+See [target-operating-model §1](../target-operating-model.md) — `security-review` routing.
+Recursion guard: Do not invoke this skill recursively or invoke plan-feature from inside it.
 
 ## Purpose
 
