@@ -69,6 +69,7 @@ def load_models():
     # admin audit log — #196).
     _CORE_MODEL_PACKAGES = (
         "src._core.infrastructure.admin.audit.models",
+        "src._core.infrastructure.prompt.models",  # prompt store, #451
     )
     for pkg_name in _CORE_MODEL_PACKAGES:
         try:

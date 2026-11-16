@@ -55,7 +55,8 @@ _ALLOWED_SUPPRESSIONS = {
     "examples/blog/post/domain/services/post_service.py": 1,
     "examples/blog/post/infrastructure/di/post_container.py": 1,
     "scripts/seed_demo_admin.py": 3,
-    "src/_apps/admin/bootstrap.py": 6,
+    # DynamicContainer attribute access; #451 added one (prompts.service_provider).
+    "src/_apps/admin/bootstrap.py": 7,
     "src/_apps/server/bootstrap.py": 3,
     "src/_core/domain/services/rag_pipeline.py": 1,
     "src/_core/infrastructure/admin/audit/logger.py": 2,

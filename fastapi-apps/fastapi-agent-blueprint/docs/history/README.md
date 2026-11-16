@@ -50,13 +50,15 @@ Read top-to-bottom; each builds on the ones above it.
 | [041](041-vector-backends-consolidation.md) | Multi-backend Infrastructure Layout | Current `src/_core/infrastructure/` umbrella + subfolder convention. |
 | [042](042-optional-infrastructure-di-pattern.md) | Optional Infrastructure (Selector + Lazy Factory) | How every non-DB infra (storage, DynamoDB, vectors, embedding, LLM) is made optional without breaking app boot. |
 | [051](051-runtime-llm-guardrails.md) | Runtime LLM Guardrails | The runtime prompt-injection + output-integrity layer every LLM adapter wires; precise-block / fuzzy-log + `GUARDRAILS_ENABLED` kill-switch. |
+| [066](066-prompt-provider-contract.md) | Prompt Provider Contract | Implements ADR 046's deferred `get_active` contract with an inline provider; the boundary tail stays in code and runs last, and the ledger names the prompt. Langfuse rejected; operator editing comes as a minimal self-hosted store. |
+| [067](067-agent-catalog-and-ledger-run-observability.md) | Agent Catalog and Ledger-Based Run Observability (Proposed) | See workflows, do not build them: code-defined `pydantic-graph` diagrams, an agent registry and per-request call trees from the usage ledger, in the admin; visual workflow authoring rejected. |
 
 ### 5. Process & harness governance
 
 | # | Title | Why it matters |
 |---|-------|----------------|
 | [045](045-hybrid-harness-target-architecture.md) | Hybrid Harness Target Architecture | The 7-step Default Coding Flow + escape-token vocabulary + Claude/Codex adapter strategy that route AI-assisted work into framing → plan → verify → review by default. |
-| [046](046-otel-core-langfuse-recipe-prompt-domain-defer.md) | Observability Strategy (OTEL + Langfuse opt-in) | `[otel]` extra, `OTEL_ENABLED` bootstrap, Langfuse opt-in recipe, and deferred prompt domain — the observability layer a contributor needs to understand before adding instrumented services. |
+| [046](046-otel-core-langfuse-recipe-prompt-domain-defer.md) | Observability Strategy (OTEL + Langfuse opt-in) | `[otel]` extra, `OTEL_ENABLED` bootstrap, Langfuse opt-in recipe, and deferred prompt domain (contract implemented by [066](066-prompt-provider-contract.md)) — the observability layer a contributor needs to understand before adding instrumented services. |
 | [047](047-governor-review-provenance-consolidation.md) | Governor Review Provenance Consolidation | Folds per-PR `governor-review-log/` into PR-description `## Governor Footer` blocks (CI-linted by `tools/check_governor_footer.py`). The canonical record for all governor-changing PR audit trails. |
 | [048](048-independent-review-generalization.md) | Independent Review Generalization | Generalizes Pillar 2 to accept three modes (`cross-tool` / `self-structured` / `human`). Constrains `[skip-governor-footer]` bypass to non-governor-changing PRs. Read before customizing governance files. |
 | [050](050-midtask-scope-expansion-gate.md) | Mid-Task Scope-Expansion Gate | A capability gap discovered mid-task is new plan-class work; stage-based advisory reminder + Direction & Non-goals in `project-dna`. |
@@ -88,7 +90,7 @@ the rationale behind each archival bucket.
 
 ## Writing a new ADR
 
-Numbering continues sequentially (next free number is 066). Only add a new
+Numbering continues sequentially (next free number is 068). Only add a new
 ADR when the decision is **load-bearing** — i.e. it constrains how future
 code will be written, not merely which tool was picked. Purely
 operational choices can be captured in `CHANGELOG.md` or a PR description.

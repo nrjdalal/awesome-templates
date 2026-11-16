@@ -12,6 +12,9 @@ from src._core.domain.dtos.rag import BaseChunkDTO, CitationDTO, QueryAnswerDTO
 from src._core.domain.protocols.agent_usage_recorder_protocol import (
     AgentUsageRecorderProtocol,
 )
+from src._core.domain.protocols.prompt_provider_protocol import (
+    PromptProviderProtocol,
+)
 from src._core.exceptions.llm_exceptions import (
     GuardrailBlocked,
     PromptInjectionDetected,
@@ -24,27 +27,31 @@ from src._core.infrastructure.llm.guardrails import (
 )
 from src._core.infrastructure.llm.prompt_boundaries import (
     RAG_INSTRUCTIONS_TAIL,
+    compose_instructions,
     escape_for_prompt_xml,
 )
+from src._core.infrastructure.prompt.inline_prompt_provider import (
+    InlinePromptProvider,
+)
+from src._core.infrastructure.prompt.registry import register_prompt
 
 _logger = structlog.stdlib.get_logger(__name__)
 
 _AGENT_NAME: Final[str] = "docs_answer"
 
+# The persona is the operator-editable part of the instructions (#447): under
+# an operator-editable provider it is resolved per call under this prompt name, and
+# this constant is both the inline default and the fallback. The boundary
+# guidance (``RAG_INSTRUCTIONS_TAIL``) is NOT editable — ``compose_instructions``
+# appends it in code after whatever persona was resolved.
+_PROMPT_NAME: Final[str] = _AGENT_NAME
 _PERSONA: Final[LiteralString] = (
     "You are a precise RAG assistant. "
     "Answer the user's question using ONLY the provided context chunks. "
     "Cite sources as [source_title]. "
     "If the context doesn't contain the answer, say so plainly."
 )
-
-# Concatenation of two ``LiteralString`` values is itself ``LiteralString``,
-# so static analysis (``uv run pyright``) blocks any future f-string that
-# would interpolate untrusted runtime data into the agent's behavioural
-# contract. The boundary-tag wrapping in ``_format_prompt`` is what
-# actually mitigates LLM01; this constant is the matching "treat the
-# wrapped content as untrusted DATA" guidance for the model.
-_INSTRUCTIONS: Final[LiteralString] = _PERSONA + RAG_INSTRUCTIONS_TAIL
+register_prompt(_PROMPT_NAME, _PERSONA)
 
 # PII token types precise enough to BLOCK on fabrication. ``email`` (``@`` anchor)
 # and ``ipv4`` (range-validated dotted quad) rarely collide with non-PII text;
@@ -75,6 +82,7 @@ class PydanticAIAnswerAgent:
         usage_recorder: AgentUsageRecorderProtocol | None = None,
         model_name: str = "",
         provider: str | None = None,
+        prompt_provider: PromptProviderProtocol | None = None,
     ) -> None:
         try:
             from pydantic_ai import Agent
@@ -90,10 +98,16 @@ class PydanticAIAnswerAgent:
         self._usage_recorder = usage_recorder
         self._model_name = model_name
         self._provider = provider
+        # None → the code persona (preserves the adapter's existing unit tests);
+        # DI injects CoreContainer.prompt_provider in production.
+        self._prompt_provider = prompt_provider or InlinePromptProvider()
+        # No constructor instructions: they are composed per run (persona first,
+        # code-owned boundary tail last). PydanticAI places constructor
+        # instructions *before* run-time ones, which would put an operator-edited
+        # persona after the boundary guidance.
         self._agent: Agent[None, _AgentAnswer] = Agent(
             model=llm_model,
             output_type=_AgentAnswer,
-            instructions=_INSTRUCTIONS,
         )
 
     async def answer(
@@ -102,9 +116,15 @@ class PydanticAIAnswerAgent:
         context_chunks: Sequence[BaseChunkDTO],
     ) -> QueryAnswerDTO:
         chunks = list(context_chunks)
+        snapshot = await self._prompt_provider.get_active(
+            _PROMPT_NAME, default=_PERSONA
+        )
+        instructions = compose_instructions(snapshot.content, RAG_INSTRUCTIONS_TAIL)
 
         if self._usage_recorder is None:
-            return await self._answer_guarded(question, chunks, capture=None)
+            return await self._answer_guarded(
+                question, chunks, instructions, capture=None
+            )
 
         # Track usage for the whole call. A guardrail block raises inside the CM,
         # so ``track_agent_usage`` records it (status=error + error_code +
@@ -116,14 +136,16 @@ class PydanticAIAnswerAgent:
             model=self._model_name,
             provider=self._provider,
             recorder=self._usage_recorder,
+            prompt_snapshot=snapshot,
             strict_record=False,
         ) as capture:
-            return await self._answer_guarded(question, chunks, capture)
+            return await self._answer_guarded(question, chunks, instructions, capture)
 
     async def _answer_guarded(
         self,
         question: str,
         chunks: list[BaseChunkDTO],
+        instructions: str,
         capture: Any | None,
     ) -> QueryAnswerDTO:
         # Input guard (#197 Phase 3): block obvious prompt-injection imperatives
@@ -145,7 +167,7 @@ class PydanticAIAnswerAgent:
                 raise PromptInjectionDetected()
 
         prompt = _format_prompt(question, chunks)
-        result = await self._agent.run(prompt)
+        result = await self._agent.run(prompt, instructions=instructions)
         # Record consumed tokens BEFORE the output guard so an output block still
         # accounts for the tokens the provider already charged.
         if capture is not None:
@@ -154,12 +176,14 @@ class PydanticAIAnswerAgent:
 
         # Output guard (#197 Phase 3).
         if self._guardrails_enabled:
-            self._check_output(answer_text, chunks)
+            self._check_output(answer_text, chunks, instructions)
 
         citations = [CitationDTO.from_chunk(chunk) for chunk in chunks]
         return QueryAnswerDTO(answer=answer_text, citations=citations)
 
-    def _check_output(self, answer_text: str, chunks: list[BaseChunkDTO]) -> None:
+    def _check_output(
+        self, answer_text: str, chunks: list[BaseChunkDTO], instructions: str
+    ) -> None:
         """Block fabricated *precise* PII; log everything else.
 
         PII fabrication = PII in the answer that is absent from every chunk
@@ -210,7 +234,7 @@ class PydanticAIAnswerAgent:
                 )
                 raise GuardrailBlocked()
 
-        if find_prompt_leak(answer_text, _INSTRUCTIONS):
+        if find_prompt_leak(answer_text, instructions):
             log_guardrail_event(
                 _logger,
                 agent=_AGENT_NAME,

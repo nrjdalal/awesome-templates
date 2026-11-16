@@ -266,6 +266,7 @@ Live registration: [Claude settings](../../../.claude/settings.json); implementa
 | LLM (PydanticAI Agent) | Active | build_llm_model(), LLMConfig, Agent structured output |
 | OpenTelemetry tracing | Active | Optional `otel` extra; server/worker instrumentation. See [OTEL runbook](../../../docs/operations/observability-otel.md). |
 | Langfuse observability recipe | Active | Opt-in OTLP recipe. See [Langfuse runbook](../../../docs/operations/observability-langfuse.md). |
+| Prompt provider / store | Active | `DbPromptProvider` (Singleton, not optional) serves the active stored persona, else the code persona; boundary tail stays in code, last; usage rows name prompt and version ([ADR 066](../../history/066-prompt-provider-contract.md), [runbook](../../../docs/operations/prompt-management.md)). |
 | Text chunking (semantic-text-splitter) | Active | chunk_text(), chunk_text_by_tokens() in src._core.common.text_utils |
 | Structured Logging (structlog) | Active | Server/worker pipeline and sensitive-field prohibition: [AGENTS.md](../../../AGENTS.md#structured-logging). |
 | JWT/Authentication | Active | HS256 access/refresh rotation, hashed persistence, Bearer-protected user routes (§15 / §17). |
@@ -357,6 +358,7 @@ Quickstart prints the seeded `admin / admin` credentials only when `ENV=quicksta
 - **Snapshot safety:** [safe snapshot whitelist](../../../src/_core/infrastructure/admin/audit/safe_state.py) excludes passwords, token hashes, temporary credentials, raw exceptions and newly added DTO fields by default. `failure_reason` is a stable `error_code`, never `str(exc)`.
 - **Registration:** server bootstrap and Alembic model loading both register the model. Audit package `__init__` must not re-export the NiceGUI-dependent logger, keeping the minimal-install path clean.
 - **Instrumentation:** authenticate logs LOGIN; explicit user logout logs before session clear, while generic auth cleanup does not impersonate a logout. Account/setup/password write callbacks log results. `/admin/audit-log` requires `audit_log`; `log_reads=False` opts domains out of view events by default.
+- **Prompt store (#451):** `/admin/prompts` writes log `PROMPT_VERSION_SAVE` / `PROMPT_ACTIVATE` / `PROMPT_REVERT`, refused writes included. Text lives in append-only `prompt_version`; `prompt_active` is one pointer per name. Both are `_core` tables, registered like the audit model.
 - **Retention:** `AUDIT_LOG_RETENTION_DAYS` is bounded 1–3650 (default 90). The decorated [cleanup task](../../../src/_apps/worker/tasks/audit_cleanup_task.py) can run from the optional scheduler, external cron or explicit enqueue; cleanup is an irreversible DELETE. Bootstrap wiring must cover worker, scheduler and InMemory producer paths. See [worker bootstrap](../../../src/_apps/worker/bootstrap.py) and [scheduler](../../../src/_apps/worker/scheduler.py).
 
 ## §12. S3 Vector Store Pattern

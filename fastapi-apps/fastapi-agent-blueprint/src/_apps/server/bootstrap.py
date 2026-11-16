@@ -36,6 +36,7 @@ from src._core.infrastructure.observability.otel_bootstrap import (
     maybe_configure_otel,
 )
 from src._core.infrastructure.persistence.rdb.database import Base, Database
+from src._core.infrastructure.prompt import models as _prompt_models  # noqa: F401
 
 _logger = structlog.stdlib.get_logger("src._apps.server.bootstrap")
 

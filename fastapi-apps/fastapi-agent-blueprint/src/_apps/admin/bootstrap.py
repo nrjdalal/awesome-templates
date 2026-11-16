@@ -14,6 +14,7 @@ from src._apps.admin.pages import (
     dashboard,  # noqa: F401 (registers @ui.page)
     error,  # noqa: F401 (registers @ui.page)
     login,  # noqa: F401 (registers @ui.page)
+    prompts,  # noqa: F401 (registers @ui.page)
     setup,  # noqa: F401 (registers @ui.page)
 )
 from src._core.config import settings
@@ -115,6 +116,10 @@ def bootstrap_admin(fastapi_app: FastAPI) -> None:
     dashboard.page_configs = page_configs
     accounts.page_configs = page_configs
     audit_log.page_configs = page_configs
+    prompts.page_configs = page_configs
+    # The provider, not an instance: resolved per request so override_database
+    # (tests) reaches the prompt store as it does every other admin read.
+    prompts.service_provider = admin_container.core_container.prompt_store_service  # pyright: ignore[reportAttributeAccessIssue]
     change_password.page_configs = page_configs
 
     # Populate the permission registry from successfully registered page_configs.

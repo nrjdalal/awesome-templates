@@ -170,3 +170,42 @@ def test_context_manager_builders():
 # success, stay-open on failure) is exercised manually in the accounts migration;
 # it can't be clicked in a headless test, and building UI inside an async task
 # trips NiceGUI's slot-stack guard.
+
+
+# ── #448 D1: grid click events must not serialise AG Grid's `context` ────────
+# NiceGUI forwards a curated event object that includes `context`. On AG Grid's
+# rowClicked that is the grid's internal bean context, which is circular, so
+# the browser threw `Converting circular structure to JSON` and the client
+# dropped its connection ("Connection lost") instead of opening the audit-log
+# detail dialog. NiceGUI filters keys *before* JSON.stringify when the listener
+# names them (`args=`), so every click listener the builder registers must
+# carry an allowlist without `context`.
+
+
+def _click_listeners(grid: Any) -> list[Any]:
+    return [
+        listener
+        for listener in grid._event_listeners.values()  # noqa: SLF001
+        if listener.type in ("cellClicked", "rowClicked")
+    ]
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {"on_row_click": lambda e: None},
+        {"on_cell_click": lambda e: None},
+        {"row_click_to": lambda row: "/admin/x"},
+    ],
+)
+def test_data_grid_click_listeners_never_serialise_context(kwargs: dict[str, Any]):
+    grid = c.data_grid([{"field": "id"}], [{"id": 1}], **kwargs)
+    listeners = _click_listeners(grid)
+
+    assert listeners, "the builder registered no click listener"
+    for listener in listeners:
+        # args is [[keys...]] — one allowlist for the single event argument.
+        assert listener.args is not None, f"{listener.type} serialises every key"
+        allowed = listener.args[0]
+        assert "data" in allowed
+        assert "context" not in allowed

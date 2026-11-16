@@ -37,6 +37,7 @@ Quick index for the `docs/` folder.
 | [operations/error-notifications.md](operations/error-notifications.md) | Slack / Discord error alerts — setup, severity channel routing, coverage limits, cooldown and payload caveats |
 | [operations/observability-otel.md](operations/observability-otel.md) | OpenTelemetry — Jaeger / Tempo / Phoenix setup |
 | [operations/observability-langfuse.md](operations/observability-langfuse.md) | Langfuse opt-in for LLM prompt tracing |
+| [operations/prompt-management.md](operations/prompt-management.md) | Editing agent personas on `/admin/prompts` — grant, save, activate, rollback, revert, ledger verification, failure behaviour |
 | [operations/performance-locust.md](operations/performance-locust.md) | Locust performance-test harness — `make perf-test`, scenarios, reading output |
 
 ## Architecture decisions

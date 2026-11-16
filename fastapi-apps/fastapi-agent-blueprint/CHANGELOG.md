@@ -7,6 +7,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Upgrading
+
+- **Run the migration.** `uv run alembic upgrade head` applies the additive
+  `0011_prompt_store` (tables `prompt_version`, `prompt_active`). Quickstart
+  creates them on boot.
+- **Grant `prompts` to the admins who should edit personas.** The new fixed
+  permission key is not added to existing admins; only the first admin created by
+  the setup wizard receives every key. Holding it means changing agent behaviour
+  in production — grant it narrowly.
+
+### Added
+
+- Self-hosted prompt store with admin editing (#451, ADR 066 Decision 5).
+  `/admin/prompts`, under Operations and gated by the new fixed permission key
+  `prompts`, shows each code-registered persona (`docs_answer`, `classification`)
+  with its code default beside the active version. Saving appends an immutable
+  version and is separate from activating; activating an older version is the
+  rollback, and "Revert to code default" clears the pointer. Every write is
+  audited (`PROMPT_VERSION_SAVE` / `PROMPT_ACTIVATE` / `PROMPT_REVERT`).
+  `CoreContainer.prompt_provider` is now `DbPromptProvider` — still a plain
+  Singleton, no setting: one read per call, no cache, and any store failure
+  serves the code text and logs `prompt_store_unavailable`. Calls on a stored
+  version record `prompt_source=self` and `external_prompt_ref=name@version` in the
+  `ai_usage` ledger. Migration `0011_prompt_store`. Operator guide:
+  [docs/operations/prompt-management.md](docs/operations/prompt-management.md).
+
+- Prompt provider contract (#447, ADR 066). The RAG answer agent (`docs_answer`)
+  and the classifier (`classification`) now resolve their persona through
+  `PromptProviderProtocol.get_active(name, *, default)`; the only implementation,
+  `InlinePromptProvider`, serves the code text, so behaviour is unchanged. The
+  prompt-injection boundary tail stays in code and `compose_instructions` always
+  appends it last. Every call by these agents now records `prompt_name` and
+  `prompt_source=inline` in the `ai_usage` ledger — no migration. Operator
+  editing without a deploy is planned as a minimal self-hosted, DB-backed store
+  in a follow-up ticket; Langfuse was evaluated and rejected.
+
+### Changed
+
+- **For forks:** `PydanticAIAnswerAgent` and `PydanticAIClassifier` no longer pass
+  `instructions=` to the `Agent` constructor; instructions are composed and passed
+  per run. A subclass or patch that relied on the constructor instructions must
+  move to `compose_instructions` and run-time instructions.
+
 ## [0.12.0] - 2026-11-07
 
 ### Upgrading

@@ -12,7 +12,7 @@ paths:
 
 # Project Overview
 
-> Last synced: 2026-11-06 via #414 B1/B4/B5
+> Last synced: 2026-11-16 via #447
 > For tech stack, refer to project-dna.md §8; for layer structure, refer to §1.
 > For the Optional infra toggle surface (env var → disabled behavior per infra), see AGENTS.md "Optional Infrastructure Toggles" + [ADR 042](../../docs/history/042-optional-infrastructure-di-pattern.md).
 > This file only contains **project-level context** not covered in project-dna.md.
@@ -56,4 +56,5 @@ Interface → Application → Domain ← Infrastructure
 - VectorSearchResult: Vector search result container (items, distances, count). CursorPage counterpart for vector search.
 - EmbeddingConfig: Immutable embedding configuration (model_name, dimension, credentials). Domain-layer VO for PydanticAI Embedder.
 - LLMConfig: Immutable LLM configuration (model_name, credentials). Domain-layer VO for PydanticAI Agent.
+- PromptSnapshot: The prompt that served one agent call (name, content, version, source, external_ref). Returned by `PromptProviderProtocol.get_active` (served by the DB-backed prompt store, code persona as fallback, #451) and passed to `track_agent_usage` (ADR 046 / [ADR 066](../../docs/history/066-prompt-provider-contract.md)).
 - DailyCount: One day's record count from a date-grouped aggregate (#368). Returned by `BaseRepository.count_datas_by_day` / `BaseService.count_datas_by_day`. Days with no rows are **absent**, not zero-filled — gap-filling is a caller policy, so a chart fills them and an alerting consumer need not.

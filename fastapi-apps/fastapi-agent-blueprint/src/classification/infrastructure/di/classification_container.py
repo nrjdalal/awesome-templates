@@ -41,6 +41,7 @@ class ClassificationContainer(containers.DeclarativeContainer):
             usage_recorder=ai_usage_recorder,
             model_name=settings.llm_model_name or "",
             provider=settings.llm_provider,
+            prompt_provider=core_container.prompt_provider,
         ),
         stub=providers.Singleton(StubClassifier),
     )

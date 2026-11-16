@@ -1,6 +1,6 @@
 # Project Status
 
-> Last synced: 2026-11-07 via v0.12.0 release
+> Last synced: 2026-11-16 via #447
 
 ## Current Version Context
 - Latest release: v0.12.0 (2026-11-07)
@@ -14,7 +14,7 @@
 - Infrastructure: RDB (PostgreSQL/MySQL/SQLite), DynamoDB, Storage (S3/MinIO), S3 Vectors, InMemory Vectors (quickstart; selected by `VECTOR_STORE_TYPE`, boot-validated since #328 — its filter support is a strict subset
   of the S3 syntax and raises rather than ignoring the rest), Embedding (PydanticAI + StubEmbedder fallback), LLM (PydanticAI Agent + TestModel stub fallback via `build_stub_llm_model`), RagPipeline (+ StubAnswerAgent),
   Broker (SQS/RabbitMQ/InMemory), Structured logging (structlog + asgi-correlation-id), JWT auth (HS256 v1), Error Notification (Slack/Discord webhook alerts from the HTTP exception handlers and Taskiq worker task
-  failures + NoopNotificationClient fallback, #17/#310; optional severity channel routing via `NOTIFICATION_WARNING_THRESHOLD`, #286). All non-DB infras optional via `providers.Selector` + lazy factories (ADR 042).
+  failures + NoopNotificationClient fallback, #17/#310; optional severity channel routing via `NOTIFICATION_WARNING_THRESHOLD`, #286), Prompt provider (always available as a `DbPromptProvider` Singleton — DB-backed store with code-persona fallback, not a Selector, #447/#451/ADR 066). Every other non-DB infra is optional via `providers.Selector` + lazy factories (ADR 042).
   `nicegui` in `admin` extra, `boto3`/`aioboto3` in `aws` extra (#104). Admin identity is a separate bounded context with its own credential store + JWT realm (distinct secret/issuer/audience); NiceGUI admin login +
   page-level permissions backed by `admin_identity` (#218/ADR 049, supersedes the #154/#194 single-table model).
 
@@ -35,6 +35,8 @@ Narrative belongs in
 
 | Feature | Issue | Impact |
 |---------|-------|--------|
+| Prompt provider contract: inline personas, code-owned boundary tail composed last | #447 (ADR 066) | Real agent calls record prompt_name/source; DB-backed operator editing is a follow-up |
+| Prompt store: /admin/prompts, `prompts` permission, append-only versions, audited | #451 (ADR 066) | Migration 0011; ledger records self + name@version; grant `prompts` to existing admins |
 
 ## Architecture Violation Status
 - Domain → Infrastructure import: CLEAN

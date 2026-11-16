@@ -42,8 +42,12 @@ from src._core.infrastructure.llm.guardrails import detect_prompt_injection
 pytest.importorskip("pydantic_ai")
 from pydantic_ai.models.test import TestModel  # noqa: E402
 
+from src._core.infrastructure.llm.prompt_boundaries import (  # noqa: E402
+    RAG_INSTRUCTIONS_TAIL,
+    compose_instructions,
+)
 from src._core.infrastructure.rag.pydantic_ai_answer_agent import (  # noqa: E402
-    _INSTRUCTIONS,
+    _PERSONA,
     PydanticAIAnswerAgent,
     _format_prompt,
 )
@@ -261,7 +265,7 @@ async def test_verbatim_prompt_leak_is_logged_not_blocked() -> None:
     """If the model echoes the instructions verbatim, the output guard LOGS a
     ``prompt_leak`` (action=log) but does NOT block — the instructions are
     non-secret generic guidance, so this is observability only."""
-    leaked = _INSTRUCTIONS[:120]
+    leaked = compose_instructions(_PERSONA, RAG_INSTRUCTIONS_TAIL)[:120]
     agent = _rag_agent(leaked)
     with capture_logs() as logs:
         result = await agent.answer("What is this about?", [_chunk("benign body")])

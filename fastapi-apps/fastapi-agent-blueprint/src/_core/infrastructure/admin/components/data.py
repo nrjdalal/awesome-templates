@@ -28,6 +28,15 @@ _SHARED_DEFAULT_COL_DEF: dict[str, Any] = {
 _GRID_HEADER_HEIGHT = 49
 _GRID_BORDER_HEIGHT = 2
 
+# The only event keys a click handler receives (#448 D1). NiceGUI forwards a
+# curated AG Grid event that includes `context`, and on rowClicked that is the
+# grid's internal bean context — a circular object. Serialising it threw
+# `Converting circular structure to JSON` in the browser and the client dropped
+# its connection instead of running the handler. Naming the keys makes NiceGUI
+# filter them *before* JSON.stringify, so `context` never reaches it. Every click
+# listener this builder registers goes through this allowlist.
+_CLICK_EVENT_ARGS = ["data", "rowIndex", "rowId", "colId", "value", "selected"]
+
 
 def data_grid(
     column_defs: list[dict],
@@ -68,6 +77,10 @@ def data_grid(
       list→detail case).
     - ``on_cell_click`` / ``on_row_click``: raw handlers (sync or async) for the
       cellClicked / rowClicked events (e.g. opening a detail dialog).
+
+    Handlers receive ``e.args`` limited to ``_CLICK_EVENT_ARGS`` (``data``,
+    ``rowIndex``, ``rowId``, ``colId``, ``value``, ``selected``) — see the note
+    on that constant for why the rest of the AG Grid event is withheld.
     """
     col_def = {**_SHARED_DEFAULT_COL_DEF, **(default_col_def or {})}
     options: dict[str, Any] = {
@@ -93,11 +106,12 @@ def data_grid(
         grid.on(
             "cellClicked",
             lambda e: ui.navigate.to(row_click_to(e.args["data"])),
+            args=_CLICK_EVENT_ARGS,
         )
     elif on_cell_click is not None:
-        grid.on("cellClicked", on_cell_click)
+        grid.on("cellClicked", on_cell_click, args=_CLICK_EVENT_ARGS)
     if on_row_click is not None:
-        grid.on("rowClicked", on_row_click)
+        grid.on("rowClicked", on_row_click, args=_CLICK_EVENT_ARGS)
     return grid
 
 

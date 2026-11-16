@@ -16,6 +16,12 @@ Design invariants (codex-reviewed, cf. plan §1):
 * **Instruction tails are ``Final[LiteralString]``** so static analysis
   (``uv run pyright``) blocks future f-string interpolation of untrusted
   data into the agent's persistent behavioural contract.
+* **The persona is runtime data; the tail is not (#447, ADR 066).** The persona
+  arrives through ``PromptProviderProtocol`` — today the code text, and with the
+  planned operator-editable store (#451) text that was never code-reviewed. ``compose_instructions`` is the only
+  place a persona meets a tail, and it always puts the tail *last*, so an
+  edited persona can add guidance but cannot remove or follow the boundary
+  rules. The tail parameter stays ``LiteralString``: only code can supply it.
 """
 
 from __future__ import annotations
@@ -63,3 +69,13 @@ __all__ = [
     "RAG_INSTRUCTIONS_TAIL",
     "escape_for_prompt_xml",
 ]
+
+
+def compose_instructions(persona: str, tail: LiteralString) -> str:
+    """Join a (possibly operator-edited) persona with a code-owned tail.
+
+    The tail always comes last. ``LiteralString`` on ``tail`` means pyright
+    rejects any caller that tries to pass runtime text in that slot, so the
+    boundary guidance can only ever be the constants in this module.
+    """
+    return persona.rstrip() + tail

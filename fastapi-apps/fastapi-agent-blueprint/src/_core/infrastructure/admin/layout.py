@@ -160,7 +160,8 @@ def admin_layout(
             active=current_domain == "",
         )
 
-        if visible_configs:
+        show_prompts = permissions is None or "prompts" in permissions
+        if visible_configs or show_prompts:
             _nav_section("Operations")
             for page_config in visible_configs:
                 _nav_item(
@@ -168,6 +169,13 @@ def admin_layout(
                     icon=page_config.icon,
                     target=f"/admin/{page_config.domain_name}",
                     active=page_config.domain_name == current_domain,
+                )
+            if show_prompts:
+                _nav_item(
+                    label="Prompts",
+                    icon="edit_note",
+                    target="/admin/prompts",
+                    active=current_domain == "prompts",
                 )
 
         show_accounts = permissions is None or "accounts" in permissions

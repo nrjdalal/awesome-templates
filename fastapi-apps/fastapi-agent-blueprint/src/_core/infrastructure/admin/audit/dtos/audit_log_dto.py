@@ -22,6 +22,11 @@ class AdminAction(StrEnum):
     # Read events (#206 Phase 2). Per-domain opt-in via ``BaseAdminPage.log_reads``.
     VIEW_LIST = "VIEW_LIST"
     VIEW_DETAIL = "VIEW_DETAIL"
+    # Prompt store writes (#451). record_id is "name@version" (or the name, for
+    # a revert); the text itself lives in the append-only prompt_version table.
+    PROMPT_VERSION_SAVE = "PROMPT_VERSION_SAVE"
+    PROMPT_ACTIVATE = "PROMPT_ACTIVATE"
+    PROMPT_REVERT = "PROMPT_REVERT"
 
 
 class AuditResult(StrEnum):

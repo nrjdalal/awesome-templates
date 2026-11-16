@@ -5,6 +5,7 @@
 - Related issues: #74 (Langfuse integration — superseded), #75 (AI Usage domain), #97 (simple-chatbot example)
 - Related ADRs: [037](037-pydanticai-agent-integration.md)(PydanticAI), [042](042-optional-infrastructure-di-pattern.md)(Optional Infra DI), [038 (archive)](archive/038-llm-observability-dual-path.md)(superseded by this ADR)
 - Supersedes: [archive/038](archive/038-llm-observability-dual-path.md)
+- Amended by: ADR [066](066-prompt-provider-contract.md) — implements the deferred §4 `get_active` contract (inline provider, code-owned boundary tail, ledger linkage) after the first trigger condition was met (#447), rejects Langfuse as the editing backend for operational burden, and narrows Problem §3's rejection of a self-built editor to allow a minimal self-hosted store in a follow-up. §1, §2 and §3 are unchanged.
 
 ## Summary
 
