@@ -76,7 +76,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "drizzle-kit": "^0.31.11",
-    "lint-staged": "^17.6.1",
+    "lint-staged": "^17.6.2",
     "simple-git-hooks": "^2.14.0",
     "sort-package-json": "^4.1.0",
     "tailwindcss": "4.3.3",
